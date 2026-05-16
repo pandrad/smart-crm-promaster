@@ -21,20 +21,46 @@ All screens fully interactive with mock data. Dev server: `cd frontend && npm ru
 | `src/components/AdminPanel.jsx` | Slide-over: Users, Estados, Prioridades, Funções, Atribuição de Tarefas, Marca, Importar |
 | `src/components/Toast.jsx` | Auto email notification demo |
 | `src/components/Primitives.jsx` | Avatar (photo support), badges — all read from store |
-| `src/store.js` | localStorage-backed store for users, stages, FU statuses, priorities, roles, assignment rules |
-| `src/data.js` | Seed mock data (overridden by store once admin makes changes) |
-| `src/icons.jsx` | Inline SVG icons |
 
-Demo login: `admin@promaster.co` / `admin123` (Admin) · `adelina@promaster.co` / `pass123` (standard)
+### File structure (finalised — do not reorganise)
+
+```
+frontend/src/
+├── api/
+│   └── client.js       — fetch stubs: login, getProcessos, getUsers,
+│                          getStages, getFUStatuses, getPriorities.
+│                          Swap stub bodies for real fetch() in Stage 5.
+├── mock/
+│   └── data.js         — all Stage 1 mock content: PROCESSOS,
+│                          MOCK_CREDENTIALS, MOCK_TOAST, MOCK_IMPORT_PREVIEW
+├── components/         — UI components (import from utils/store/mock only)
+├── pages/              — Login.jsx, Main.jsx
+├── data.js             — seed arrays only (STAGES, FOLLOWUP_STATUSES, USERS)
+│                          imported by store.js alone — no components touch it
+├── store.js            — localStorage runtime state; seeds from data.js
+├── utils.js            — pure utilities: daysLeft()
+└── icons.jsx           — inline SVG icons
+```
+
+### Separation of concerns — confirmed clean
+- `data.js` — seeds only, one consumer (`store.js`)
+- `mock/data.js` — all hardcoded demo content, no logic
+- `utils.js` — pure functions, no data
+- `store.js` — admin-editable runtime state, localStorage-backed
+- `api/client.js` — data-fetching layer; currently returns mock data, ready for real API
+- Components import `daysLeft` from `utils.js`, `PROCESSOS` from `mock/data.js`, everything else from `store`
 
 ### Deliverable sent to client
 `entrega/Smart CRM — Promaster (Protótipo).html` — single self-contained HTML file, opens in any browser without a server. Built with HashRouter + inlined JS, script placed after `#root` in body.
 
 `entrega/Instruções — Smart CRM Promaster.md` — Portuguese instructions covering all sections + open questions A–F.
 
+Demo login: `admin@promaster.co` / `admin123` (Admin) · `adelina@promaster.co` / `pass123` (standard)
+
 ### Next action
-**Await client feedback (Step 2).**
-Once feedback is collected and open questions A–F are answered, resume here to:
+**Awaiting client feedback and final UI sign-off before Stage 1 closes.**
+
+Do not write any code until feedback is received. Once open questions A–F are answered, resume here to:
 1. Incorporate any UI changes from client feedback
 2. Finalise `database/schema.sql` with confirmed status list, user list, and SLA rules
 3. Proceed to Step 3 (Azure AD + Graph API)
