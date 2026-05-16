@@ -9,7 +9,7 @@
  *   return Promise.resolve(<mock data>)   →   return fetch('/api/...')
  */
 
-import { MOCK_CREDENTIALS } from "../mock/data.js";
+import { MOCK_CREDENTIALS, PROCESSOS } from "../mock/data.js";
 import { store } from "../store.js";
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -32,7 +32,6 @@ export async function login(email, password) {
  * Returns the full list of process records.
  */
 export async function getProcessos() {
-  const { PROCESSOS } = await import("../data.js");
   return Promise.resolve(PROCESSOS);
 }
 

@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { PROCESSOS, daysLeft } from "../data.js";
+import { PROCESSOS } from "../mock/data.js";
+import { daysLeft } from "../utils.js";
 import { store } from "../store.js";
 import { StatsBar } from "../components/StatsBar.jsx";
 import { Toolbar } from "../components/Toolbar.jsx";

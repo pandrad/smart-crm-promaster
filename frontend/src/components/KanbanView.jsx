@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { daysLeft } from "../data.js";
+import { daysLeft } from "../utils.js";
 import { store } from "../store.js";
 import { Avatar, UrgencyTag } from "./Primitives.jsx";
 import { Icon } from "../icons.jsx";

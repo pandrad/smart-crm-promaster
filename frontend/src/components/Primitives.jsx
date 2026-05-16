@@ -1,4 +1,4 @@
-import { daysLeft } from "../data.js";
+import { daysLeft } from "../utils.js";
 import { store } from "../store.js";
 
 const AVATAR_PALETTE = ["#6366f1","#0ea5e9","#10b981","#f59e0b","#ef4444","#8b5cf6","#ec4899"];

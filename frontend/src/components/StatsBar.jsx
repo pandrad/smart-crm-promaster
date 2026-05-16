@@ -1,5 +1,5 @@
 import { Icon } from "../icons.jsx";
-import { daysLeft } from "../data.js";
+import { daysLeft } from "../utils.js";
 
 // processos     — full list (for overall totals)
 // myProcessos   — user-filtered list (used when myTab is active)

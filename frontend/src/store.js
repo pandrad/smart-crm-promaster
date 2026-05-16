@@ -50,6 +50,13 @@ export const store = {
   getRoles()       { return load("crm_roles", DEFAULT_ROLES); },
   saveRoles(roles) { save("crm_roles", roles); },
 
+  // ── Role labels (static lookup: id → display string) ──────────────────────
+  // Kept here alongside getRoles() so both live in one place.
+  getRoleLabel(id) {
+    const roles = load("crm_roles", DEFAULT_ROLES);
+    return roles.find(r => r.id === id)?.label ?? id;
+  },
+
   // ── AI assignment override ─────────────────────────────────────────────────
   // Stored as { cotacao: userId|null, comercial: userId|null, compra: userId|null }
   getAssignment()       { return load("crm_assignment", { cotacao: null, comercial: null, compra: null }); },

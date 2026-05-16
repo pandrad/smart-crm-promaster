@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { daysLeft } from "../data.js";
+import { daysLeft } from "../utils.js";
 import { store } from "../store.js";
 import { Avatar, StageBadge, FUBadge, Tag } from "./Primitives.jsx";
 import { Icon } from "../icons.jsx";

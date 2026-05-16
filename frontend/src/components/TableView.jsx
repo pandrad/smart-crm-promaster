@@ -1,4 +1,4 @@
-import { daysLeft } from "../data.js";
+import { daysLeft } from "../utils.js";
 import { Avatar, UrgencyTag, StageBadge, FUBadge, PriorityDot } from "./Primitives.jsx";
 import { Icon } from "../icons.jsx";
 
