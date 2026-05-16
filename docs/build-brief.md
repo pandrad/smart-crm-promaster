@@ -328,6 +328,15 @@ smart-crm/
 - `POST /admin/*` — admin CRUD endpoints
 - Notifications: scheduled job for 48h deadline alerts + overdue alert to supervisor
 
+> **Reviewer agent pass (run after each significant module):**
+> After building each backend module (`graph_api.py`, `email_processor.py`,
+> `claude_client.py`, `auth.py`, `importer.py`, etc.), open a separate Claude Code
+> session with minimal context — provide only the module's spec from this brief and
+> the code that was produced — and ask it to review for bugs, missing logic, and
+> spec compliance. This cold-context review catches assumptions baked in during
+> the build session that a fresh reader would flag.
+> The reviewer prompt is stored in `docs/reviewer-prompt.md`.
+
 **Step 5 — Connect frontend to real data**
 - Replace hardcoded `DATA`, `STAGES`, `OWNERS` arrays with API calls
 - Implement login screen with real auth

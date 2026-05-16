@@ -69,6 +69,14 @@ Open questions A–F: see `docs/build-brief.md` § "Questions Still Open".
 
 See `docs/build-brief.md` § "Build Order" for full step list.
 
+## Stage 4 — Reviewer Agent Protocol
+
+After each significant backend module is built, run a **separate Claude Code session with clean context** to review it before proceeding to the next module. Do not reuse the build session.
+
+Modules to review (in order): `graph_api.py`, `email_processor.py`, `claude_client.py`, `auth.py`, `models.py`, `notifications.py`, `importer.py`.
+
+Reviewer prompt template: `docs/reviewer-prompt.md`
+
 ## Tech Stack
 
 | Layer | Technology |
