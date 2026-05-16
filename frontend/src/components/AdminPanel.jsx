@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { store } from "../store.js";
+import { MOCK_IMPORT_PREVIEW } from "../mock/data.js";
 import { Avatar, Tag } from "./Primitives.jsx";
 import { Icon } from "../icons.jsx";
 
@@ -734,10 +735,7 @@ function ImportTab() {
                     </tr>
                   </thead>
                   <tbody>
-                    {[["2003001","Cliente Exemplo Lda","VOLVO","EC360BLC","Entrada","15/05/2026"],
-                      ["2003002","Construtora Demo SA","CAT","320GC","Em Análise","20/05/2026"],
-                      ["2003003","Obras Angola SARL","JCB","JS220","Ganho","10/04/2026"]
-                    ].map((row, i) => (
+                    {MOCK_IMPORT_PREVIEW.map((row, i) => (
                       <tr key={i} style={{ borderBottom: "1px solid #f8fafc" }}>
                         {row.map((cell, j) => <td key={j} style={{ padding: "7px 12px", fontSize: 12, color: "#475569" }}>{cell}</td>)}
                       </tr>

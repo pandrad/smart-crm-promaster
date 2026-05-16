@@ -1,9 +1,9 @@
 import { Icon } from "../icons.jsx";
-import { STAGES } from "../data.js";
 import { store } from "../store.js";
 
 export function Toolbar({ view, setView, search, setSearch, ownerFilter, setOwnerFilter, commFilter, setCommFilter, statusFilter, setStatusFilter, onFilterChange }) {
-  const users = store.getUsers();
+  const stages = store.getStages();
+  const users  = store.getUsers();
   const cotacaoOwners   = [...new Set(users.filter(u => u.role === "cotacao"   && u.active !== false).map(u => u.name))];
   const comercialOwners = [...new Set(users.filter(u => u.role === "comercial" && u.active !== false).map(u => u.name))];
 
@@ -44,7 +44,7 @@ export function Toolbar({ view, setView, search, setSearch, ownerFilter, setOwne
       <select value={statusFilter} onChange={e => wrap(setStatusFilter)(e.target.value)}
         style={{ fontSize: 13, border: "1px solid #e2e8f0", borderRadius: 8, padding: "7px 10px", background: "white", outline: "none" }}>
         <option value="Todos">Todos os estados</option>
-        {STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+        {stages.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
       </select>
 
       {/* view toggle */}

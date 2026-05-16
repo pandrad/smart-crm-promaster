@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
-import { STAGES, daysLeft } from "../data.js";
+import { daysLeft } from "../data.js";
+import { store } from "../store.js";
 import { Avatar, UrgencyTag } from "./Primitives.jsx";
 import { Icon } from "../icons.jsx";
 
@@ -108,10 +109,12 @@ export function KanbanView({ rows, processos, setProcessos, onSelect, currentUse
     setProcessos(prev => prev.map(p => p.id === id ? { ...p, status: targetStageId } : p));
   }
 
+  const stages = store.getStages();
+
   return (
     <div style={{ padding: "0 24px 32px", overflowX: "auto" }}>
-      <div style={{ display: "flex", gap: 12, minWidth: STAGES.length * 212 }}>
-        {STAGES.map(stage => {
+      <div style={{ display: "flex", gap: 12, minWidth: stages.length * 212 }}>
+        {stages.map(stage => {
           const cards  = rows.filter(p => p.status === stage.id);
           const isOver = overCol === stage.id && draggingId !== null;
 

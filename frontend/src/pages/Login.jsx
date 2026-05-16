@@ -1,12 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "../icons.jsx";
-
-// Mock credentials — replaced by real auth in Step 5
-const MOCK_USERS = [
-  { email: "admin@promaster.co",   password: "admin123",  role: "admin",   name: "Admin" },
-  { email: "adelina@promaster.co", password: "pass123",   role: "cotacao", name: "Adelina Rodrigues" },
-];
+import { MOCK_CREDENTIALS } from "../mock/data.js";
 
 export function Login() {
   const [email,    setEmail]    = useState("");
@@ -21,7 +16,7 @@ export function Login() {
     setLoading(true);
 
     setTimeout(() => {
-      const user = MOCK_USERS.find(u => u.email === email && u.password === password);
+      const user = MOCK_CREDENTIALS.find(u => u.email === email && u.password === password);
       if (user) {
         localStorage.setItem("crm_user", JSON.stringify({ email: user.email, role: user.role, name: user.name }));
         navigate("/");

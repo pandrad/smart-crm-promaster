@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon } from "../icons.jsx";
+import { MOCK_TOAST } from "../mock/data.js";
 
 export function Toast() {
   const [visible, setVisible] = useState(false);
@@ -36,21 +37,23 @@ export function Toast() {
             </button>
           </div>
           <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
-            De: <strong>carlos.menezes@terramovida.pt</strong>
+            De: <strong>{MOCK_TOAST.sender}</strong>
           </div>
           <div style={{ fontSize: 12, color: "#475569", marginTop: 4 }}>
-            "Solicito cotação urgente para VOLVO EC480E…"
+            "{MOCK_TOAST.excerpt}"
           </div>
           <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
             <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 9999, fontSize: 11, fontWeight: 600, background: "#e0f2fe", color: "#0369a1" }}>
-              🤖 VOLVO EC480E
+              🤖 {MOCK_TOAST.equipment}
             </span>
-            <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 9999, fontSize: 11, fontWeight: 600, background: "#dcfce7", color: "#15803d" }}>
-              Novo cliente
-            </span>
+            {MOCK_TOAST.isNew && (
+              <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 9999, fontSize: 11, fontWeight: 600, background: "#dcfce7", color: "#15803d" }}>
+                Novo cliente
+              </span>
+            )}
           </div>
           <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 6 }}>
-            Processo criado automaticamente → #2004631
+            Processo criado automaticamente → #{MOCK_TOAST.processId}
           </div>
         </div>
       </div>
