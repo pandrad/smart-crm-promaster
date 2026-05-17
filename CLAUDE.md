@@ -12,15 +12,22 @@ All screens fully interactive with mock data. Dev server: `cd frontend && npm ru
 | File | Screen / Purpose |
 |------|-----------------|
 | `src/pages/Login.jsx` | Login — mock credentials, saves name to localStorage |
-| `src/pages/Main.jsx` | Dashboard shell — topbar with profile + admin buttons, stats, tabs |
-| `src/components/StatsBar.jsx` | 5 clickable stat cards (Todos, Em Aberto, Em Atraso, Urgentes, Ganhos) — user-specific in "Meus processos" mode |
-| `src/components/Toolbar.jsx` | Search + Resp. Cotação + Resp. Comercial filters + table/kanban toggle |
-| `src/components/TableView.jsx` | Full process table |
+| `src/pages/Main.jsx` | Layout shell — sidebar + route outlet, shared state, global modals |
+| `src/pages/Processos.jsx` | Dashboard — stats bar, filters, table/kanban views |
+| `src/pages/Tarefas.jsx` | Task management — table, filters, TaskDrawer with all actions |
+| `src/pages/Inbox.jsx` | Email triage — 4 actions per email, new-client prompt |
+| `src/pages/Arquivo.jsx` | Archived processes — read-only table |
+| `src/components/Sidebar.jsx` | Persistent left nav — 3 zones, badges, user chip |
+| `src/components/StatsBar.jsx` | 6 clickable stat cards incl. Transitados — user-specific in Meus processos |
+| `src/components/Toolbar.jsx` | Search + filters + column visibility toggle + table/kanban toggle |
+| `src/components/TableView.jsx` | Sortable table, per-column filters, priority inline change, FU conditional |
 | `src/components/KanbanView.jsx` | Kanban with drag-and-drop; non-owner cards locked |
-| `src/components/DetailDrawer.jsx` | Right panel: 3 roles, pipeline, timeline; Enviar Email + Alterar Estado modals; admin Reatribuir |
+| `src/components/DetailDrawer.jsx` | Right panel: process number, Comprador, Consulta checklist, Excel link, FU conditional, reassign for supervisor/owner |
 | `src/components/AdminPanel.jsx` | Slide-over: Users, Estados, Prioridades, Funções, Atribuição de Tarefas, Marca, Importar |
+| `src/components/SupervisorWidget.jsx` | Summary widget visible to admin/supervisor only |
 | `src/components/Toast.jsx` | Auto email notification demo |
 | `src/components/Primitives.jsx` | Avatar (photo support), badges — all read from store |
+| `src/theme.js` | Dark theme colour constants |
 
 ### File structure (finalised — do not reorganise)
 
@@ -31,13 +38,16 @@ frontend/src/
 │                          getStages, getFUStatuses, getPriorities.
 │                          Swap stub bodies for real fetch() in Stage 5.
 ├── mock/
-│   └── data.js         — all Stage 1 mock content: PROCESSOS,
-│                          MOCK_CREDENTIALS, MOCK_TOAST, MOCK_IMPORT_PREVIEW
+│   └── data.js         — all Stage 1 mock content: PROCESSOS, TAREFAS,
+│                          INBOX_EMAILS, MOCK_CREDENTIALS, MOCK_TOAST,
+│                          MOCK_IMPORT_PREVIEW
 ├── components/         — UI components (import from utils/store/mock only)
-├── pages/              — Login.jsx, Main.jsx
+├── pages/              — Login.jsx, Main.jsx, Processos.jsx, Tarefas.jsx,
+│                          Inbox.jsx, Arquivo.jsx
 ├── data.js             — seed arrays only (STAGES, FOLLOWUP_STATUSES, USERS)
 │                          imported by store.js alone — no components touch it
 ├── store.js            — localStorage runtime state; seeds from data.js
+├── theme.js            — dark theme colour constants
 ├── utils.js            — pure utilities: daysLeft()
 └── icons.jsx           — inline SVG icons
 ```
@@ -46,6 +56,7 @@ frontend/src/
 - `data.js` — seeds only, one consumer (`store.js`)
 - `mock/data.js` — all hardcoded demo content, no logic
 - `utils.js` — pure functions, no data
+- `theme.js` — colour constants only, no logic
 - `store.js` — admin-editable runtime state, localStorage-backed
 - `api/client.js` — data-fetching layer; currently returns mock data, ready for real API
 - Components import `daysLeft` from `utils.js`, `PROCESSOS` from `mock/data.js`, everything else from `store`
@@ -55,7 +66,7 @@ frontend/src/
 
 `entrega/Instruções — Smart CRM Promaster.md` — Portuguese instructions covering all sections + open questions A–F.
 
-Demo login: `admin@promaster.co` / `admin123` (Admin) · `adelina@promaster.co` / `pass123` (standard)
+Demo login: `admin@promaster.co` / `admin123` (Admin) · `supervisor@promaster.co` / `super123` (Supervisor) · `adelina@promaster.co` / `pass123` (standard)
 
 ### Next action
 **Awaiting client feedback and final UI sign-off before Stage 1 closes.**
