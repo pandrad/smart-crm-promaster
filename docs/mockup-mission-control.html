@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart CRM — Mission Control Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; height: 100vh; display: flex; overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: #0f172a;
+    border-right: 1px solid #1e293b;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    height: 100vh;
+  }
+
+  .logo-area {
+    padding: 20px 16px 16px;
+    border-bottom: 1px solid #1e293b;
+  }
+  .logo-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f1f5f9;
+    letter-spacing: 0.02em;
+  }
+  .logo-sub {
+    font-size: 10px;
+    color: #475569;
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .nav-section {
+    padding: 12px 8px 4px;
+  }
+  .nav-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0 8px;
+    margin-bottom: 4px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #64748b;
+    transition: all 0.15s;
+    position: relative;
+    margin-bottom: 1px;
+  }
+  .nav-item:hover { background: #1e293b; color: #cbd5e1; }
+  .nav-item.active { background: #1d4ed8; color: #fff; }
+  .nav-item.active .nav-icon { color: #fff; }
+  .nav-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+  .nav-badge {
+    margin-left: auto;
+    background: #dc2626;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 9999px;
+    min-width: 16px;
+    text-align: center;
+  }
+  .nav-badge.amber { background: #d97706; }
+  .nav-badge.blue { background: #2563eb; }
+
+  .sidebar-bottom {
+    margin-top: auto;
+    padding: 12px 8px;
+    border-top: 1px solid #1e293b;
+  }
+  .user-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .user-chip:hover { background: #1e293b; }
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #1d4ed8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .user-info { flex: 1; min-width: 0; }
+  .user-name { font-size: 12px; font-weight: 600; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-role { font-size: 10px; color: #475569; }
+  .sync-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+    flex-shrink: 0;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* MAIN */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #0f172a;
+    overflow: hidden;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    height: 52px;
+    background: #0f172a;
+    border-bottom: 1px solid #1e293b;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .page-title { font-size: 15px; font-weight: 700; color: #f1f5f9; }
+  .page-sub { font-size: 11px; color: #475569; margin-left: 4px; }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 7px; font-size: 12px;
+    font-weight: 600; cursor: pointer; border: none;
+  }
+  .btn-primary { background: #1d4ed8; color: #fff; }
+  .btn-ghost { background: #1e293b; color: #94a3b8; }
+  .btn-ghost:hover { background: #263548; }
+
+  /* STATS */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    padding: 14px 20px;
+    flex-shrink: 0;
+  }
+  .stat-card {
+    background: #1e293b;
+    border-radius: 10px;
+    padding: 12px 14px;
+    border: 1px solid #263548;
+  }
+  .stat-value { font-size: 24px; font-weight: 800; color: #f1f5f9; line-height: 1; }
+  .stat-label { font-size: 10px; color: #64748b; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .stat-card.red .stat-value { color: #f87171; }
+  .stat-card.amber .stat-value { color: #fbbf24; }
+  .stat-card.green .stat-value { color: #4ade80; }
+  .stat-card.carryover { border: 1px solid #334155; background: #161f2e; }
+  .stat-card.carryover .stat-value { color: #94a3b8; }
+  .carryover-tag {
+    font-size: 9px; color: #475569;
+    background: #263548; padding: 1px 5px;
+    border-radius: 4px; display: inline-block; margin-top: 3px;
+  }
+
+  /* TOOLBAR */
+  .toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 20px 10px;
+    flex-shrink: 0;
+  }
+  .search-wrap {
+    position: relative; flex: 1; max-width: 280px;
+  }
+  .search-icon {
+    position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+    color: #475569; font-size: 13px;
+  }
+  .search-input {
+    width: 100%; padding: 7px 10px 7px 30px;
+    background: #1e293b; border: 1px solid #263548;
+    border-radius: 7px; color: #cbd5e1; font-size: 12px;
+    outline: none;
+  }
+  .filter-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 6px 10px; background: #1e293b;
+    border: 1px solid #263548; border-radius: 7px;
+    color: #94a3b8; font-size: 12px; cursor: pointer;
+  }
+  .view-toggle {
+    display: flex; border: 1px solid #263548;
+    border-radius: 7px; overflow: hidden; margin-left: auto;
+  }
+  .view-btn {
+    padding: 6px 12px; font-size: 12px; cursor: pointer;
+    background: #1e293b; color: #64748b; border: none;
+  }
+  .view-btn.active { background: #1d4ed8; color: #fff; }
+  .cols-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 6px 10px; background: #1e293b;
+    border: 1px solid #263548; border-radius: 7px;
+    color: #94a3b8; font-size: 12px; cursor: pointer;
+  }
+
+  /* TABLE */
+  .table-wrap {
+    flex: 1; overflow: auto; padding: 0 20px 20px;
+  }
+  table { width: 100%; border-collapse: collapse; min-width: 900px; }
+  thead tr { background: #1e293b; position: sticky; top: 0; z-index: 2; }
+  th {
+    padding: 9px 12px; font-size: 10px; font-weight: 700;
+    color: #475569; text-transform: uppercase; letter-spacing: 0.06em;
+    text-align: left; white-space: nowrap; cursor: pointer;
+    border-bottom: 1px solid #263548;
+  }
+  th:hover { color: #94a3b8; }
+  th .sort-icon { margin-left: 3px; opacity: 0.5; }
+  tbody tr {
+    border-bottom: 1px solid #1e293b;
+    cursor: pointer; transition: background 0.1s;
+  }
+  tbody tr:hover { background: #1a2537; }
+  td { padding: 10px 12px; font-size: 12px; color: #94a3b8; white-space: nowrap; }
+  .td-primary { color: #e2e8f0; font-weight: 600; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+  .td-mono { font-family: monospace; color: #475569; font-size: 11px; }
+
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; border-radius: 9999px;
+    font-size: 10px; font-weight: 700; white-space: nowrap;
+  }
+  .badge-entrada  { background: #1e293b; color: #64748b; border: 1px solid #334155; }
+  .badge-qualif   { background: #1e1b4b; color: #a5b4fc; }
+  .badge-consulta { background: #0c2a4a; color: #60a5fa; }
+  .badge-fechar   { background: #2d1b69; color: #c4b5fd; }
+  .badge-fechado  { background: #14532d; color: #86efac; }
+  .badge-encomenda{ background: #14532d; color: #4ade80; }
+  .badge-cancelado{ background: #3b0f0f; color: #fca5a5; }
+
+  .urgency {
+    display: inline-flex; align-items: center;
+    padding: 2px 7px; border-radius: 9999px;
+    font-size: 10px; font-weight: 700;
+  }
+  .urg-red    { background: #3b0f0f; color: #f87171; }
+  .urg-amber  { background: #3b2000; color: #fbbf24; }
+  .urg-green  { background: #14532d; color: #4ade80; }
+
+  .prio-dot {
+    width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+  }
+  .prio-alta   { background: #ef4444; }
+  .prio-normal { background: #334155; }
+
+  /* ADMIN WIDGET */
+  .admin-widget {
+    margin: 0 20px 10px;
+    background: #161f2e;
+    border: 1px solid #1d4ed8;
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex; gap: 16px; align-items: flex-start;
+    flex-shrink: 0;
+  }
+  .widget-title {
+    font-size: 10px; font-weight: 700; color: #3b82f6;
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;
+  }
+  .widget-stats { display: flex; gap: 20px; flex: 1; }
+  .widget-stat { text-align: center; }
+  .widget-stat-val { font-size: 18px; font-weight: 800; color: #f1f5f9; }
+  .widget-stat-lab { font-size: 9px; color: #475569; margin-top: 1px; }
+  .widget-divider { width: 1px; background: #263548; align-self: stretch; }
+  .overdue-list { flex: 1; }
+  .overdue-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 3px 0; font-size: 11px; color: #94a3b8;
+  }
+  .overdue-num { font-family: monospace; color: #475569; font-size: 10px; }
+  .overdue-days { color: #f87171; font-weight: 700; font-size: 10px; margin-left: auto; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="logo-area">
+    <div class="logo-name">Smart CRM</div>
+    <div class="logo-sub">Promaster</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Principal</div>
+    <div class="nav-item active">
+      <span class="nav-icon">⊞</span> Processos
+      <span class="nav-badge amber">3</span>
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">✓</span> Tarefas
+      <span class="nav-badge">7</span>
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">✉</span> Inbox
+      <span class="nav-badge">12</span>
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Gestão</div>
+    <div class="nav-item">
+      <span class="nav-icon">◑</span> Clientes
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">◈</span> Arquivo
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Sistema</div>
+    <div class="nav-item">
+      <span class="nav-icon">⚙</span> Administração
+    </div>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="user-chip">
+      <div class="avatar">AR</div>
+      <div class="user-info">
+        <div class="user-name">Adelina Rodrigues</div>
+        <div class="user-role">Supervisor</div>
+      </div>
+      <div class="sync-dot"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <span class="page-title">Processos</span>
+    <span class="page-sub">Maio 2026</span>
+    <div class="topbar-right">
+      <div class="btn btn-ghost">🌙</div>
+      <div class="btn btn-primary">+ Novo Processo</div>
+    </div>
+  </div>
+
+  <!-- ADMIN WIDGET (supervisor/admin only) -->
+  <div class="admin-widget">
+    <div style="flex:1">
+      <div class="widget-title">Resumo — Supervisor</div>
+      <div class="widget-stats">
+        <div class="widget-stat">
+          <div class="widget-stat-val" style="color:#60a5fa">24</div>
+          <div class="widget-stat-lab">Abertos mês</div>
+        </div>
+        <div class="widget-stat">
+          <div class="widget-stat-val" style="color:#4ade80">18</div>
+          <div class="widget-stat-lab">Fechados mês</div>
+        </div>
+        <div class="widget-stat">
+          <div class="widget-stat-val" style="color:#f87171">5</div>
+          <div class="widget-stat-lab">Em atraso</div>
+        </div>
+        <div class="widget-stat">
+          <div class="widget-stat-val" style="color:#fbbf24">7</div>
+          <div class="widget-stat-lab">Tarefas pend.</div>
+        </div>
+      </div>
+    </div>
+    <div class="widget-divider"></div>
+    <div class="overdue-list">
+      <div class="widget-title">Mais atrasados</div>
+      <div class="overdue-item">
+        <span class="overdue-num">2604008</span>
+        <span style="color:#cbd5e1">Construtora Horizonte</span>
+        <span class="overdue-days">-8d</span>
+      </div>
+      <div class="overdue-item">
+        <span class="overdue-num">2604021</span>
+        <span style="color:#cbd5e1">Obras Nacionais SARL</span>
+        <span class="overdue-days">-5d</span>
+      </div>
+      <div class="overdue-item">
+        <span class="overdue-num">2605003</span>
+        <span style="color:#cbd5e1">Vendap II</span>
+        <span class="overdue-days">-2d</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value">24</div>
+      <div class="stat-label">Em Aberto</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-value">5</div>
+      <div class="stat-label">Em Atraso</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-value">3</div>
+      <div class="stat-label">Urgentes</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-value">8</div>
+      <div class="stat-label">Ganhos mês</div>
+    </div>
+    <div class="stat-card carryover">
+      <div class="stat-value">6</div>
+      <div class="stat-label">Transitados</div>
+      <div class="carryover-tag">Mês anterior</div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input class="search-input" placeholder="Pesquisar processos, clientes, marcas…"/>
+    </div>
+    <div class="filter-btn">Responsável ▾</div>
+    <div class="filter-btn">Estado ▾</div>
+    <div class="filter-btn">Prioridade ▾</div>
+    <div class="cols-btn">Colunas ⊟</div>
+    <div class="view-toggle">
+      <button class="view-btn active">≡ Tabela</button>
+      <button class="view-btn">⊟ Kanban</button>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nº <span class="sort-icon">↕</span></th>
+          <th>Criado <span class="sort-icon">↕</span></th>
+          <th>Prazo <span class="sort-icon">↕</span></th>
+          <th>P</th>
+          <th>Estado <span class="sort-icon">↕</span></th>
+          <th>Cliente <span class="sort-icon">↕</span></th>
+          <th>Comprador</th>
+          <th>Marca/Modelo</th>
+          <th>Resp. Cotação</th>
+          <th>Resp. Comercial</th>
+          <th>Valor</th>
+          <th>Emails</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="td-mono">2605001</td>
+          <td>14/05/2026</td>
+          <td><span class="urgency urg-red">-3d</span></td>
+          <td><span class="prio-dot prio-alta" title="Alta"></span></td>
+          <td><span class="badge badge-consulta">5. Consulta</span></td>
+          <td class="td-primary">Construtora Horizonte SA</td>
+          <td style="color:#64748b">Luísa Pinto</td>
+          <td style="color:#64748b">CATERPILLAR 320GC</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="avatar" style="width:22px;height:22px;font-size:8px">MC</div>
+              <span style="color:#94a3b8">Marta</span>
+            </div>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="avatar" style="width:22px;height:22px;font-size:8px;background:#0e7490">AF</div>
+              <span style="color:#94a3b8">Ana</span>
+            </div>
+          </td>
+          <td style="color:#94a3b8">—</td>
+          <td style="color:#475569;font-size:11px">✉ 9</td>
+        </tr>
+        <tr>
+          <td class="td-mono">2605002</td>
+          <td>14/05/2026</td>
+          <td><span class="urgency urg-amber">Hoje</span></td>
+          <td><span class="prio-dot prio-alta"></span></td>
+          <td><span class="badge badge-fechar">6. Para Fechar</span></td>
+          <td class="td-primary">Planasul Engenharia</td>
+          <td style="color:#64748b">Rui Barros</td>
+          <td style="color:#64748b">VOLVO EC360BLC</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="avatar" style="width:22px;height:22px;font-size:8px">AR</div>
+              <span style="color:#94a3b8">Adelina</span>
+            </div>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="avatar" style="width:22px;height:22px;font-size:8px;background:#0e7490">JM</div>
+              <span style="color:#94a3b8">João</span>
+            </div>
+          </td>
+          <td style="color:#e2e8f0;font-weight:600">€89.000</td>
+          <td style="color:#475569;font-size:11px">✉ 5</td>
+        </tr>
+        <tr>
+          <td class="td-mono">2605003</td>
+          <td>15/05/2026</td>
+          <td><span class="urgency urg-green">3d</span></td>
+          <td><span class="prio-dot prio-normal"></span></td>
+          <td><span class="badge badge-entrada">1. Entrada</span></td>
+          <td class="td-primary">Sociedade Mineira do Puri</td>
+          <td style="color:#64748b">Elmo Costa</td>
+          <td style="color:#64748b">—</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="avatar" style="width:22px;height:22px;font-size:8px;background:#7c3aed">VL</div>
+              <span style="color:#94a3b8">Vasco</span>
+            </div>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="avatar" style="width:22px;height:22px;font-size:8px;background:#0e7490">JM</div>
+              <span style="color:#94a3b8">João</span>
+            </div>
+          </td>
+          <td style="color:#94a3b8">—</td>
+          <td style="color:#475569;font-size:11px">✉ 1</td>
+        </tr>
+        <tr>
+          <td class="td-mono">2605004</td>
+          <td>15/05/2026</td>
+          <td><span class="urgency urg-green">4d</span></td>
+          <td><span class="prio-dot prio-normal"></span></td>
+          <td><span class="badge badge-qualif">2. Qualificação</span></td>
+          <td class="td-primary">BetãoCerto Construções</td>
+          <td style="color:#64748b">Rui Cardoso</td>
+          <td style="color:#64748b">—</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="avatar" style="width:22px;height:22px;font-size:8px;background:#7c3aed">VL</div>
+              <span style="color:#94a3b8">Vasco</span>
+            </div>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="avatar" style="width:22px;height:22px;font-size:8px;background:#0e7490">AF</div>
+              <span style="color:#94a3b8">Ana</span>
+            </div>
+          </td>
+          <td style="color:#94a3b8">—</td>
+          <td style="color:#475569;font-size:11px">✉ 2</td>
+        </tr>
+        <tr>
+          <td class="td-mono">2604018</td>
+          <td>28/04/2026</td>
+          <td><span class="urgency urg-green">8d</span></td>
+          <td><span class="prio-dot prio-normal"></span></td>
+          <td><span class="badge badge-encomenda">10. Encomenda</span></td>
+          <td class="td-primary">TerraMovida Lda</td>
+          <td style="color:#64748b">Carlos Menezes</td>
+          <td style="color:#64748b">VOLVO L90H</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="avatar" style="width:22px;height:22px;font-size:8px;background:#0f766e">JS</div>
+              <span style="color:#94a3b8">João S.</span>
+            </div>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="avatar" style="width:22px;height:22px;font-size:8px;background:#0e7490">RN</div>
+              <span style="color:#94a3b8">Ricardo</span>
+            </div>
+          </td>
+          <td style="color:#4ade80;font-weight:600">€210.000</td>
+          <td style="color:#475569;font-size:11px">✉ 12</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</body>
+</html>

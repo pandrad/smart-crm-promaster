@@ -1,4 +1,4 @@
-import { HashRouter as BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Login } from "./pages/Login.jsx";
 import { Main } from "./pages/Main.jsx";
 
@@ -9,12 +9,12 @@ function RequireAuth({ children }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/"      element={<RequireAuth><Main /></RequireAuth>} />
-        <Route path="*"      element={<Navigate to="/" replace />} />
+        {/* Main shell handles all sub-routes (/processos, /tarefas, /inbox, /arquivo) */}
+        <Route path="/*" element={<RequireAuth><Main /></RequireAuth>} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }

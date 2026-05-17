@@ -4,18 +4,20 @@
  */
 
 import { USERS, STAGES, FOLLOWUP_STATUSES } from "./data.js";
+import { TAREFAS, INBOX_EMAILS } from "./mock/data.js";
 
 const DEFAULT_PRIORITIES = [
-  { id: 1, label: "Normal", color: "#64748b", bg: "#f1f5f9" },
-  { id: 2, label: "Alta",   color: "#dc2626", bg: "#fee2e2" },
+  { id: 1, label: "Normal", color: "#94a3b8", bg: "#1e293b" },
+  { id: 2, label: "Alta",   color: "#f87171", bg: "#2d0a0a" },
 ];
 
 const DEFAULT_ROLES = [
-  { id: "admin",     label: "Administrador"   },
-  { id: "comercial", label: "Resp. Comercial"  },
-  { id: "cotacao",   label: "Resp. Cotação"    },
-  { id: "compra",    label: "Resp. Compra"     },
-  { id: "viewer",    label: "Visualizador"     },
+  { id: "admin",      label: "Administrador"   },
+  { id: "supervisor", label: "Supervisor"       },
+  { id: "comercial",  label: "Resp. Comercial"  },
+  { id: "cotacao",    label: "Resp. Cotação"    },
+  { id: "compra",     label: "Resp. Compra"     },
+  { id: "viewer",     label: "Visualizador"     },
 ];
 
 function load(key, fallback) {
@@ -43,22 +45,49 @@ export const store = {
   saveFUStatuses(fu) { save("crm_fu", fu); },
 
   // ── Priorities ─────────────────────────────────────────────────────────────
-  getPriorities()          { return load("crm_priorities", DEFAULT_PRIORITIES); },
-  savePriorities(list)     { save("crm_priorities", list); },
+  getPriorities()      { return load("crm_priorities", DEFAULT_PRIORITIES); },
+  savePriorities(list) { save("crm_priorities", list); },
 
   // ── Roles ──────────────────────────────────────────────────────────────────
   getRoles()       { return load("crm_roles", DEFAULT_ROLES); },
   saveRoles(roles) { save("crm_roles", roles); },
 
-  // ── Role labels (static lookup: id → display string) ──────────────────────
-  // Kept here alongside getRoles() so both live in one place.
   getRoleLabel(id) {
     const roles = load("crm_roles", DEFAULT_ROLES);
     return roles.find(r => r.id === id)?.label ?? id;
   },
 
-  // ── AI assignment override ─────────────────────────────────────────────────
-  // Stored as { cotacao: userId|null, comercial: userId|null, compra: userId|null }
+  // ── AI assignment ──────────────────────────────────────────────────────────
   getAssignment()       { return load("crm_assignment", { cotacao: null, comercial: null, compra: null }); },
   saveAssignment(rules) { save("crm_assignment", rules); },
+
+  // ── Tarefas (tasks) ────────────────────────────────────────────────────────
+  getTarefas()         { return load("crm_tarefas", TAREFAS); },
+  saveTarefas(tarefas) { save("crm_tarefas", tarefas); },
+
+  // ── Inbox emails ───────────────────────────────────────────────────────────
+  getInboxEmails()       { return load("crm_inbox", INBOX_EMAILS); },
+  saveInboxEmails(items) { save("crm_inbox", items); },
+
+  // ── Column visibility preferences (keyed by user email) ───────────────────
+  getColumnPrefs(email) {
+    const all = load("crm_col_prefs", {});
+    return all[email] ?? null;
+  },
+  saveColumnPrefs(email, prefs) {
+    const all = load("crm_col_prefs", {});
+    all[email] = prefs;
+    save("crm_col_prefs", all);
+  },
+
+  // ── Sort preferences (keyed by user email) ─────────────────────────────────
+  getSortPrefs(email) {
+    const all = load("crm_sort_prefs", {});
+    return all[email] ?? { col: null, dir: "asc" };
+  },
+  saveSortPrefs(email, prefs) {
+    const all = load("crm_sort_prefs", {});
+    all[email] = prefs;
+    save("crm_sort_prefs", all);
+  },
 };
