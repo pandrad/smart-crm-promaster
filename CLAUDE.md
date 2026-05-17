@@ -68,15 +68,26 @@ frontend/src/
 
 Demo login: `admin@promaster.co` / `admin123` (Admin) · `supervisor@promaster.co` / `super123` (Supervisor) · `adelina@promaster.co` / `pass123` (standard)
 
+### Mission Control redesign — all phases complete and pushed to GitHub
+
+| Phase | What was done | Commit |
+|-------|--------------|--------|
+| A | Data foundations: 11-stage status list, Supervisor role, TAREFAS + INBOX_EMAILS mock data, new icons | fc30f90 |
+| B | Layout shell: dark sidebar, Main.jsx restructured, Processos.jsx extracted, stub pages, App.jsx routes | fc30f90 |
+| C | All components adapted to dark theme: StatsBar, Toolbar, TableView, KanbanView, Primitives, Toast, Login, AdminPanel | 9b0cf42 |
+| D | DetailDrawer updates: process number prominence, Comprador first, FU conditional, Consulta checklist, Excel link, supervisor/owner reassign | 6f3bdb6 |
+| E | New screens: Tarefas (full table + TaskDrawer), Inbox (4 triage actions + new-client flow), Arquivo | a7a7195 |
+| F | AdminPanel dark theme polish, CLAUDE.md updated | 18d7513 |
+
 ### Next action
-**Awaiting client feedback and final UI sign-off before Stage 1 closes.**
+**Pending final browser QA before client delivery. Do not make any code changes until QA is complete.**
 
-Do not write any code until feedback is received. Once open questions A–F are answered, resume here to:
-1. Incorporate any UI changes from client feedback
-2. Finalise `database/schema.sql` with confirmed status list, user list, and SLA rules
-3. Proceed to Step 3 (Azure AD + Graph API)
+Next session:
+1. Run the full interactive element checklist from `docs/build-brief.md` (plan file) end-to-end in the browser at http://localhost:5299
+2. Fix any failures found during QA (code changes only permitted after QA identifies specific issues)
+3. If all checks pass → prepare client deliverable (single-file HTML build)
 
-Open questions A–F: see `docs/build-brief.md` § "Questions Still Open".
+Dev server auto-starts on login via launch agent → http://localhost:5299
 
 See `docs/build-brief.md` § "Build Order" for full step list.
 
