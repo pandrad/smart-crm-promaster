@@ -3,13 +3,14 @@ import { store } from "../store.js";
 import { MOCK_IMPORT_PREVIEW } from "../mock/data.js";
 import { Avatar, Tag } from "./Primitives.jsx";
 import { Icon } from "../icons.jsx";
+import { THEME } from "../theme.js";
 
 // ── Shared UI helpers ─────────────────────────────────────────────────────────
 
 function SectionHeader({ title, action, onAction }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-      <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#0f172a" }}>{title}</h2>
+      <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: THEME.text }}>{title}</h2>
       {action && (
         <button onClick={onAction} style={{ display: "flex", alignItems: "center", gap: 6, background: "#2563eb", color: "white", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
           <Icon name="plus" size={13} color="white" /> {action}
@@ -22,23 +23,23 @@ function SectionHeader({ title, action, onAction }) {
 function FieldRow({ label, hint, children }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</label>
+      <label style={{ fontSize: 11, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</label>
       {children}
-      {hint && <p style={{ margin: 0, fontSize: 11, color: "#94a3b8" }}>{hint}</p>}
+      {hint && <p style={{ margin: 0, fontSize: 11, color: THEME.textMuted }}>{hint}</p>}
     </div>
   );
 }
 
-const INPUT  = { width: "100%", padding: "7px 10px", fontSize: 13, border: "1px solid #e2e8f0", borderRadius: 7, outline: "none", boxSizing: "border-box", background: "white" };
+const INPUT  = { width: "100%", padding: "7px 10px", fontSize: 13, border: `1px solid ${THEME.border}`, borderRadius: 7, outline: "none", boxSizing: "border-box", background: THEME.sidebar, color: THEME.text };
 const SELECT = { ...INPUT };
 
 function Modal({ title, onClose, children, width = 460 }) {
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ background: "white", borderRadius: 14, width, maxWidth: "95vw", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #f1f5f9", position: "sticky", top: 0, background: "white", zIndex: 1 }}>
-          <span style={{ fontWeight: 700, fontSize: 15, color: "#0f172a" }}>{title}</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 4 }}><Icon name="x" size={16} /></button>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, borderRadius: 14, width, maxWidth: "95vw", maxHeight: "90vh", overflowY: "auto", border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: `1px solid ${THEME.border}`, position: "sticky", top: 0, background: THEME.card, zIndex: 1 }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>{title}</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
         </div>
         <div style={{ padding: "20px" }}>{children}</div>
       </div>
@@ -49,8 +50,8 @@ function Modal({ title, onClose, children, width = 460 }) {
 function SaveRow({ onCancel, onSave, saveLabel = "Guardar" }) {
   return (
     <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
-      <button onClick={onCancel} style={{ background: "none", border: "1px solid #e2e8f0", borderRadius: 8, padding: "7px 16px", fontSize: 13, color: "#475569", cursor: "pointer" }}>Cancelar</button>
-      <button onClick={onSave}   style={{ background: "#2563eb", color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{saveLabel}</button>
+      <button onClick={onCancel} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
+      <button onClick={onSave}   style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{saveLabel}</button>
     </div>
   );
 }
@@ -78,11 +79,11 @@ function ColorSwatch({ label, value, onChange }) {
           <button key={c} onClick={() => onChange(c)} style={{ width: 24, height: 24, borderRadius: 6, background: c, border: value === c ? "3px solid #0f172a" : "2px solid transparent", cursor: "pointer", padding: 0 }} />
         ))}
         <button onClick={() => setShowCustom(s => !s)} title="Cor personalizada"
-          style={{ width: 24, height: 24, borderRadius: 6, border: "1px dashed #cbd5e1", background: "white", cursor: "pointer", fontSize: 14, color: "#94a3b8", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+          style={{ width: 24, height: 24, borderRadius: 6, border: "1px dashed #cbd5e1", background: THEME.card, cursor: "pointer", fontSize: 14, color: THEME.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
       </div>
       {showCustom && (
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input type="color" value={value} onChange={e => onChange(e.target.value)} style={{ width: 32, height: 32, border: "1px solid #e2e8f0", borderRadius: 6, cursor: "pointer", padding: 2 }} />
+          <input type="color" value={value} onChange={e => onChange(e.target.value)} style={{ width: 32, height: 32, border: `1px solid ${THEME.border}`, borderRadius: 6, cursor: "pointer", padding: 2 }} />
           <input style={{ ...INPUT, flex: 1 }} value={value} onChange={e => onChange(e.target.value)} placeholder="#rrggbb" />
         </div>
       )}
@@ -108,11 +109,11 @@ function UserModal({ user, roles, onClose, onSave }) {
         {/* photo */}
         <FieldRow label="Foto">
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div onClick={() => fileRef.current?.click()} style={{ width: 60, height: 60, borderRadius: "50%", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", flexShrink: 0, border: "2px dashed #cbd5e1" }}>
+            <div onClick={() => fileRef.current?.click()} style={{ width: 60, height: 60, borderRadius: "50%", background: THEME.bg, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", flexShrink: 0, border: "2px dashed #cbd5e1" }}>
               {form.photo ? <img src={form.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <Icon name="user" size={22} color="#94a3b8" />}
             </div>
             <div>
-              <button onClick={() => fileRef.current?.click()} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "1px solid #e2e8f0", borderRadius: 7, padding: "5px 12px", fontSize: 12, color: "#475569", cursor: "pointer", marginBottom: 4 }}>
+              <button onClick={() => fileRef.current?.click()} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "5px 12px", fontSize: 12, color: THEME.textMuted, cursor: "pointer", marginBottom: 4 }}>
                 <Icon name="upload" size={12} /> {form.photo ? "Alterar foto" : "Carregar foto"}
               </button>
               {form.photo && (
@@ -172,25 +173,25 @@ function UsersTab({ onUsersChange }) {
   return (
     <div>
       <SectionHeader title="Utilizadores" action="Novo utilizador" onAction={() => setEditing("new")} />
-      <div style={{ background: "white", borderRadius: 12, border: "1px solid #f1f5f9", overflow: "hidden" }}>
+      <div style={{ background: THEME.card, borderRadius: 12, border: "1px solid #f1f5f9", overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "#f8fafc", borderBottom: "1px solid #f1f5f9" }}>
+            <tr style={{ background: THEME.sidebar, borderBottom: `1px solid ${THEME.border}` }}>
               {["Utilizador","Email","Função","Estado",""].map((h, i) => (
-                <th key={i} style={{ padding: "9px 14px", fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "left" }}>{h}</th>
+                <th key={i} style={{ padding: "9px 14px", fontSize: 11, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "left" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {users.map(u => (
-              <tr key={u.id} style={{ borderBottom: "1px solid #f8fafc" }}>
+              <tr key={u.id} style={{ borderBottom: `1px solid ${THEME.borderLight}` }}>
                 <td style={{ padding: "11px 14px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                     <Avatar name={u.name} photo={u.photo} />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{u.name}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: THEME.text }}>{u.name}</span>
                   </div>
                 </td>
-                <td style={{ padding: "11px 14px", fontSize: 12, color: "#64748b" }}>{u.email}</td>
+                <td style={{ padding: "11px 14px", fontSize: 12, color: THEME.textDim }}>{u.email}</td>
                 <td style={{ padding: "11px 14px" }}><Tag bg="#f1f5f9" color="#475569">{roleLabel(u.role)}</Tag></td>
                 <td style={{ padding: "11px 14px" }}>
                   <Tag bg={u.active ? "#dcfce7" : "#f1f5f9"} color={u.active ? "#15803d" : "#94a3b8"}>
@@ -199,10 +200,10 @@ function UsersTab({ onUsersChange }) {
                 </td>
                 <td style={{ padding: "11px 14px" }}>
                   <div style={{ display: "flex", gap: 6 }}>
-                    <button onClick={() => setEditing(u)} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 10px", fontSize: 12, color: "#475569", cursor: "pointer" }}>
+                    <button onClick={() => setEditing(u)} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: `1px solid ${THEME.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 12, color: THEME.textMuted, cursor: "pointer" }}>
                       <Icon name="edit" size={12} /> Editar
                     </button>
-                    <button onClick={() => toggleActive(u.id)} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 10px", fontSize: 12, color: u.active ? "#dc2626" : "#15803d", cursor: "pointer" }}>
+                    <button onClick={() => toggleActive(u.id)} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: `1px solid ${THEME.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 12, color: u.active ? "#dc2626" : "#15803d", cursor: "pointer" }}>
                       {u.active ? "Desativar" : "Ativar"}
                     </button>
                   </div>
@@ -235,7 +236,7 @@ function StatusModal({ item, onClose, onSave }) {
         </FieldRow>
         <ColorSwatch label="Cor" value={form.color} onChange={pickColor} />
         <div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Pré-visualização</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Pré-visualização</div>
           <span style={{ display: "inline-flex", padding: "3px 10px", borderRadius: 9999, fontSize: 12, fontWeight: 600, background: form.bg, color: form.color }}>
             {form.label || "Amostra"}
           </span>
@@ -274,21 +275,21 @@ function StatusList({ title, items, getItems, saveItems, dotShape }) {
   return (
     <div style={{ flex: 1, minWidth: 280 }}>
       <SectionHeader title={title} action="Novo estado" onAction={() => setEditing("new")} />
-      <div style={{ background: "white", borderRadius: 12, border: "1px solid #f1f5f9", overflow: "hidden" }}>
+      <div style={{ background: THEME.card, borderRadius: 12, border: "1px solid #f1f5f9", overflow: "hidden" }}>
         {list.map((s, i) => (
           <div key={s.id} draggable onDragStart={() => onDragStart(i)} onDragOver={e => onDragOver(e, i)}
             style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: i < list.length - 1 ? "1px solid #f8fafc" : "none", cursor: "grab" }}>
             <Icon name="chevron" size={12} color="#cbd5e1" style={{ transform: "rotate(90deg)", flexShrink: 0 }} />
             <div style={{ width: 11, height: 11, borderRadius: dotShape === "circle" ? "50%" : 3, background: s.color, flexShrink: 0 }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b", flex: 1 }}>{s.label}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{s.label}</span>
             <span style={{ display: "inline-flex", padding: "2px 8px", borderRadius: 9999, fontSize: 11, fontWeight: 600, background: s.bg, color: s.color }}>Amostra</span>
-            <button onClick={() => setEditing(s)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 4 }}>
+            <button onClick={() => setEditing(s)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}>
               <Icon name="edit" size={13} />
             </button>
           </div>
         ))}
       </div>
-      <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 6, marginBottom: 0 }}>Arraste para reordenar</p>
+      <p style={{ fontSize: 11, color: THEME.textMuted, marginTop: 6, marginBottom: 0 }}>Arraste para reordenar</p>
       {editing !== null && <StatusModal item={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSave={save} />}
     </div>
   );
@@ -320,7 +321,7 @@ function PriorityModal({ item, onClose, onSave }) {
         </FieldRow>
         <ColorSwatch label="Cor" value={form.color} onChange={pickColor} />
         <div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Pré-visualização</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Pré-visualização</div>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 9999, fontSize: 12, fontWeight: 600, background: form.bg, color: form.color }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: form.color, display: "inline-block" }} />
             {form.label || "Amostra"}
@@ -347,13 +348,13 @@ function PrioritiesTab() {
   return (
     <div style={{ maxWidth: 480 }}>
       <SectionHeader title="Prioridades" action="Nova prioridade" onAction={() => setEditing("new")} />
-      <div style={{ background: "white", borderRadius: 12, border: "1px solid #f1f5f9", overflow: "hidden" }}>
+      <div style={{ background: THEME.card, borderRadius: 12, border: "1px solid #f1f5f9", overflow: "hidden" }}>
         {list.map((p, i) => (
           <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: i < list.length - 1 ? "1px solid #f8fafc" : "none" }}>
             <span style={{ width: 10, height: 10, borderRadius: "50%", background: p.color, flexShrink: 0 }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b", flex: 1 }}>{p.label}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{p.label}</span>
             <span style={{ display: "inline-flex", padding: "2px 8px", borderRadius: 9999, fontSize: 11, fontWeight: 600, background: p.bg, color: p.color }}>Amostra</span>
-            <button onClick={() => setEditing(p)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 4 }}>
+            <button onClick={() => setEditing(p)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}>
               <Icon name="edit" size={13} />
             </button>
           </div>
@@ -400,15 +401,15 @@ function RolesTab() {
   return (
     <div style={{ maxWidth: 480 }}>
       <SectionHeader title="Funções" action="Nova função" onAction={() => setEditing("new")} />
-      <p style={{ fontSize: 13, color: "#64748b", marginTop: 0, marginBottom: 16 }}>
+      <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 16 }}>
         As funções definidas aqui ficam disponíveis para atribuição aos utilizadores.
       </p>
-      <div style={{ background: "white", borderRadius: 12, border: "1px solid #f1f5f9", overflow: "hidden" }}>
+      <div style={{ background: THEME.card, borderRadius: 12, border: "1px solid #f1f5f9", overflow: "hidden" }}>
         {roles.map((r, i) => (
           <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderBottom: i < roles.length - 1 ? "1px solid #f8fafc" : "none" }}>
             <Tag bg="#f1f5f9" color="#475569" style={{ fontFamily: "monospace", fontSize: 11 }}>{r.id}</Tag>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b", flex: 1 }}>{r.label}</span>
-            <button onClick={() => setEditing(r)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 4 }}><Icon name="edit" size={13} /></button>
+            <span style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{r.label}</span>
+            <button onClick={() => setEditing(r)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="edit" size={13} /></button>
             <button onClick={() => remove(r.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 4 }}><Icon name="x" size={13} /></button>
           </div>
         ))}
@@ -443,7 +444,7 @@ function AssignmentTab() {
   return (
     <div style={{ maxWidth: 560 }}>
       <SectionHeader title="Atribuição de Tarefas" />
-      <p style={{ fontSize: 13, color: "#64748b", marginTop: 0, marginBottom: 20 }}>
+      <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 20 }}>
         Defina quem a IA deve atribuir para cada função quando chega um novo email/processo.
         Se atribuir mais do que uma pessoa à mesma função, a IA faz rotação (round-robin) entre elas.
         Se só houver uma pessoa, é sempre essa.
@@ -459,11 +460,11 @@ function AssignmentTab() {
           }
 
           return (
-            <div key={slot.key} style={{ background: "white", borderRadius: 10, border: "1px solid #f1f5f9", padding: "14px 16px" }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", marginBottom: 2 }}>{slot.label}</div>
-              <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 10 }}>{slot.hint}</div>
+            <div key={slot.key} style={{ background: THEME.card, borderRadius: 10, border: "1px solid #f1f5f9", padding: "14px 16px" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: THEME.text, marginBottom: 2 }}>{slot.label}</div>
+              <div style={{ fontSize: 11, color: THEME.textMuted, marginBottom: 10 }}>{slot.hint}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {eligible.length === 0 && <span style={{ fontSize: 12, color: "#94a3b8" }}>Nenhum utilizador com esta função.</span>}
+                {eligible.length === 0 && <span style={{ fontSize: 12, color: THEME.textMuted }}>Nenhum utilizador com esta função.</span>}
                 {eligible.map(u => {
                   const checked = assigned.includes(String(u.id)) || assigned.includes(u.id);
                   return (
@@ -471,7 +472,7 @@ function AssignmentTab() {
                       <input type="checkbox" checked={checked} onChange={() => toggleUser(u.id)} style={{ accentColor: "#2563eb" }} />
                       <Avatar name={u.name} size={24} photo={u.photo} />
                       <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? "#1d4ed8" : "#475569" }}>{u.name}</span>
-                      {assigned.length > 1 && checked && <span style={{ marginLeft: "auto", fontSize: 10, color: "#64748b", background: "#e0f2fe", borderRadius: 9999, padding: "1px 7px" }}>round-robin</span>}
+                      {assigned.length > 1 && checked && <span style={{ marginLeft: "auto", fontSize: 10, color: THEME.textDim, background: "#e0f2fe", borderRadius: 9999, padding: "1px 7px" }}>round-robin</span>}
                     </label>
                   );
                 })}
@@ -582,7 +583,7 @@ function LogoUploader({ logoUrl, accent, onLogoChange }) {
             }
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <button onClick={() => fileRef.current?.click()} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "1px solid #e2e8f0", borderRadius: 8, padding: "7px 14px", fontSize: 13, color: "#475569", cursor: "pointer" }}>
+            <button onClick={() => fileRef.current?.click()} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 14px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>
               <Icon name="upload" size={13} /> {logoUrl ? "Alterar imagem" : "Carregar imagem"}
             </button>
             {logoUrl && (
@@ -590,34 +591,34 @@ function LogoUploader({ logoUrl, accent, onLogoChange }) {
                 Remover logótipo
               </button>
             )}
-            <p style={{ margin: 0, fontSize: 11, color: "#94a3b8" }}>PNG, SVG ou JPG</p>
+            <p style={{ margin: 0, fontSize: 11, color: THEME.textMuted }}>PNG, SVG ou JPG</p>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
-              <span style={{ fontSize: 11, color: "#64748b" }}>Pré-vis:</span>
+              <span style={{ fontSize: 11, color: THEME.textDim }}>Pré-vis:</span>
               <input type="range" min={24} max={96} value={prevSize} onChange={e => setPrevSize(Number(e.target.value))} style={{ width: 80 }} />
-              <span style={{ fontSize: 11, color: "#64748b" }}>{prevSize}px</span>
+              <span style={{ fontSize: 11, color: THEME.textDim }}>{prevSize}px</span>
             </div>
           </div>
         </div>
       ) : (
         <div>
-          <p style={{ fontSize: 12, color: "#64748b", marginTop: 0, marginBottom: 10 }}>
+          <p style={{ fontSize: 12, color: THEME.textDim, marginTop: 0, marginBottom: 10 }}>
             Arraste para reposicionar · Deslize o zoom para ajustar o tamanho
           </p>
           {/* crop window */}
           <div
-            style={{ width: CROP, height: CROP, overflow: "hidden", borderRadius: 12, border: "2px solid #e2e8f0", cursor: isDragging ? "grabbing" : "grab", position: "relative", background: "#f1f5f9", flexShrink: 0 }}
+            style={{ width: CROP, height: CROP, overflow: "hidden", borderRadius: 12, border: "2px solid #e2e8f0", cursor: isDragging ? "grabbing" : "grab", position: "relative", background: THEME.bg, flexShrink: 0 }}
             onMouseDown={onMD} onMouseMove={onMM} onMouseUp={onMU} onMouseLeave={onMU}
           >
             <img src={imgSrc} alt="preview" draggable={false} style={imgStyle} />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
-            <span style={{ fontSize: 11, color: "#64748b" }}>−</span>
+            <span style={{ fontSize: 11, color: THEME.textDim }}>−</span>
             <input type="range" min={0.1} max={3} step={0.02} value={zoom} onChange={e => setZoom(Number(e.target.value))} style={{ width: 140 }} />
-            <span style={{ fontSize: 11, color: "#64748b" }}>+</span>
-            <span style={{ fontSize: 12, color: "#64748b", minWidth: 36 }}>{Math.round(zoom * 100)}%</span>
+            <span style={{ fontSize: 11, color: THEME.textDim }}>+</span>
+            <span style={{ fontSize: 12, color: THEME.textDim, minWidth: 36 }}>{Math.round(zoom * 100)}%</span>
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-            <button onClick={() => setImgSrc(null)} style={{ background: "none", border: "1px solid #e2e8f0", borderRadius: 7, padding: "6px 14px", fontSize: 12, color: "#475569", cursor: "pointer" }}>Cancelar</button>
+            <button onClick={() => setImgSrc(null)} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "6px 14px", fontSize: 12, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
             <button onClick={handleConfirm} style={{ background: "#2563eb", color: "white", border: "none", borderRadius: 7, padding: "6px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Confirmar</button>
           </div>
         </div>
@@ -664,14 +665,14 @@ function BrandingTab({ onBrandingChange }) {
         <ColorSwatch label="Cor de destaque" value={accent} onChange={setAccent} />
 
         <div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Pré-visualização</div>
-          <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Pré-visualização</div>
+          <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 10, padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 32, height: 32, background: accent, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
               {logoUrl ? <img src={logoUrl} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <Icon name="bar" size={14} color="white" />}
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>{appName || "Nome da aplicação"}</div>
-              <div style={{ fontSize: 10, color: "#94a3b8" }}>{subtitle || "Subtítulo"}</div>
+              <div style={{ fontWeight: 700, fontSize: 14, color: THEME.text }}>{appName || "Nome da aplicação"}</div>
+              <div style={{ fontSize: 10, color: THEME.textMuted }}>{subtitle || "Subtítulo"}</div>
             </div>
           </div>
         </div>
@@ -705,7 +706,7 @@ function ImportTab() {
   return (
     <div style={{ maxWidth: 600 }}>
       <SectionHeader title="Importar Processos" />
-      <p style={{ fontSize: 13, color: "#64748b", marginTop: 0, marginBottom: 20 }}>
+      <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 20 }}>
         Carregue um ficheiro CSV ou Excel exportado do SharePoint. O sistema irá mapear as colunas, pré-visualizar e importar os registos em bloco.
       </p>
       {!done ? (
@@ -718,26 +719,26 @@ function ImportTab() {
             style={{ border: `2px dashed ${dragging ? "#2563eb" : "#e2e8f0"}`, borderRadius: 12, padding: "36px 24px", textAlign: "center", cursor: "pointer", background: dragging ? "#eff6ff" : "#f8fafc", transition: "all 0.15s" }}
           >
             <Icon name="upload" size={30} color={dragging ? "#2563eb" : "#94a3b8"} style={{ display: "block", margin: "0 auto 10px" }} />
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#475569", marginBottom: 4 }}>{file ? file.name : "Arraste o ficheiro aqui ou clique para selecionar"}</div>
-            <div style={{ fontSize: 12, color: "#94a3b8" }}>CSV, XLS ou XLSX · até 10 MB</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: THEME.textMuted, marginBottom: 4 }}>{file ? file.name : "Arraste o ficheiro aqui ou clique para selecionar"}</div>
+            <div style={{ fontSize: 12, color: THEME.textMuted }}>CSV, XLS ou XLSX · até 10 MB</div>
             <input id="admin-file-input" type="file" accept=".csv,.xlsx,.xls" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
           </div>
           {file && (
             <div style={{ marginTop: 18 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", marginBottom: 10 }}>Pré-visualização (primeiras linhas)</div>
-              <div style={{ background: "white", borderRadius: 10, border: "1px solid #f1f5f9", overflowX: "auto", marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: THEME.text, marginBottom: 10 }}>Pré-visualização (primeiras linhas)</div>
+              <div style={{ background: THEME.card, borderRadius: 10, border: "1px solid #f1f5f9", overflowX: "auto", marginBottom: 14 }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 480 }}>
                   <thead>
-                    <tr style={{ background: "#f8fafc", borderBottom: "1px solid #f1f5f9" }}>
+                    <tr style={{ background: THEME.sidebar, borderBottom: `1px solid ${THEME.border}` }}>
                       {["Nº Processo","Cliente","Marca","Modelo","Estado","Data Limite"].map(h => (
-                        <th key={h} style={{ padding: "7px 12px", fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", textAlign: "left", whiteSpace: "nowrap" }}>{h}</th>
+                        <th key={h} style={{ padding: "7px 12px", fontSize: 11, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", textAlign: "left", whiteSpace: "nowrap" }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {MOCK_IMPORT_PREVIEW.map((row, i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid #f8fafc" }}>
-                        {row.map((cell, j) => <td key={j} style={{ padding: "7px 12px", fontSize: 12, color: "#475569" }}>{cell}</td>)}
+                      <tr key={i} style={{ borderBottom: `1px solid ${THEME.borderLight}` }}>
+                        {row.map((cell, j) => <td key={j} style={{ padding: "7px 12px", fontSize: 12, color: THEME.textMuted }}>{cell}</td>)}
                       </tr>
                     ))}
                   </tbody>
@@ -747,7 +748,7 @@ function ImportTab() {
                 <strong>Atenção:</strong> Verifique o mapeamento de colunas antes de confirmar.
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={handleReset} style={{ background: "none", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 16px", fontSize: 13, color: "#64748b", cursor: "pointer" }}>Remover ficheiro</button>
+                <button onClick={handleReset} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "8px 16px", fontSize: 13, color: THEME.textDim, cursor: "pointer" }}>Remover ficheiro</button>
                 <button onClick={() => { setImporting(true); setTimeout(() => { setImporting(false); setDone(true); }, 1800); }} disabled={importing}
                   style={{ background: importing ? "#93c5fd" : "#2563eb", color: "white", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 13, fontWeight: 600, cursor: importing ? "default" : "pointer" }}>
                   {importing ? "A importar…" : "Confirmar importação"}
@@ -761,7 +762,7 @@ function ImportTab() {
           <div style={{ fontSize: 32, marginBottom: 8 }}>✓</div>
           <div style={{ fontSize: 15, fontWeight: 700, color: "#15803d", marginBottom: 4 }}>Importação concluída</div>
           <div style={{ fontSize: 13, color: "#166534", marginBottom: 16 }}>{file?.name} · 3 registos importados (simulado)</div>
-          <button onClick={handleReset} style={{ background: "white", border: "1px solid #bbf7d0", borderRadius: 8, padding: "7px 18px", fontSize: 13, color: "#15803d", fontWeight: 600, cursor: "pointer" }}>Importar outro ficheiro</button>
+          <button onClick={handleReset} style={{ background: THEME.card, border: "1px solid #bbf7d0", borderRadius: 8, padding: "7px 18px", fontSize: 13, color: "#15803d", fontWeight: 600, cursor: "pointer" }}>Importar outro ficheiro</button>
         </div>
       )}
     </div>
@@ -786,26 +787,26 @@ export function AdminPanel({ onClose, onBrandingChange, onUsersChange }) {
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 100 }} />
-      <div style={{ position: "fixed", top: 0, right: 0, height: "100vh", width: 800, maxWidth: "96vw", background: "#f8fafc", zIndex: 101, display: "flex", flexDirection: "column", boxShadow: "-6px 0 40px rgba(0,0,0,0.14)" }}>
+      <div style={{ position: "fixed", top: 0, right: 0, height: "100vh", width: 800, maxWidth: "96vw", background: THEME.sidebar, zIndex: 101, display: "flex", flexDirection: "column", boxShadow: "-6px 0 40px rgba(0,0,0,0.14)" }}>
 
         {/* header */}
-        <div style={{ background: "white", borderBottom: "1px solid #e2e8f0", padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+        <div style={{ background: THEME.card, borderBottom: "1px solid #e2e8f0", padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 30, height: 30, background: "#2563eb", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Icon name="settings" size={14} color="white" />
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a" }}>Administração</div>
-              <div style={{ fontSize: 11, color: "#94a3b8" }}>Configurações do sistema</div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Administração</div>
+              <div style={{ fontSize: 11, color: THEME.textMuted }}>Configurações do sistema</div>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 4 }}>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}>
             <Icon name="x" size={18} />
           </button>
         </div>
 
         {/* tab bar — scrollable so all 7 tabs fit */}
-        <div style={{ background: "white", borderBottom: "1px solid #e2e8f0", display: "flex", flexShrink: 0, overflowX: "auto" }}>
+        <div style={{ background: THEME.card, borderBottom: "1px solid #e2e8f0", display: "flex", flexShrink: 0, overflowX: "auto" }}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 14px", fontSize: 13, fontWeight: 500, border: "none", borderBottom: activeTab === t.id ? "2px solid #2563eb" : "2px solid transparent", background: "none", color: activeTab === t.id ? "#2563eb" : "#64748b", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>

@@ -1,54 +1,55 @@
 import { useState, useRef } from "react";
 import { daysLeft } from "../utils.js";
 import { store } from "../store.js";
+import { THEME } from "../theme.js";
 import { Avatar, UrgencyTag } from "./Primitives.jsx";
 import { Icon } from "../icons.jsx";
 
 function KanbanCard({ p, onClick, locked, isDragging }) {
   const d = daysLeft(p.deadline);
-  const borderColor = d < 0 ? "#ef4444" : d <= 2 ? "#f59e0b" : "#e2e8f0";
+  const borderColor = d < 0 ? THEME.danger : d <= 2 ? THEME.warning : THEME.border;
 
   return (
     <div
       onClick={() => !locked && onClick(p)}
       style={{
-        background: locked ? "#f1f5f9" : "white",
+        background: locked ? THEME.bg : THEME.card,
         borderRadius: 10,
-        border: `1px solid ${locked ? "#e2e8f0" : borderColor}`,
-        borderLeft: `3px solid ${locked ? "#cbd5e1" : borderColor}`,
+        border: `1px solid ${locked ? THEME.border : borderColor}`,
+        borderLeft: `3px solid ${locked ? THEME.border : borderColor}`,
         padding: "10px 12px",
         marginBottom: 8,
         cursor: locked ? "not-allowed" : "grab",
-        opacity: isDragging ? 0.4 : locked ? 0.55 : 1,
+        opacity: isDragging ? 0.4 : locked ? 0.5 : 1,
         transition: "opacity 0.1s",
         userSelect: "none",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-        <span style={{ fontSize: 10, color: "#94a3b8", fontFamily: "monospace" }}>#{p.id}</span>
+        <span style={{ fontSize: 10, color: THEME.textDim, fontFamily: "monospace" }}>{p.id}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           {p.priority === "Alta" && !locked && (
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444", display: "inline-block" }} />
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: THEME.danger, display: "inline-block" }} />
           )}
-          {locked && <Icon name="lock" size={11} color="#cbd5e1" />}
+          {locked && <Icon name="lock" size={11} color={THEME.border} />}
         </div>
       </div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: locked ? "#94a3b8" : "#1e293b", marginBottom: 4, lineHeight: 1.3 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: locked ? THEME.textDim : THEME.text, marginBottom: 4, lineHeight: 1.3 }}>
         {p.client}
       </div>
-      <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 8 }}>
+      <div style={{ fontSize: 11, color: THEME.textDim, marginBottom: 8 }}>
         {p.brand}{p.model ? ` · ${p.model}` : ""}
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <Avatar name={p.owner} size={22} />
-          <span style={{ fontSize: 11, color: "#64748b" }}>{p.owner.split(" ")[0]}</span>
+          <span style={{ fontSize: 11, color: THEME.textMuted }}>{p.owner.split(" ")[0]}</span>
         </div>
         <UrgencyTag deadline={p.deadline} />
       </div>
       {p.emails > 0 && (
-        <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, color: "#94a3b8", fontSize: 11 }}>
-          <Icon name="mail" size={10} /> {p.emails} email{p.emails !== 1 ? "s" : ""}
+        <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, color: THEME.textDim, fontSize: 11 }}>
+          <Icon name="mail" size={10} color={THEME.textDim} /> {p.emails} email{p.emails !== 1 ? "s" : ""}
         </div>
       )}
     </div>
@@ -56,10 +57,8 @@ function KanbanCard({ p, onClick, locked, isDragging }) {
 }
 
 export function KanbanView({ rows, processos, setProcessos, onSelect, currentUser }) {
-  // Track which card is being dragged — stored in a ref so it survives across
-  // the synthetic event boundary without triggering re-renders mid-drag.
-  const dragging = useRef(null);   // { id, fromStage }
-  const [overCol, setOverCol] = useState(null);  // stage id being hovered over
+  const dragging = useRef(null);
+  const [overCol, setOverCol] = useState(null);
   const [draggingId, setDraggingId] = useState(null);
 
   const userName = currentUser?.name ?? "";
@@ -129,7 +128,7 @@ export function KanbanView({ rows, processos, setProcessos, onSelect, currentUse
               {/* column header */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: stage.color }}>{stage.label}</span>
-                <span style={{ fontSize: 11, background: "white", border: "1px solid #e2e8f0", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", fontWeight: 700 }}>
+                <span style={{ fontSize: 11, background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", color: THEME.textDim, fontWeight: 700 }}>
                   {cards.length}
                 </span>
               </div>
@@ -137,8 +136,8 @@ export function KanbanView({ rows, processos, setProcessos, onSelect, currentUse
               {/* drop zone */}
               <div style={{
                 minHeight: 300, borderRadius: 12, padding: 8,
-                background: isOver ? stage.bg : "#f1f5f9",
-                border: isOver ? `2px dashed ${stage.color}` : "2px solid transparent",
+                background: isOver ? `${stage.color}18` : THEME.sidebar,
+                border: isOver ? `2px dashed ${stage.color}` : `2px solid ${THEME.border}`,
                 transition: "all 0.12s",
               }}>
                 {cards.map(p => {
@@ -160,7 +159,7 @@ export function KanbanView({ rows, processos, setProcessos, onSelect, currentUse
                   );
                 })}
                 {cards.length === 0 && (
-                  <div style={{ textAlign: "center", color: "#cbd5e1", fontSize: 12, padding: "32px 0" }}>
+                  <div style={{ textAlign: "center", color: THEME.border, fontSize: 12, padding: "32px 0" }}>
                     {isOver ? "Soltar aqui" : "Vazio"}
                   </div>
                 )}

@@ -1,5 +1,6 @@
 import { daysLeft } from "../utils.js";
 import { store } from "../store.js";
+import { THEME } from "../theme.js";
 
 const AVATAR_PALETTE = ["#6366f1","#0ea5e9","#10b981","#f59e0b","#ef4444","#8b5cf6","#ec4899"];
 
@@ -15,13 +16,13 @@ export function Avatar({ name, size = 26, photo }) {
 
 export function UrgencyTag({ deadline }) {
   const d = daysLeft(deadline);
-  if (d < 0)   return <Tag bg="#fee2e2" color="#dc2626">⚠ {Math.abs(d)}d atraso</Tag>;
-  if (d === 0) return <Tag bg="#fef3c7" color="#b45309">Hoje</Tag>;
-  if (d <= 2)  return <Tag bg="#ffedd5" color="#c2410c">{d}d</Tag>;
-  return              <Tag bg="#f0fdf4" color="#15803d">{d}d</Tag>;
+  if (d < 0)   return <Tag bg={THEME.dangerBg}  color={THEME.danger}>⚠ {Math.abs(d)}d atraso</Tag>;
+  if (d === 0) return <Tag bg={THEME.warningBg} color={THEME.warning}>Hoje</Tag>;
+  if (d <= 2)  return <Tag bg={THEME.warningBg} color={THEME.warning}>{d}d</Tag>;
+  return              <Tag bg={THEME.successBg} color={THEME.success}>{d}d</Tag>;
 }
 
-// Always read from store so admin edits are reflected immediately
+// Always reads from store so admin edits are reflected immediately
 export function StageBadge({ id }) {
   const stages = store.getStages();
   const s = stages.find(x => x.id === id);
@@ -31,7 +32,7 @@ export function StageBadge({ id }) {
 export function FUBadge({ label }) {
   const list = store.getFUStatuses();
   const s = list.find(x => x.label === label);
-  return <Tag bg={s?.bg ?? "#f1f5f9"} color={s?.color ?? "#64748b"}>{label}</Tag>;
+  return <Tag bg={s?.bg ?? THEME.sidebar} color={s?.color ?? THEME.textMuted}>{label}</Tag>;
 }
 
 export function Tag({ bg, color, children, style }) {
@@ -44,6 +45,6 @@ export function Tag({ bg, color, children, style }) {
 
 export function PriorityDot({ priority }) {
   return (
-    <span title={priority} style={{ width: 8, height: 8, borderRadius: "50%", display: "inline-block", background: priority === "Alta" ? "#ef4444" : "#cbd5e1" }} />
+    <span title={priority} style={{ width: 8, height: 8, borderRadius: "50%", display: "inline-block", background: priority === "Alta" ? THEME.danger : THEME.border }} />
   );
 }
