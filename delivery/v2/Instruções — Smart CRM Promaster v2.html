@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart CRM — Instruções v2 · Promaster</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px; line-height: 1.7; color: #1e293b;
+    background: #f8fafc; margin: 0; padding: 0;
+  }
+  .page { max-width: 860px; margin: 40px auto 80px; background: white;
+    border-radius: 12px; border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06); padding: 48px 56px; }
+  h1 { font-size: 26px; font-weight: 800; color: #0f172a;
+    border-bottom: 3px solid #2563eb; padding-bottom: 10px; margin: 0 0 24px; }
+  h2 { font-size: 18px; font-weight: 700; color: #0f172a;
+    border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin: 36px 0 14px; }
+  h3 { font-size: 15px; font-weight: 700; color: #2563eb; margin: 24px 0 8px; }
+  h4 { font-size: 14px; font-weight: 600; color: #475569; margin: 16px 0 6px; }
+  p  { margin: 6px 0 10px; color: #334155; }
+  code { background: #f1f5f9; border-radius: 4px; padding: 2px 6px;
+    font-family: "SF Mono", Menlo, monospace; font-size: 12.5px; color: #0f172a; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0 18px; font-size: 13px; }
+  th { background: #f1f5f9; font-weight: 600; color: #0f172a;
+    border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; }
+  td { border: 1px solid #e2e8f0; padding: 7px 12px; color: #334155; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  ul  { margin: 8px 0 12px 0; padding-left: 22px; }
+  li  { margin: 4px 0; color: #334155; }
+  blockquote { border-left: 3px solid #2563eb; margin: 12px 0;
+    padding: 8px 16px; background: #eff6ff; color: #1e40af;
+    border-radius: 0 8px 8px 0; font-size: 13px; }
+  hr  { border: none; border-top: 1px solid #e2e8f0; margin: 28px 0; }
+  strong { color: #0f172a; }
+  em { color: #475569; }
+  .footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #e2e8f0;
+    font-size: 12px; color: #94a3b8; text-align: center; }
+  @media (max-width: 700px) { .page { padding: 24px 20px; margin: 16px; } }
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; border: none; padding: 0; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Smart CRM — Mission Control · Versão 2</h1>
+<p><strong>Promaster · Protótipo para revisão · Maio 2026</strong></p>
+
+<hr>
+
+<h2>Como abrir</h2>
+
+<p>1. Abra o ficheiro <strong><code>Smart CRM — Promaster v2.html</code></strong> em qualquer navegador (Chrome, Edge ou Firefox recomendados).</p>
+<p>2. Não é necessária ligação à Internet nem instalar nada.</p>
+<p>3. Todos os dados são fictícios e servem apenas para demonstração.</p>
+
+<hr>
+
+<h2>Acessos de demonstração</h2>
+
+<table><thead><tr><th>Perfil</th><th>Email</th><th>Palavra-passe</th><th>Permissões</th></tr></thead><tbody>
+<p></tbody></table></p>
+<table><thead><tr><th>Administrador</th><th><code>admin@promaster.co</code></th><th><code>admin123</code></th><th>Acesso total — painel de administração, reatribuição de qualquer processo ou tarefa, alteração de prioridades</th></tr></thead><tbody>
+<tr><td>Supervisor</td><td><code>supervisor@promaster.co</code></td><td><code>super123</code></td><td>Pode reatribuir processos e tarefas, alterar prioridades, ver widget de resumo — não acede à configuração do sistema</td></tr>
+<tr><td>Utilizador standard</td><td><code>adelina@promaster.co</code></td><td><code>pass123</code></td><td>Acesso ao dashboard, pode reatribuir os seus próprios processos e tarefas</td></tr>
+<p></tbody></table></p>
+<blockquote>Recomendamos testar com os três perfis para ver as diferenças de permissão.</blockquote>
+
+<hr>
+
+<h2>O que há de novo nesta versão</h2>
+
+<p>Esta versão introduz o redesenho completo <strong>Mission Control</strong> — navegação lateral persistente, tema escuro, e três novas secções (Tarefas, Inbox, Arquivo).</p>
+
+<hr>
+
+<h2>Estrutura da aplicação</h2>
+
+<h3>Navegação lateral (sidebar)</h3>
+
+<p>A barra lateral esquerda está sempre visível e organiza-se em três zonas:</p>
+
+<p><strong>Principal</strong></p>
+<ul><li><strong>Processos</strong> — lista principal de processos comerciais (com badge do número em aberto)</li>
+<li><strong>Tarefas</strong> — tarefas não relacionadas com cotações (com badge das pendentes)</li>
+<li><strong>Inbox</strong> — emails recebidos a aguardar triagem (com badge dos pendentes)</li>
+<p></ul></p>
+<p><strong>Gestão</strong></p>
+<ul><li><strong>Clientes</strong> — (previsto para versão futura)</li>
+<li><strong>Arquivo</strong> — processos arquivados (mais de 3 anos)</li>
+<p></ul></p>
+<p><strong>Sistema</strong> <em>(apenas Admin e Supervisor)</em></p>
+<ul><li><strong>Administração</strong> — abre o painel de configuração</li>
+<p></ul></p>
+<p>Na parte inferior da sidebar encontra o chip do utilizador (clique para editar o perfil) e o botão <strong>Terminar sessão</strong>.</p>
+
+<hr>
+
+<h2>Secções detalhadas</h2>
+
+<h3>1. Processos</h3>
+
+<p>O ecrã principal de gestão de cotações.</p>
+
+<p><strong>Barra de estatísticas</strong></p>
+<p>Seis cartões clicáveis que filtram a lista:</p>
+<ul><li><strong>Todos</strong> — sem filtro, mostra tudo</li>
+<li><strong>Em Aberto</strong> — estados 1 a 6 (processos activos)</li>
+<li><strong>Em Atraso</strong> — prazo ultrapassado e ainda em aberto</li>
+<li><strong>Urgentes</strong> — prazo nas próximas 48 horas</li>
+<li><strong>Ganhos</strong> — processos com estado Encomenda</li>
+<li><strong>Transitados</strong> (tom acinzentado) — processos de meses anteriores ainda em aberto</li>
+<p></ul></p>
+<p>Clique num cartão para filtrar. Clique novamente para limpar.</p>
+
+<p><strong>Meus processos / Todos os processos</strong></p>
+<p>Botões de contexto que alternam entre a visão global e os processos onde o utilizador tem um papel atribuído. Os cartões de estatística actualizam-se em conformidade.</p>
+
+<p><strong>Vista em Tabela</strong></p>
+<ul><li>Clique em qualquer cabeçalho de coluna para ordenar (ascendente / descendente — seta indicadora)</li>
+<li>Clique no ícone de filtro junto ao cabeçalho para filtrar por valores distintos; vários filtros de coluna podem estar activos em simultâneo</li>
+<li>A coluna <strong>Prio</strong> (prioridade) permite alterar a prioridade directamente na linha — clique no indicador (Admin e Supervisor apenas)</li>
+<li>A coluna <strong>Follow Up</strong> só aparece quando o processo está em estado Enviado ou Encomenda</li>
+<li>O botão de olho na barra de ferramentas permite mostrar/esconder colunas individualmente; preferência gravada por utilizador</li>
+<p></ul></p>
+<p><strong>Vista Kanban</strong></p>
+<ul><li>Colunas por estado; arraste os cartões para mover um processo para outro estado</li>
+<li>Cartões de processos não atribuídos ao utilizador aparecem bloqueados (cadeado) e não podem ser arrastados</li>
+<p></ul></p>
+<p><strong>Painel de detalhe (gaveta lateral)</strong></p>
+<p>Ao clicar numa linha ou cartão abre-se o painel lateral com:</p>
+<ul><li><strong>Número do processo</strong> em destaque (monospace, grande)</li>
+<li><strong>Comprador</strong> imediatamente abaixo do cliente</li>
+<li>Grelha de informação completa</li>
+<li><strong>Consulta</strong> — quando o estado é <em>Consulta</em>, aparece uma lista de verificação com dois passos obrigatórios (Pedido ao fornecedor / Resposta do fornecedor); cada passo regista o timestamp ao ser marcado e indica se o SLA foi excedido</li>
+<li><strong>Anexos</strong> — o link do Excel modelo aparece sempre; outros anexos quando existirem</li>
+<li><strong>Equipa</strong> — os três responsáveis (Cotação, Comercial, Compra) com botão Reatribuir visível para Admin, Supervisor, e o próprio responsável</li>
+<li><strong>Pipeline</strong> — barra visual do progresso por fase</li>
+<li><strong>Histórico</strong> — linha do tempo de todos os eventos</li>
+<li><strong>Follow-up</strong> — só visível quando estado ≥ Enviado</li>
+<li>Botões: <strong>Enviar Email</strong> (rascunho pré-preenchido) e <strong>Alterar Estado</strong> (lista de todos os estados; selector de follow-up aparece apenas se o estado destino for ≥ Enviado)</li>
+<p></ul></p>
+<p><strong>Widget de supervisão</strong> <em>(Admin e Supervisor)</em></p>
+<p>Aparece acima da barra de estatísticas e mostra: processos abertos este mês, fechados este mês, em atraso agora, tarefas pendentes, e os 3 processos mais atrasados.</p>
+
+<hr>
+
+<h3>2. Tarefas</h3>
+
+<p>Gestão de actividades que não são cotações.</p>
+
+<p><strong>Tipos de tarefa:</strong> Contas Correntes · Status de Encomenda · Desconto · Cliente Novo · Diversos</p>
+
+<p>Cada tarefa tem: tipo, cliente, comprador, responsável, estado (Pendente / Em Curso / Concluído), prazo, prioridade, descrição e o email de origem.</p>
+
+<p><strong>Filtros disponíveis:</strong> pesquisa livre, tipo, estado, responsável.</p>
+
+<p><strong>Gaveta de tarefa</strong></p>
+<ul><li>Campos completos da tarefa</li>
+<li>Email de origem (clique para expandir/colapsar)</li>
+<li><strong>Marcar como Concluído</strong> — altera o estado e desactiva o botão</li>
+<li><strong>Alterar Estado</strong> — modal com todos os estados</li>
+<li><strong>Reatribuir</strong> — visível para o responsável da tarefa, Supervisor e Admin</li>
+<p></ul></p>
+<hr>
+
+<h3>3. Inbox</h3>
+
+<p>Triagem de emails recebidos antes de serem classificados.</p>
+
+<p>Cada email mostra: remetente, assunto, pré-visualização, hora de recepção, e a <strong>sugestão da IA</strong> (tipo sugerido e percentagem de confiança).</p>
+
+<p><strong>Emails internos</strong> (entre membros da equipa) são automaticamente excluídos e nunca aparecem na lista.</p>
+
+<p><strong>Quatro acções por email:</strong></p>
+
+<table><thead><tr><th>Acção</th><th>O que acontece</th></tr></thead><tbody>
+<p></tbody></table></p>
+<table><thead><tr><th><strong>Novo Processo</strong></th><th>Gera um número AAMMMNNN imediatamente, cria o processo e move-o para a lista de Processos. O email desaparece do Inbox.</th></tr></thead><tbody>
+<tr><td><strong>Nova Tarefa</strong></td><td>Abre um selector de tipo de tarefa; ao confirmar, cria a tarefa em Tarefas. O email desaparece do Inbox.</td></tr>
+<tr><td><strong>Associar</strong></td><td>Campo de texto para introduzir um número de processo existente; valida e associa o email a esse processo.</td></tr>
+<tr><td><strong>Diversos</strong></td><td>Remove o email da lista de pendentes (marcado como diversos, atribuído ao supervisor).</td></tr>
+<p></tbody></table></p>
+<p><strong>Cliente não reconhecido</strong> — quando o remetente não está na base de dados, aparece um banner amarelo com a opção de criar uma ficha de cliente (nome e email).</p>
+
+<hr>
+
+<h3>4. Arquivo</h3>
+
+<p>Processos com mais de 3 anos são automaticamente sinalizados como arquivados e não aparecem na lista principal.</p>
+
+<p>No Arquivo, a tabela é de leitura apenas. Clique numa linha para abrir o painel de detalhe completo.</p>
+
+<hr>
+
+<h3>5. Painel de Administração</h3>
+
+<p>Disponível para <strong>Admin</strong> (acesso total) e <strong>Supervisor</strong> (sem acesso à configuração do sistema).</p>
+<p>Clique em <strong>Administração</strong> na sidebar para abrir como gaveta lateral.</p>
+
+<table><thead><tr><th>Aba</th><th>O que configura</th></tr></thead><tbody>
+<p></tbody></table></p>
+<table><thead><tr><th><strong>Utilizadores</strong></th><th>Adicionar, editar, desactivar/activar utilizadores; definir função, foto e palavra-passe inicial</th></tr></thead><tbody>
+<tr><td><strong>Estados</strong></td><td>Criar, editar, reordenar e colorir as fases do processo e os estados de follow-up (arrastar para reordenar)</td></tr>
+<tr><td><strong>Prioridades</strong></td><td>Definir níveis de prioridade com cores</td></tr>
+<tr><td><strong>Funções</strong></td><td>Criar e editar funções disponíveis para atribuição a utilizadores</td></tr>
+<tr><td><strong>Atribuição de Tarefas</strong></td><td>Para cada função, seleccionar o(s) utilizador(es) responsável(eis); se forem dois ou mais, a IA faz rotação automática</td></tr>
+<tr><td><strong>Marca / Logótipo</strong></td><td>Carregar logótipo (com zoom/reposicionamento), definir nome da aplicação e cor de destaque</td></tr>
+<tr><td><strong>Importar</strong></td><td>Importação em bloco de processos a partir de CSV/Excel (exportação do SharePoint)</td></tr>
+<p></tbody></table></p>
+<hr>
+
+<h3>6. Perfil do utilizador</h3>
+
+<p>Clique no chip do utilizador no fundo da sidebar:</p>
+<ul><li>Alterar nome de utilizador</li>
+<li>Carregar ou alterar fotografia (reflectida em todos os avatares)</li>
+<li>Definir nova palavra-passe</li>
+<p></ul></p>
+<hr>
+
+<h3>7. Tema claro / escuro</h3>
+
+<p>Botão no topo da área de conteúdo (ícone de sol/lua). A preferência é guardada e aplicada na próxima sessão.</p>
+
+<hr>
+
+<h3>8. Notificação de email (toast)</h3>
+
+<p>Após 2 segundos, aparece uma notificação no canto inferior direito a simular a chegada de um email classificado pela IA.</p>
+
+<hr>
+
+<h2>Perguntas em aberto (a confirmar antes da próxima fase)</h2>
+
+<table><thead><tr><th>#</th><th>Questão</th></tr></thead><tbody>
+<p></tbody></table></p>
+<table><thead><tr><th>A</th><th><strong>Atribuição automática</strong>: a lógica de rotação (round-robin) está correcta? Existem regras por tipo de equipamento ou cliente?</th></tr></thead><tbody>
+<tr><td>B</td><td><strong>Lista completa de utilizadores</strong>: nomes, emails e funções de todos os colaboradores (~10–15 pessoas)</td></tr>
+<tr><td>C</td><td><strong>Lista completa de estados</strong>: confirmar se as 11 fases actuais estão correctas ou se há ajustes</td></tr>
+<tr><td>D</td><td><strong>Prazos SLA por fase</strong>: quantos dias cada fase pode durar antes de disparar um alerta de urgência?</td></tr>
+<tr><td>E</td><td><strong>Responsável pelos alertas de atraso</strong>: quem recebe a notificação quando um processo entra em atraso?</td></tr>
+<tr><td>F</td><td><strong>Exportação do SharePoint</strong>: é possível exportar os processos para Excel/CSV? Uma amostra de 10–20 linhas reais seria ideal antes de construir a ferramenta de importação</td></tr>
+<p></tbody></table></p>
+<hr>
+
+<h2>Próximos passos</h2>
+
+<p>Após a vossa revisão e feedback, a próxima fase inclui:</p>
+
+<p>1. <strong>Ajustes ao protótipo</strong> com base no feedback desta sessão</p>
+<p>2. <strong>Finalização do esquema da base de dados</strong> com os estados, utilizadores e SLAs confirmados</p>
+<p>3. <strong>Configuração do Azure AD</strong> para ligação ao Outlook da Promaster (<code>info@promaster.co</code>)</p>
+<p>4. <strong>Desenvolvimento do backend</strong> (FastAPI + PostgreSQL via Supabase)</p>
+<p>5. <strong>Ligação da interface aos dados reais</strong></p>
+
+<hr>
+
+<p><em>Protótipo desenvolvido por Pedro Andrade — Maio 2026</em></p>
+<p><em>Para questões técnicas: pandrad@gmail.com</em></p>
+
+</div>
+</body>
+</html>

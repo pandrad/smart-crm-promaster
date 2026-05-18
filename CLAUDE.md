@@ -67,18 +67,20 @@ frontend/src/
 ```
 delivery/
 ├── v1/   — original light-theme prototype (first client review)
-│   ├── Smart CRM — Promaster v1.html
-│   ├── Instruções — Smart CRM Promaster v1.md
-│   └── Instruções — Smart CRM Promaster v1.pdf
+│   ├── Smart CRM — Promaster v1.html             (app — open in browser)
+│   ├── Instruções — Smart CRM Promaster v1.html   (instructions — open in browser)
+│   └── Instruções — Smart CRM Promaster v1.md     (source)
 └── v2/   — Mission Control redesign (dark theme, sidebar, Tarefas, Inbox, Arquivo)
-    ├── Smart CRM — Promaster v2.html
-    ├── Instruções — Smart CRM Promaster v2.md
-    └── Instruções — Smart CRM Promaster v2.pdf
+    ├── Smart CRM — Promaster v2.html             (app — open in browser)
+    ├── Instruções — Smart CRM Promaster v2.html   (instructions — open in browser)
+    └── Instruções — Smart CRM Promaster v2.md     (source)
 ```
+
+Both the app and the instructions are self-contained HTML files — client opens them directly in any browser. Instructions are print-ready (clean print stylesheet included).
 
 Demo login: `admin@promaster.co` / `admin123` (Admin) · `supervisor@promaster.co` / `super123` (Supervisor) · `adelina@promaster.co` / `pass123` (standard)
 
-**To add a new version:** create `delivery/vN/`, put the HTML and `.md` instructions inside, then run `node /tmp/md-to-pdf.js` (or adapt the script) to regenerate the PDF via Chrome headless. Rebuild HTML: enable `vite-plugin-singlefile` in `vite.config.js`, build, patch `type="module"` out, move script after `#root`, restore config.
+**To add a new version:** create `delivery/vN/`, write the `.md` instructions, run `node /tmp/md-to-html.js` (adapt paths) to generate the instructions HTML. Rebuild app HTML: enable `vite-plugin-singlefile`, build, patch `type="module"` out, move script after `#root`, restore config.
 
 ### Mission Control redesign — all phases complete and pushed to GitHub
 

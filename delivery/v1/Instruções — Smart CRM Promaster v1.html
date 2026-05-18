@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart CRM — Instruções v1 · Promaster</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px; line-height: 1.7; color: #1e293b;
+    background: #f8fafc; margin: 0; padding: 0;
+  }
+  .page { max-width: 860px; margin: 40px auto 80px; background: white;
+    border-radius: 12px; border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06); padding: 48px 56px; }
+  h1 { font-size: 26px; font-weight: 800; color: #0f172a;
+    border-bottom: 3px solid #2563eb; padding-bottom: 10px; margin: 0 0 24px; }
+  h2 { font-size: 18px; font-weight: 700; color: #0f172a;
+    border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin: 36px 0 14px; }
+  h3 { font-size: 15px; font-weight: 700; color: #2563eb; margin: 24px 0 8px; }
+  h4 { font-size: 14px; font-weight: 600; color: #475569; margin: 16px 0 6px; }
+  p  { margin: 6px 0 10px; color: #334155; }
+  code { background: #f1f5f9; border-radius: 4px; padding: 2px 6px;
+    font-family: "SF Mono", Menlo, monospace; font-size: 12.5px; color: #0f172a; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0 18px; font-size: 13px; }
+  th { background: #f1f5f9; font-weight: 600; color: #0f172a;
+    border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; }
+  td { border: 1px solid #e2e8f0; padding: 7px 12px; color: #334155; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  ul  { margin: 8px 0 12px 0; padding-left: 22px; }
+  li  { margin: 4px 0; color: #334155; }
+  blockquote { border-left: 3px solid #2563eb; margin: 12px 0;
+    padding: 8px 16px; background: #eff6ff; color: #1e40af;
+    border-radius: 0 8px 8px 0; font-size: 13px; }
+  hr  { border: none; border-top: 1px solid #e2e8f0; margin: 28px 0; }
+  strong { color: #0f172a; }
+  em { color: #475569; }
+  .footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #e2e8f0;
+    font-size: 12px; color: #94a3b8; text-align: center; }
+  @media (max-width: 700px) { .page { padding: 24px 20px; margin: 16px; } }
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; border: none; padding: 0; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Smart CRM — Protótipo para Revisão</h1>
+<p><strong>Promaster · Versão de demonstração · Maio 2026</strong></p>
+
+<hr>
+
+<h2>Como abrir</h2>
+
+<p>1. Abra o ficheiro <strong><code>Smart CRM — Promaster (Protótipo).html</code></strong> em qualquer navegador (Chrome, Edge ou Firefox recomendados).</p>
+<p>2. Não é necessária ligação à Internet. Não é necessário instalar nada.</p>
+<p>3. Todos os dados são fictícios e servem apenas para demonstração.</p>
+
+<hr>
+
+<h2>Acessos de demonstração</h2>
+
+<table><thead><tr><th>Utilizador</th><th>Email</th><th>Palavra-passe</th><th>Perfil</th></tr></thead><tbody>
+<p></tbody></table></p>
+<table><thead><tr><th>Administrador</th><th><code>admin@promaster.co</code></th><th><code>admin123</code></th><th>Acesso total</th></tr></thead><tbody>
+<tr><td>Adelina Rodrigues</td><td><code>adelina@promaster.co</code></td><td><code>pass123</code></td><td>Utilizador standard</td></tr>
+<p></tbody></table></p>
+<blockquote>Recomendamos testar com ambos os perfis para ver a diferença de permissões.</blockquote>
+
+<hr>
+
+<h2>O que está incluído neste protótipo</h2>
+
+<h3>1. Dashboard principal</h3>
+
+<p>O ecrã principal apresenta todos os processos comerciais numa vista centralizada.</p>
+
+<p><strong>Barra de estatísticas (topo)</strong></p>
+<p>Cinco cartões clicáveis que funcionam como filtros rápidos:</p>
+<ul><li><strong>Todos</strong> — mostra todos os processos sem filtro</li>
+<li><strong>Em Aberto</strong> — processos ainda não concluídos</li>
+<li><strong>Em Atraso</strong> — processos cujo prazo já passou</li>
+<li><strong>Urgentes</strong> — processos com prazo nas próximas 48 horas</li>
+<li><strong>Ganhos (mês)</strong> — processos fechados com sucesso</li>
+<p></ul></p>
+<blockquote>Ao clicar num cartão, a tabela/kanban filtra automaticamente. Clique novamente para limpar o filtro.</blockquote>
+
+<p><strong>Tabs de âmbito</strong></p>
+<ul><li><strong>Todos os processos</strong> — visão global de toda a equipa</li>
+<li><strong>Meus processos</strong> — filtra apenas os processos onde o utilizador tem um papel atribuído (Cotação, Comercial ou Compra). Os cartões de estatística actualizam-se em conformidade.</li>
+<p></ul></p>
+<hr>
+
+<h3>2. Vista em Tabela</h3>
+
+<p>A tabela mostra todos os campos de cada processo numa linha:</p>
+
+<table><thead><tr><th>Coluna</th><th>Descrição</th></tr></thead><tbody>
+<p></tbody></table></p>
+<table><thead><tr><th>Nº</th><th>Número único do processo</th></tr></thead><tbody>
+<tr><td>Criado</td><td>Data de criação</td></tr>
+<tr><td>Prazo</td><td>Urgência em dias (verde = OK, laranja = breve, vermelho = atraso)</td></tr>
+<tr><td>Prio</td><td>Indicador de prioridade (vermelho = Alta)</td></tr>
+<tr><td>Estado</td><td>Fase actual do processo</td></tr>
+<tr><td>Follow Up</td><td>Estado comercial do follow-up</td></tr>
+<tr><td>Cliente</td><td>Nome do cliente</td></tr>
+<tr><td>Marca / Modelo</td><td>Equipamento em questão</td></tr>
+<tr><td>Resp. Cotação / Comercial</td><td>Responsáveis atribuídos</td></tr>
+<tr><td>Valor</td><td>Preço de venda (quando definido)</td></tr>
+<tr><td>Emails</td><td>Número de emails associados</td></tr>
+<p></tbody></table></p>
+<p><strong>Clique em qualquer linha</strong> para abrir o painel de detalhe lateral.</p>
+
+<hr>
+
+<h3>3. Vista Kanban</h3>
+
+<p>Alterna para a visão em colunas clicando em <strong>Kanban</strong> no canto superior direito da barra de ferramentas.</p>
+
+<ul><li>Cada coluna representa um estado do processo.</li>
+<li>Os cartões podem ser <strong>arrastados entre colunas</strong> para alterar o estado (apenas para processos atribuídos ao utilizador — os outros aparecem bloqueados com um cadeado).</li>
+<li>Clique num cartão para abrir o painel de detalhe.</li>
+<p></ul></p>
+<hr>
+
+<h3>4. Filtros e pesquisa</h3>
+
+<p>Na barra de ferramentas, estão disponíveis:</p>
+<ul><li><strong>Pesquisa de texto livre</strong> — procura por cliente, marca ou número de processo</li>
+<li><strong>Resp. Cotação</strong> — filtra por responsável de cotação</li>
+<li><strong>Resp. Comercial</strong> — filtra por responsável comercial</li>
+<li><strong>Todos os estados</strong> — filtra por fase do processo</li>
+<p></ul></p>
+<hr>
+
+<h3>5. Painel de detalhe (gaveta lateral)</h3>
+
+<p>Ao clicar num processo abre-se uma gaveta lateral à direita com:</p>
+
+<ul><li><strong>Cabeçalho</strong> com estado, follow-up e prioridade</li>
+<li><strong>Alerta de atraso</strong> (se aplicável)</li>
+<li><strong>Grelha de informação</strong> — todos os campos do processo</li>
+<li><strong>Equipa atribuída</strong> — os três responsáveis (Cotação, Comercial, Compra)</li>
+<li><strong>Pipeline visual</strong> — barra colorida que mostra em que fase está o processo</li>
+<li><strong>Histórico</strong> — linha do tempo de todos os eventos (email recebido, classificação IA, atribuições, etc.)</li>
+<p></ul></p>
+<p><strong>Acções disponíveis:</strong></p>
+<ul><li><strong>Enviar Email</strong> — abre um rascunho pré-preenchido para responder ao cliente</li>
+<li><strong>Alterar Estado</strong> — permite mudar a fase do processo e o follow-up sem fechar a gaveta</li>
+<li><strong>Reatribuir</strong> <em>(apenas administrador)</em> — permite alterar os três responsáveis atribuídos ao processo</li>
+<p></ul></p>
+<hr>
+
+<h3>6. Notificação de email (toast)</h3>
+
+<p>Após 2 segundos, aparece uma notificação no canto inferior direito simulando a chegada de um email.</p>
+<p>Demonstra como o sistema detecta automaticamente novos emails, os classifica com IA e cria um processo.</p>
+
+<hr>
+
+<h3>7. Perfil do utilizador</h3>
+
+<p>No canto superior direito, clique no <strong>nome/avatar</strong> para aceder ao seu perfil:</p>
+<ul><li>Alterar nome de utilizador</li>
+<li>Carregar ou alterar fotografia</li>
+<li>Definir nova palavra-passe</li>
+<p></ul></p>
+<hr>
+
+<h2>Painel de Administração</h2>
+
+<p>Disponível apenas com o perfil <strong>admin</strong>. Clique no botão <strong>Administração</strong> na barra superior.</p>
+
+<p>O painel abre como uma gaveta lateral sobre o dashboard (o dashboard permanece visível por baixo).</p>
+
+<h3>Aba: Utilizadores</h3>
+
+<p>Gestão de todos os utilizadores do sistema:</p>
+<ul><li><strong>Adicionar</strong> novo utilizador com nome, email, função, foto e palavra-passe inicial</li>
+<li><strong>Editar</strong> dados de um utilizador existente</li>
+<li><strong>Desativar / Ativar</strong> utilizadores sem os eliminar</li>
+<p></ul></p>
+<h3>Aba: Estados</h3>
+
+<p>Gestão das fases do processo e dos estados de follow-up:</p>
+<ul><li><strong>Adicionar, editar e reordenar</strong> estados (arrastar para reordenar)</li>
+<li><strong>Personalizar a cor</strong> de cada estado com paleta de cores predefinida ou cor personalizada</li>
+<li>As alterações são reflectidas imediatamente na tabela, kanban e gaveta de detalhe</li>
+<p></ul></p>
+<h3>Aba: Prioridades</h3>
+
+<p>Define os níveis de prioridade disponíveis (ex.: Normal, Alta) com as respectivas cores.</p>
+
+<h3>Aba: Funções</h3>
+
+<p>Define as funções que podem ser atribuídas aos utilizadores (ex.: Resp. Cotação, Resp. Comercial, Resp. Compra, Administrador).</p>
+
+<h3>Aba: Atribuição de Tarefas</h3>
+
+<p>Configura a regra de atribuição automática quando a IA recebe um novo email:</p>
+<ul><li>Para cada função, seleccione <strong>um ou mais utilizadores</strong></li>
+<li>Se for seleccionado apenas um, é sempre esse o responsável</li>
+<li>Se forem seleccionados dois ou mais, a IA faz <strong>rotação (round-robin)</strong> entre eles</li>
+<p></ul></p>
+<h3>Aba: Marca / Logótipo</h3>
+
+<p>Personaliza a aparência da aplicação:</p>
+<ul><li><strong>Logótipo</strong> — carregue uma imagem, ajuste o zoom e arraste para reposicionar; as alterações aparecem imediatamente na barra de navegação</li>
+<li><strong>Nome da aplicação</strong> e <strong>subtítulo</strong></li>
+<li><strong>Cor de destaque</strong> — altera a cor principal de toda a interface</li>
+<p></ul></p>
+<h3>Aba: Importar</h3>
+
+<p>Ferramenta para importação em bloco de processos existentes a partir de um ficheiro CSV ou Excel (exportação do SharePoint actual).</p>
+
+<hr>
+
+<h2>Perguntas em aberto (a confirmar antes da próxima fase)</h2>
+
+<p>Antes de avançarmos para o desenvolvimento do backend, precisamos de confirmar os seguintes pontos:</p>
+
+<table><thead><tr><th>#</th><th>Questão</th></tr></thead><tbody>
+<p></tbody></table></p>
+<table><thead><tr><th>A</th><th><strong>Atribuição automática</strong>: round-robin é a regra preferida? Ou existem regras específicas (ex.: por tipo de equipamento)?</th></tr></thead><tbody>
+<tr><td>B</td><td><strong>Lista completa de utilizadores</strong>: nomes, emails e funções de todos os ~10–15 colaboradores</td></tr>
+<tr><td>C</td><td><strong>Lista completa de estados</strong>: confirmar as fases actuais (ex.: 1. Entrada, 2. Pendente Cliente, etc.) e se há fases em falta</td></tr>
+<tr><td>D</td><td><strong>Prazos SLA por fase</strong>: quantos dias cada fase pode durar antes de acionar um alerta de urgência</td></tr>
+<tr><td>E</td><td><strong>Responsável pelos alertas de atraso</strong>: quem deve receber a notificação quando um processo entra em atraso?</td></tr>
+<tr><td>F</td><td><strong>Exportação do SharePoint</strong>: é possível exportar os processos existentes para Excel/CSV? Idealmente uma amostra com 10–20 linhas reais</td></tr>
+<p></tbody></table></p>
+<hr>
+
+<h2>Próximos passos</h2>
+
+<p>Após a vossa revisão e feedback, a próxima fase inclui:</p>
+
+<p>1. <strong>Ajustes ao protótipo</strong> com base no feedback recebido</p>
+<p>2. <strong>Finalização do esquema da base de dados</strong> com os estados e utilizadores confirmados</p>
+<p>3. <strong>Configuração do Azure AD</strong> para ligação ao Outlook da Promaster</p>
+<p>4. <strong>Desenvolvimento do backend</strong> (FastAPI + PostgreSQL)</p>
+<p>5. <strong>Ligação da interface aos dados reais</strong></p>
+
+<hr>
+
+<p><em>Protótipo desenvolvido por Pedro Andrade — Maio 2026</em></p>
+<p><em>Para questões técnicas: pandrad@gmail.com</em></p>
+
+</div>
+</body>
+</html>
