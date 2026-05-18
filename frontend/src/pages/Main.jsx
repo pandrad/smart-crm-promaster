@@ -131,21 +131,33 @@ export function Main() {
     navigate("/login");
   }
 
-  // ── QA reset — dev only ────────────────────────────────────────────────────
-  // Wipes all runtime localStorage keys and resets React state to original
-  // mock data. Only rendered when import.meta.env.DEV is true (localhost).
+  // ── Repor dados mock — apenas em desenvolvimento ──────────────────────────
+  // Limpa todas as chaves de localStorage e repõe o estado React aos dados
+  // mock originais. Só aparece quando import.meta.env.DEV === true (localhost).
   function handleQAReset() {
-    const keys = ["crm_users","crm_stages","crm_fu","crm_priorities","crm_roles",
-                  "crm_assignment","crm_task_assignment","crm_tarefas","crm_inbox",
-                  "crm_col_prefs","crm_sort_prefs","crm_branding"];
+    // Clear every runtime key including theme
+    const keys = [
+      "crm_users","crm_stages","crm_fu","crm_priorities","crm_roles",
+      "crm_assignment","crm_task_assignment","crm_tarefas","crm_inbox",
+      "crm_col_prefs","crm_sort_prefs","crm_branding","crm_theme",
+    ];
     keys.forEach(k => localStorage.removeItem(k));
-    setProcessos(PROCESSOS);
-    setTarefas(TAREFAS);
-    setInboxEmails(INBOX_EMAILS);
-    setUsers(store.getUsers());      // re-reads default from data.js seeds
+
+    // Reset all React state to original mock values
+    setProcessos([...PROCESSOS]);
+    setTarefas([...TAREFAS]);
+    setInboxEmails([...INBOX_EMAILS]);
+    setUsers(store.getUsers());   // re-reads seed from data.js now that crm_users is gone
     setBranding({});
     setSelected(null);
+    setSelectedTask(null);
     setAdminOpen(false);
+    setProfileOpen(false);
+
+    // Reset theme to dark and force full re-render
+    applyTheme("dark");
+    setThemeMode("dark");
+    setThemeVersion(v => v + 1);  // bumps key on root div → full subtree re-render
   }
 
   function handleTaskUpdate(updated) {
@@ -216,7 +228,7 @@ export function Main() {
               title="Repõe todos os dados mock ao estado original (apenas em desenvolvimento)"
               style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", fontSize: 11, fontWeight: 600, background: "#2d0a0a", color: "#f87171", border: "1px solid #ef444444", borderRadius: 6, cursor: "pointer" }}
             >
-              <Icon name="x" size={11} color="#f87171" /> Reset Mock Data
+              <Icon name="x" size={11} color="#f87171" /> Repor dados mock
             </button>
           )}
 
