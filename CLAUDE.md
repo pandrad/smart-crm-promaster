@@ -14,20 +14,20 @@ All screens fully interactive with mock data. Dev server: `cd frontend && npm ru
 | `src/pages/Login.jsx` | Login — mock credentials, saves name to localStorage |
 | `src/pages/Main.jsx` | Layout shell — sidebar + route outlet, shared state, global modals |
 | `src/pages/Processos.jsx` | Dashboard — stats bar, filters, table/kanban views |
-| `src/pages/Tarefas.jsx` | Task management — table, filters, TaskDrawer with all actions |
-| `src/pages/Inbox.jsx` | Email triage — 4 actions per email, new-client prompt |
+| `src/pages/Tarefas.jsx` | Task management — full task model, 4 actions (Abrir Processo, Concluir, Passar, Escalar/Retomar), history timeline |
+| `src/pages/Inbox.jsx` | Email triage — preview panel with full body, 4 actions; Confirmar como Processo creates Pré-Entrada task (not a process) |
 | `src/pages/Arquivo.jsx` | Archived processes — read-only table |
-| `src/components/Sidebar.jsx` | Persistent left nav — 3 zones, badges, user chip |
+| `src/components/Sidebar.jsx` | Persistent left nav — 3 zones, badges, user chip, logout |
 | `src/components/StatsBar.jsx` | 6 clickable stat cards incl. Transitados — user-specific in Meus processos |
 | `src/components/Toolbar.jsx` | Search + filters + column visibility toggle + table/kanban toggle |
 | `src/components/TableView.jsx` | Sortable table, per-column filters, priority inline change, FU conditional |
 | `src/components/KanbanView.jsx` | Kanban with drag-and-drop; non-owner cards locked |
 | `src/components/DetailDrawer.jsx` | Right panel: process number, Comprador, Consulta checklist, Excel link, FU conditional, reassign for supervisor/owner |
-| `src/components/AdminPanel.jsx` | Slide-over: Users, Estados, Prioridades, Funções, Atribuição de Tarefas, Marca, Importar |
-| `src/components/SupervisorWidget.jsx` | Summary widget visible to admin/supervisor only |
+| `src/components/AdminPanel.jsx` | Slide-over: Users, Estados, Prioridades, Funções, Atribuição de Tarefas (process roles + task type assignment), Marca, Importar |
+| `src/components/SupervisorWidget.jsx` | Summary widget: stat cards + escalated tasks section (clickable → TaskDrawer) |
 | `src/components/Toast.jsx` | Auto email notification demo |
 | `src/components/Primitives.jsx` | Avatar (photo support), badges — all read from store |
-| `src/theme.js` | Dark theme colour constants |
+| `src/theme.js` | Dark/light theme system — mutable THEME object, applyTheme(), persisted to localStorage |
 
 ### File structure (finalised — do not reorganise)
 
@@ -39,8 +39,8 @@ frontend/src/
 │                          Swap stub bodies for real fetch() in Stage 5.
 ├── mock/
 │   └── data.js         — all Stage 1 mock content: PROCESSOS, TAREFAS,
-│                          INBOX_EMAILS, MOCK_CREDENTIALS, MOCK_TOAST,
-│                          MOCK_IMPORT_PREVIEW
+│                          INBOX_EMAILS (with full body text), MOCK_CREDENTIALS,
+│                          MOCK_TOAST, MOCK_IMPORT_PREVIEW
 ├── components/         — UI components (import from utils/store/mock only)
 ├── pages/              — Login.jsx, Main.jsx, Processos.jsx, Tarefas.jsx,
 │                          Inbox.jsx, Arquivo.jsx
@@ -93,13 +93,28 @@ Demo login: `admin@promaster.co` / `admin123` (Admin) · `supervisor@promaster.c
 | E | New screens: Tarefas (full table + TaskDrawer), Inbox (4 triage actions + new-client flow), Arquivo | a7a7195 |
 | F | AdminPanel dark theme polish, CLAUDE.md updated | 18d7513 |
 
+### Task model redesign — complete and pushed to GitHub (parked for QA)
+
+Second iteration based on confirmed client feedback. Tarefas is now the primary work surface.
+
+| Phase | What was done | Commit |
+|-------|--------------|--------|
+| A | New task model (owner, history[], escalationNote, originEmail with body), 8 mock tasks, inbox emails with full body text, store.getTaskAssignment() with per-type default owners | e7cfadf |
+| B | Inbox rewrite: email preview panel (full body, all 4 actions inside), fixed triage flow — Confirmar como Processo creates Pré-Entrada task, not a process | 3fd861c |
+| C | Tarefas redesign: 8 types, 5 statuses, 4 fully working actions (Abrir Processo, Concluir, Passar, Escalar/Retomar), history timeline in TaskDrawer | 3fd861c |
+| D | SupervisorWidget: escalated tasks section (clickable → TaskDrawer), stat cards updated | 3fd861c |
+| E | Wiring: shell-level TaskDrawer in Main, onOpenTask through Processos → SupervisorWidget, AdminPanel task type assignment section added alongside existing process role section, sidebar badge fixed | 3fd861c |
+| Fix | QA reset button fixed (themeVersion bump, all keys cleared), renamed to "Repor dados mock" | 75085ae |
+
 ### Next action
-**Pending final browser QA before client delivery. Do not make any code changes until QA is complete.**
+**Parked pending thorough browser QA. Do not make code changes until QA identifies specific issues.**
 
 Next session:
-1. Run the full interactive element checklist from `docs/build-brief.md` (plan file) end-to-end in the browser at http://localhost:5299
-2. Fix any failures found during QA (code changes only permitted after QA identifies specific issues)
-3. If all checks pass → prepare client deliverable (single-file HTML build)
+1. Run the full interactive element checklist end-to-end in the browser at http://localhost:5299
+2. Test all three login profiles (admin, supervisor, adelina)
+3. Use "Repor dados mock" button (top bar, dev only) to reset state between test runs
+4. Fix any failures found — code changes only after QA identifies specific issues
+5. If all checks pass → prepare updated client deliverable (v3, single-file HTML build)
 
 Dev server auto-starts on login via launch agent → http://localhost:5299
 
