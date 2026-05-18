@@ -62,18 +62,23 @@ frontend/src/
 - Components import `daysLeft` from `utils.js`, `PROCESSOS` from `mock/data.js`, everything else from `store`
 
 ### Deliverable folder
-`entrega/` renamed to `delivery/`. All deliverables live here — do not delete previous versions.
+`delivery/` — one subfolder per UI version. Never delete previous versions. Each subfolder contains: the HTML app, the Portuguese instructions as `.md`, and the same instructions as `.pdf`.
 
-| File | Description |
-|------|-------------|
-| `delivery/Smart CRM — Promaster v1 (Protótipo Original).html` | v1 — original light-theme prototype (first client review) |
-| `delivery/Smart CRM — Promaster v2.html` | v2 — Mission Control redesign (dark theme, sidebar, Tarefas, Inbox, Arquivo) |
-| `delivery/Instruções — Smart CRM Promaster.md` | v1 instructions in Portuguese |
-| `delivery/Instruções — Smart CRM Promaster v2.md` | v2 instructions in Portuguese (updated for all new screens) |
+```
+delivery/
+├── v1/   — original light-theme prototype (first client review)
+│   ├── Smart CRM — Promaster v1.html
+│   ├── Instruções — Smart CRM Promaster v1.md
+│   └── Instruções — Smart CRM Promaster v1.pdf
+└── v2/   — Mission Control redesign (dark theme, sidebar, Tarefas, Inbox, Arquivo)
+    ├── Smart CRM — Promaster v2.html
+    ├── Instruções — Smart CRM Promaster v2.md
+    └── Instruções — Smart CRM Promaster v2.pdf
+```
 
 Demo login: `admin@promaster.co` / `admin123` (Admin) · `supervisor@promaster.co` / `super123` (Supervisor) · `adelina@promaster.co` / `pass123` (standard)
 
-To rebuild a deliverable: enable `vite-plugin-singlefile` in `vite.config.js`, build, patch `type="module"` out of the script tag, move script after `#root`, restore config.
+**To add a new version:** create `delivery/vN/`, put the HTML and `.md` instructions inside, then run `node /tmp/md-to-pdf.js` (or adapt the script) to regenerate the PDF via Chrome headless. Rebuild HTML: enable `vite-plugin-singlefile` in `vite.config.js`, build, patch `type="module"` out, move script after `#root`, restore config.
 
 ### Mission Control redesign — all phases complete and pushed to GitHub
 
