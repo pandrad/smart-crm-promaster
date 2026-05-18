@@ -61,12 +61,19 @@ frontend/src/
 - `api/client.js` — data-fetching layer; currently returns mock data, ready for real API
 - Components import `daysLeft` from `utils.js`, `PROCESSOS` from `mock/data.js`, everything else from `store`
 
-### Deliverable sent to client
-`entrega/Smart CRM — Promaster (Protótipo).html` — single self-contained HTML file, opens in any browser without a server. Built with HashRouter + inlined JS, script placed after `#root` in body.
+### Deliverable folder
+`entrega/` renamed to `delivery/`. All deliverables live here — do not delete previous versions.
 
-`entrega/Instruções — Smart CRM Promaster.md` — Portuguese instructions covering all sections + open questions A–F.
+| File | Description |
+|------|-------------|
+| `delivery/Smart CRM — Promaster v1 (Protótipo Original).html` | v1 — original light-theme prototype (first client review) |
+| `delivery/Smart CRM — Promaster v2.html` | v2 — Mission Control redesign (dark theme, sidebar, Tarefas, Inbox, Arquivo) |
+| `delivery/Instruções — Smart CRM Promaster.md` | v1 instructions in Portuguese |
+| `delivery/Instruções — Smart CRM Promaster v2.md` | v2 instructions in Portuguese (updated for all new screens) |
 
 Demo login: `admin@promaster.co` / `admin123` (Admin) · `supervisor@promaster.co` / `super123` (Supervisor) · `adelina@promaster.co` / `pass123` (standard)
+
+To rebuild a deliverable: enable `vite-plugin-singlefile` in `vite.config.js`, build, patch `type="module"` out of the script tag, move script after `#root`, restore config.
 
 ### Mission Control redesign — all phases complete and pushed to GitHub
 
