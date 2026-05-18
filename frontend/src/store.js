@@ -57,9 +57,27 @@ export const store = {
     return roles.find(r => r.id === id)?.label ?? id;
   },
 
-  // ── AI assignment ──────────────────────────────────────────────────────────
+  // ── Process role assignment (cotacao / comercial / compra) ────────────────
   getAssignment()       { return load("crm_assignment", { cotacao: null, comercial: null, compra: null }); },
   saveAssignment(rules) { save("crm_assignment", rules); },
+
+  // ── Task type assignment ───────────────────────────────────────────────────
+  // Maps each task type to a default owner name (string) or null.
+  // null → task appears in Supervisor/Admin list for manual assignment.
+  // Configured via the "Atribuição de Tarefas" admin tab (task section).
+  getTaskAssignment() {
+    return load("crm_task_assignment", {
+      "Pré-Entrada":     "Adelina Rodrigues",
+      "Desconto":        "Marta Costa",
+      "Status Encomenda":"Tiago Pinto",
+      "Contas Correntes":"Adelina Rodrigues",
+      "Cliente Novo":    "Vasco Lourenço",
+      "Diversos":        null,
+      "Follow-up":       "João Silva",
+      "Escalação":       null,
+    });
+  },
+  saveTaskAssignment(rules) { save("crm_task_assignment", rules); },
 
   // ── Tarefas (tasks) ────────────────────────────────────────────────────────
   getTarefas()         { return load("crm_tarefas", TAREFAS); },
