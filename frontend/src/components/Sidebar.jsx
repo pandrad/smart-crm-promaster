@@ -40,7 +40,7 @@ function NavItem({ icon, label, path, active, badge, disabled, onClick }) {
   );
 }
 
-export function Sidebar({ currentUser, processosBadge, tarefasBadge, inboxBadge, onOpenProfile, onOpenAdmin, accent }) {
+export function Sidebar({ currentUser, processosBadge, tarefasBadge, inboxBadge, onOpenProfile, onOpenAdmin, onLogout, accent }) {
   const navigate  = useNavigate();
   const location  = useLocation();
   const path      = location.pathname;
@@ -150,6 +150,30 @@ export function Sidebar({ currentUser, processosBadge, tarefasBadge, inboxBadge,
         {/* sync pulse dot */}
         <div style={{ width: 8, height: 8, borderRadius: "50%", background: THEME.success, flexShrink: 0, animation: "pulse 2s infinite" }} />
       </div>
+
+      {/* Logout button */}
+      <button
+        onClick={onLogout}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          margin: "4px 10px 10px",
+          padding: "8px 14px",
+          background: "none",
+          border: `1px solid ${THEME.border}`,
+          borderRadius: 8,
+          cursor: "pointer",
+          color: THEME.danger,
+          fontSize: 12,
+          fontWeight: 500,
+          transition: "background 0.1s",
+          flexShrink: 0,
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = THEME.dangerBg; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
+      >
+        <Icon name="logout" size={14} color={THEME.danger} />
+        Terminar sessão
+      </button>
 
     </div>
   );
