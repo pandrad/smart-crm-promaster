@@ -421,58 +421,77 @@ function RolesTab() {
 
 // ── Task Assignment tab ───────────────────────────────────────────────────────
 
+const TASK_TYPE_LIST = [
+  "Pré-Entrada","Desconto","Status Encomenda",
+  "Contas Correntes","Cliente Novo","Diversos","Follow-up","Escalação",
+];
+
 function AssignmentTab() {
   const allUsers = store.getUsers().filter(u => u.active !== false);
-  // rules: { cotacao: userId|""|"rr", comercial: ..., compra: ... }
+
+  // ── Section 1: Process role assignment (cotacao / comercial / compra) ──────
   const [rules, setRules] = useState(() => store.getAssignment());
-  const [saved, setSaved] = useState(false);
+  const [savedRoles, setSavedRoles] = useState(false);
 
-  function set(k, v) { setRules(r => ({ ...r, [k]: v })); }
+  function setRule(k, v) { setRules(r => ({ ...r, [k]: v })); }
 
-  function handleSave() {
+  function handleSaveRoles() {
     store.saveAssignment(rules);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    setSavedRoles(true);
+    setTimeout(() => setSavedRoles(false), 2500);
   }
 
-  const SLOTS = [
+  const ROLE_SLOTS = [
     { key: "cotacao",   label: "Resp. Cotação",   roleFilter: "cotacao",   hint: "Responsável pela cotação dos processos recebidos" },
     { key: "comercial", label: "Resp. Comercial",  roleFilter: "comercial", hint: "Responsável comercial dos processos recebidos"    },
     { key: "compra",    label: "Resp. Compra",     roleFilter: "compra",    hint: "Responsável de compras dos processos recebidos"   },
   ];
 
+  // ── Section 2: Task type assignment ──────────────────────────────────────
+  const [taskRules, setTaskRules] = useState(() => store.getTaskAssignment());
+  const [savedTask, setSavedTask] = useState(false);
+
+  function setTaskRule(type, ownerName) {
+    setTaskRules(r => ({ ...r, [type]: ownerName || null }));
+  }
+
+  function handleSaveTask() {
+    store.saveTaskAssignment(taskRules);
+    setSavedTask(true);
+    setTimeout(() => setSavedTask(false), 2500);
+  }
+
   return (
-    <div style={{ maxWidth: 560 }}>
-      <SectionHeader title="Atribuição de Tarefas" />
-      <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 20 }}>
-        Defina quem a IA deve atribuir para cada função quando chega um novo email/processo.
-        Se atribuir mais do que uma pessoa à mesma função, a IA faz rotação (round-robin) entre elas.
-        Se só houver uma pessoa, é sempre essa.
+    <div style={{ maxWidth: 600 }}>
+
+      {/* ── Process role assignment ── */}
+      <SectionHeader title="Atribuição por Função (Processos)" />
+      <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 16 }}>
+        Define quem a IA atribui por defeito para cada função quando chega um novo processo.
+        Seleccionar múltiplos activa rotação (round-robin).
       </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        {SLOTS.map(slot => {
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {ROLE_SLOTS.map(slot => {
           const eligible = allUsers.filter(u => u.role === slot.roleFilter || u.role === "admin");
           const assigned = Array.isArray(rules[slot.key]) ? rules[slot.key] : (rules[slot.key] ? [rules[slot.key]] : []);
-
           function toggleUser(uid) {
             const next = assigned.includes(uid) ? assigned.filter(x => x !== uid) : [...assigned, uid];
-            set(slot.key, next);
+            setRule(slot.key, next);
           }
-
           return (
-            <div key={slot.key} style={{ background: THEME.card, borderRadius: 10, border: `1px solid ${THEME.border}`, padding: "14px 16px" }}>
+            <div key={slot.key} style={{ background: THEME.sidebar, borderRadius: 10, border: `1px solid ${THEME.border}`, padding: "12px 14px" }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: THEME.text, marginBottom: 2 }}>{slot.label}</div>
-              <div style={{ fontSize: 11, color: THEME.textMuted, marginBottom: 10 }}>{slot.hint}</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ fontSize: 11, color: THEME.textDim, marginBottom: 8 }}>{slot.hint}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 {eligible.length === 0 && <span style={{ fontSize: 12, color: THEME.textMuted }}>Nenhum utilizador com esta função.</span>}
                 {eligible.map(u => {
                   const checked = assigned.includes(String(u.id)) || assigned.includes(u.id);
                   return (
-                    <label key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", borderRadius: 8, background: checked ? `${THEME.accent}22` : THEME.sidebar, cursor: "pointer", border: checked ? `1px solid ${THEME.accent}55` : "1px solid transparent" }}>
+                    <label key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 8px", borderRadius: 7, background: checked ? `${THEME.accent}22` : THEME.bg, cursor: "pointer", border: checked ? `1px solid ${THEME.accent}55` : "1px solid transparent" }}>
                       <input type="checkbox" checked={checked} onChange={() => toggleUser(u.id)} style={{ accentColor: THEME.accent }} />
-                      <Avatar name={u.name} size={24} photo={u.photo} />
-                      <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? "#1d4ed8" : "#475569" }}>{u.name}</span>
-                      {assigned.length > 1 && checked && <span style={{ marginLeft: "auto", fontSize: 10, color: THEME.textDim, background: "#e0f2fe", borderRadius: 9999, padding: "1px 7px" }}>round-robin</span>}
+                      <Avatar name={u.name} size={22} photo={u.photo} />
+                      <span style={{ fontSize: 12, fontWeight: checked ? 600 : 400, color: checked ? THEME.accent : THEME.textMuted }}>{u.name}</span>
+                      {assigned.length > 1 && checked && <span style={{ marginLeft: "auto", fontSize: 10, color: THEME.textDim, background: THEME.infoBg, borderRadius: 9999, padding: "1px 7px" }}>round-robin</span>}
                     </label>
                   );
                 })}
@@ -481,11 +500,44 @@ function AssignmentTab() {
           );
         })}
       </div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 20 }}>
-        <button onClick={handleSave} style={{ background: "#2563eb", color: "white", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-          Guardar regras
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 14, marginBottom: 28 }}>
+        <button onClick={handleSaveRoles} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          Guardar atribuição de processos
         </button>
-        {saved && <span style={{ fontSize: 12, color: "#15803d", fontWeight: 500 }}>✓ Guardado</span>}
+        {savedRoles && <span style={{ fontSize: 12, color: THEME.success, fontWeight: 500 }}>✓ Guardado</span>}
+      </div>
+
+      {/* ── Task type assignment ── */}
+      <div style={{ borderTop: `1px solid ${THEME.border}`, paddingTop: 24 }}>
+        <SectionHeader title="Atribuição por Tipo de Tarefa" />
+        <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 16 }}>
+          Define o responsável por defeito para cada tipo de tarefa criada via Inbox ou manualmente.
+          Seleccionar "Sem responsável" envia a tarefa para a lista do Supervisor para atribuição manual.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {TASK_TYPE_LIST.map(type => {
+            const currentOwner = taskRules[type] ?? "";
+            return (
+              <div key={type} style={{ background: THEME.sidebar, borderRadius: 9, border: `1px solid ${THEME.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: THEME.text, minWidth: 140 }}>{type}</div>
+                <select
+                  value={currentOwner}
+                  onChange={e => setTaskRule(type, e.target.value)}
+                  style={{ flex: 1, fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "6px 10px", background: THEME.bg, color: currentOwner ? THEME.text : THEME.textDim, outline: "none" }}
+                >
+                  <option value="">Sem responsável (→ Supervisor)</option>
+                  {allUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                </select>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 14 }}>
+          <button onClick={handleSaveTask} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            Guardar atribuição de tarefas
+          </button>
+          {savedTask && <span style={{ fontSize: 12, color: THEME.success, fontWeight: 500 }}>✓ Guardado</span>}
+        </div>
       </div>
     </div>
   );

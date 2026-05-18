@@ -11,7 +11,7 @@ import { Avatar } from "../components/Primitives.jsx";
 import { Icon } from "../icons.jsx";
 
 import { Processos } from "./Processos.jsx";
-import { Tarefas } from "./Tarefas.jsx";
+import { Tarefas, TaskDrawer } from "./Tarefas.jsx";
 import { Inbox } from "./Inbox.jsx";
 import { Arquivo } from "./Arquivo.jsx";
 
@@ -83,6 +83,7 @@ export function Main() {
   const [inboxEmails,  setInboxEmails]  = useState(() => store.getInboxEmails());
   const [users,        setUsers]        = useState(() => store.getUsers());
   const [selected,     setSelected]     = useState(null);
+  const [selectedTask, setSelectedTask] = useState(null);   // tarefa open from SupervisorWidget
   const [adminOpen,    setAdminOpen]    = useState(false);
   const [profileOpen,  setProfileOpen]  = useState(false);
   const [branding,     setBranding]     = useState(() => {
@@ -135,8 +136,8 @@ export function Main() {
   // mock data. Only rendered when import.meta.env.DEV is true (localhost).
   function handleQAReset() {
     const keys = ["crm_users","crm_stages","crm_fu","crm_priorities","crm_roles",
-                  "crm_assignment","crm_tarefas","crm_inbox","crm_col_prefs",
-                  "crm_sort_prefs","crm_branding"];
+                  "crm_assignment","crm_task_assignment","crm_tarefas","crm_inbox",
+                  "crm_col_prefs","crm_sort_prefs","crm_branding"];
     keys.forEach(k => localStorage.removeItem(k));
     setProcessos(PROCESSOS);
     setTarefas(TAREFAS);
@@ -147,10 +148,24 @@ export function Main() {
     setAdminOpen(false);
   }
 
+  function handleTaskUpdate(updated) {
+    const next = tarefas.map(t => t.id === updated.id ? updated : t);
+    setTarefas(next);
+    store.saveTarefas(next);
+    setSelectedTask(updated);
+  }
+
   // ── Badge counts ───────────────────────────────────────────────────────────
+  const isPrivileged   = currentUser?.role === "admin" || currentUser?.role === "supervisor";
   const processosBadge = processos.filter(p => !p.archived && p.status < 7).length;
-  const tarefasBadge   = tarefas.filter(t => t.status === "Pendente").length;
-  const inboxBadge     = inboxEmails.filter(e => !e.isInternal && e.status === "pending").length;
+  const tarefasBadge   = tarefas.filter(t => {
+    const active = t.status === "Por Fazer" || t.status === "Em Curso" ||
+                   t.status === "Bloqueado" || t.status === "Escalado";
+    if (!active) return false;
+    if (isPrivileged) return true;   // admin/supervisor see all active tasks
+    return t.owner === currentUser?.name || t.owner === null;
+  }).length;
+  const inboxBadge = inboxEmails.filter(e => !e.isInternal && e.status === "pending").length;
 
   const sharedProps = {
     processos, setProcessos,
@@ -160,7 +175,8 @@ export function Main() {
     currentUser,
     accent,
     onSelectProcesso: setSelected,
-    onLogout: handleLogout,
+    onOpenTask:       setSelectedTask,
+    onLogout:         handleLogout,
   };
 
   return (
@@ -236,6 +252,18 @@ export function Main() {
           onUpdate={handleProcessoUpdate}
           users={users}
           currentUser={currentUser}
+        />
+      )}
+      {/* Shell-level TaskDrawer — opened from SupervisorWidget or anywhere */}
+      {selectedTask && (
+        <TaskDrawer
+          task={selectedTask}
+          users={users}
+          currentUser={currentUser}
+          onClose={() => setSelectedTask(null)}
+          onUpdate={handleTaskUpdate}
+          setProcessos={setProcessos}
+          processos={processos}
         />
       )}
       {adminOpen && (

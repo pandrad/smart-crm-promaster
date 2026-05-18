@@ -9,7 +9,7 @@ import { KanbanView } from "../components/KanbanView.jsx";
 import { SupervisorWidget } from "../components/SupervisorWidget.jsx";
 import { Icon } from "../icons.jsx";
 
-export function Processos({ processos, setProcessos, tarefas, users, currentUser, accent, onSelectProcesso }) {
+export function Processos({ processos, setProcessos, tarefas, users, currentUser, accent, onSelectProcesso, onOpenTask }) {
   const [view,         setView]         = useState("table");
   const [search,       setSearch]       = useState("");
   const [ownerFilter,  setOwnerFilter]  = useState("Todos");
@@ -121,7 +121,7 @@ export function Processos({ processos, setProcessos, tarefas, users, currentUser
       {/* Supervisor widget */}
       {(isAdmin || isSupervisor) && (
         <div style={{ padding: "16px 24px 0" }}>
-          <SupervisorWidget processos={active} tarefas={tarefas} />
+          <SupervisorWidget processos={active} tarefas={tarefas} onOpenTask={onOpenTask} />
         </div>
       )}
 
