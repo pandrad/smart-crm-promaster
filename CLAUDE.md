@@ -135,7 +135,7 @@ Five QA tools mounted only when `import.meta.env.DEV === true`. Absent from prod
 
 **⚠ Must be deleted before Stage 2 client review.** Delete `src/components/DevTools.jsx` and remove its import from `src/pages/Main.jsx`.
 
-### Stage 1 status — complete, in QA
+### Stage 1 status — complete, in human review
 
 | Item | Status |
 |------|--------|
@@ -146,11 +146,43 @@ Five QA tools mounted only when `import.meta.env.DEV === true`. Absent from prod
 | No-deletion rule (architecture rule 6) | ✅ Enforced |
 | `docs/build-brief.md` updated | ✅ Current |
 | DEV ONLY testing tools | ✅ Built, awaiting deletion pre-delivery |
-| Browser QA | 🔄 In progress |
-| Stage 1 closed | ⏳ Pending QA sign-off |
+| Static QA (code analysis + build) | ✅ Complete — 1 bug found and fixed (see below) |
+| Human browser review | 🔄 In progress — owner testing manually |
+| Stage 1 closed | ⏳ Pending human review sign-off |
+
+### Static QA result (complete)
+
+Full static analysis pass was run across all source files against the QA plan checklist.
+
+**One bug found and fixed:**
+- `AdminPanel.jsx` — `TASK_TYPE_LIST` was missing `"Validação de Processo"`, so the admin had no way to configure who receives validation tasks from Inbox triage. Fixed: added as first entry. Committed as `QA fix — Validacao de Processo added to task assignment tab`.
+
+**All other checks passed:**
+- Login, auth guard, 3 demo profiles — correct
+- DevTools: all 5 tools wired, `import.meta.env.DEV` guard confirmed, absent from dist bundle
+- Processos filters, Meus/Todos tabs, sort, column visibility — correct
+- SupervisorWidget `onOpenTask` wiring, privilege flags — correct
+- DetailDrawer: FU conditional (`status >= 9`), Consulta checklist (`status === 5 && p.consulta`), `canReassign` — correct
+- KanbanView: `locked = !isOwned(p)`, draggable guard — correct
+- Tarefas: scope filter, `isValidation`/`isValidator`/`isTriagedBy`/`isOwner`/`isDone` flags — correct
+- Inbox `handlePreEntrada`: creates Validação task with correct `triagedBy`/`validatorOwner` fields, marks email `triaged` — correct
+- Validation modals (Validar, Devolver, Resubmeter, Cancelar) action guards — correct
+- T009/T010 field names match exactly what TaskDrawer reads — confirmed
+- No-deletion rule: no `delete`/`remove` in any task/email/process handler — confirmed
+- Arquivo: read-only, opens DetailDrawer — correct
+- Theme toggle and QA reset — correct
 
 ### Next action
-**Currently in QA and human review. Do not make code changes unless QA identifies a specific failure.**
+**Human browser review in progress. Do not make code changes unless the manual review identifies a specific failure.**
+
+When human review is complete and all issues resolved:
+1. Fix any failures identified during browser review
+2. Delete `src/components/DevTools.jsx` and remove its import from `src/pages/Main.jsx`
+3. Final commit: `git commit -m "Stage 1 complete — frontend closed"`
+4. Push to GitHub
+5. Build v3 deliverable (vite-plugin-singlefile → patch → `delivery/v3/`)
+6. Write `delivery/v3/Instruções — Smart CRM Promaster v3.md`
+7. Proceed to Stage 2: schema finalisation (`database/schema.sql`)
 
 When QA is complete:
 1. Fix any failures identified during QA

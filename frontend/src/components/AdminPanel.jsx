@@ -422,6 +422,7 @@ function RolesTab() {
 // ── Task Assignment tab ───────────────────────────────────────────────────────
 
 const TASK_TYPE_LIST = [
+  "Validação de Processo",
   "Pré-Entrada","Desconto","Status Encomenda",
   "Contas Correntes","Cliente Novo","Diversos","Follow-up","Escalação",
 ];
