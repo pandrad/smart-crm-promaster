@@ -302,21 +302,21 @@ function EmailPreviewPanel({ email, processos, tarefas, currentUser, onClose, on
 
 // ── Inbox page ────────────────────────────────────────────────────────────────
 export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, tarefas, setTarefas, currentUser, accent }) {
-  const [emails,        setEmails]        = useState(inboxEmails);
+  // No local copy — read inboxEmails from Main state directly so DevTools updates
+  // are reflected immediately without leaving and re-entering the page.
   const [selectedEmail, setSelectedEmail] = useState(null);  // email object | null
   const [clientCreated, setClientCreated] = useState(new Set()); // email ids whose new-client banner was dismissed
 
   // Visible = non-internal, pending
-  const visible = emails.filter(e => !e.isInternal && e.status === "pending");
+  const visible = inboxEmails.filter(e => !e.isInternal && e.status === "pending");
 
   function syncEmails(next) {
-    setEmails(next);
     setInboxEmails(next);
     store.saveInboxEmails(next);
   }
 
   function markEmailProcessed(id, patch = {}) {
-    const next = emails.map(e => e.id === id ? { ...e, status: "processed", ...patch } : e);
+    const next = inboxEmails.map(e => e.id === id ? { ...e, status: "processed", ...patch } : e);
     syncEmails(next);
     // Close panel if the processed email was selected
     setSelectedEmail(prev => prev?.id === id ? null : prev);
@@ -339,7 +339,7 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
   // The validator (Resp. Cotação) will review and either open the process or return it.
   // No process is created here. Email is marked "triaged" (not deleted, accessible in processed view).
   function handlePreEntrada(emailId) {
-    const email = emails.find(e => e.id === emailId);
+    const email = inboxEmails.find(e => e.id === emailId);
     if (!email) return;
 
     const validatorOwner = ownerForType("Validação de Processo");
@@ -382,7 +382,7 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
     setTarefas(nextTarefas);
     store.saveTarefas(nextTarefas);
     // Mark email as "triaged" — remains accessible, never deleted
-    const next = emails.map(e => e.id === emailId
+    const next = inboxEmails.map(e => e.id === emailId
       ? { ...e, status: "triaged", triagedTaskId: taskId }
       : e
     );
@@ -392,7 +392,7 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
 
   // "Confirmar como Tarefa" → creates a task of the chosen type
   function handleConfirmTarefa(emailId, type) {
-    const email = emails.find(e => e.id === emailId);
+    const email = inboxEmails.find(e => e.id === emailId);
     if (!email) return;
 
     const owner = ownerForType(type);
@@ -434,7 +434,7 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
   }
 
   function handleDiversos(emailId) {
-    const next = emails.map(e => e.id === emailId ? { ...e, status: "diversos" } : e);
+    const next = inboxEmails.map(e => e.id === emailId ? { ...e, status: "diversos" } : e);
     syncEmails(next);
     setSelectedEmail(prev => prev?.id === emailId ? null : prev);
   }

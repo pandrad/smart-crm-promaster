@@ -298,6 +298,7 @@ export function Main() {
         <DevTools
           currentUser={currentUser}
           onSwitchUser={handleSwitchUser}
+          processos={processos}
           setProcessos={setProcessos}
           setTarefas={setTarefas}
           setInboxEmails={setInboxEmails}
