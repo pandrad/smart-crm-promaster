@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Icon } from "../icons.jsx";
 import { THEME } from "../theme.js";
 import { MOCK_TOAST } from "../mock/data.js";
+import { TYPE_COLORS } from "../pages/Tarefas.jsx";
 
-export function Toast() {
+export function Toast({ currentUser }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -13,6 +14,8 @@ export function Toast() {
 
   if (!visible) return null;
 
+  const tc = TYPE_COLORS[MOCK_TOAST.type] || TYPE_COLORS["Diversos"];
+
   return (
     <div style={{
       position: "fixed", bottom: 24, right: 24,
@@ -21,39 +24,32 @@ export function Toast() {
       padding: 16, width: 320, zIndex: 60,
     }}>
       <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#1e3a5f", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Icon name="mail" size={16} color="#60a5fa" />
+        <div style={{ width: 36, height: 36, borderRadius: "50%", background: tc.bg, border: `1px solid ${tc.color}44`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon name="tasks" size={16} color={tc.color} />
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: THEME.text }}>Novo email detectado</span>
-            <button onClick={() => setVisible(false)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textDim, padding: 0 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: THEME.text }}>Nova tarefa atribuída</span>
+            <button onClick={() => setVisible(false)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textDim, padding: 0, flexShrink: 0 }}>
               <Icon name="x" size={13} />
             </button>
           </div>
-          <div style={{ fontSize: 11, color: THEME.textMuted, marginTop: 2 }}>
-            De: <strong style={{ color: THEME.text }}>{MOCK_TOAST.sender}</strong>
+          <div style={{ fontSize: 11, color: THEME.textMuted, marginTop: 3 }}>
+            Para: <strong style={{ color: THEME.text }}>{currentUser?.name || "—"}</strong>
+            <span style={{ color: THEME.textDim }}> · por {MOCK_TOAST.assignedBy}</span>
           </div>
-          <div style={{ fontSize: 12, color: THEME.textMuted, marginTop: 4 }}>
-            "{MOCK_TOAST.excerpt}"
+          <div style={{ display: "inline-flex", alignItems: "center", marginTop: 6, padding: "2px 8px", borderRadius: 9999, fontSize: 11, fontWeight: 600, background: tc.bg, color: tc.color }}>
+            {MOCK_TOAST.type}
           </div>
-          <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-            <Tag bg="#1e3a5f" color="#60a5fa">🤖 {MOCK_TOAST.equipment}</Tag>
-            {MOCK_TOAST.isNew && <Tag bg={THEME.successBg} color={THEME.success}>Novo cliente</Tag>}
+          <div style={{ fontSize: 12, fontWeight: 600, color: THEME.text, marginTop: 5 }}>{MOCK_TOAST.client}</div>
+          <div style={{ fontSize: 11, color: THEME.textMuted, marginTop: 2, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+            {MOCK_TOAST.note}
           </div>
-          <div style={{ fontSize: 10, color: THEME.textDim, marginTop: 6 }}>
-            Processo criado automaticamente → #{MOCK_TOAST.processId}
+          <div style={{ fontSize: 10, color: THEME.textDim, marginTop: 6, fontFamily: "monospace" }}>
+            #{MOCK_TOAST.taskId}
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-function Tag({ bg, color, children }) {
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 9999, fontSize: 11, fontWeight: 600, background: bg, color }}>
-      {children}
-    </span>
   );
 }

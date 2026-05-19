@@ -18,11 +18,11 @@ export const MOCK_CREDENTIALS = [
 
 // ── Toast demo ────────────────────────────────────────────────────────────────
 export const MOCK_TOAST = {
-  sender:    "carlos.menezes@terramovida.pt",
-  excerpt:   "Solicito cotação urgente para VOLVO EC480E…",
-  equipment: "VOLVO EC480E",
-  isNew:     true,
-  processId: "2605011",
+  taskId:   "T006",
+  type:     "Contas Correntes",
+  client:   "TerraMovida Lda",
+  assignedBy: "Supervisor",
+  note:     "Verificar facturas pendentes Q1 2026 — total €74.700. Prazo: 30 de Maio.",
 };
 
 // ── Import preview ────────────────────────────────────────────────────────────

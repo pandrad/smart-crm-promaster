@@ -104,9 +104,8 @@ export function Sidebar({ currentUser, processosBadge, tarefasBadge, inboxBadge,
         <NavSection label="Gestão" />
         <NavItem
           icon="users" label="Clientes"
-          path="/clientes" active={false}
-          disabled={true}
-          onClick={() => {}}
+          path="/clientes" active={path === "/clientes"}
+          onClick={() => navigate("/clientes")}
         />
         <NavItem
           icon="archive" label="Arquivo"

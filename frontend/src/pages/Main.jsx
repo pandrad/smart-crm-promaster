@@ -14,6 +14,7 @@ import { Processos } from "./Processos.jsx";
 import { Tarefas, TaskDrawer } from "./Tarefas.jsx";
 import { Inbox } from "./Inbox.jsx";
 import { Arquivo } from "./Arquivo.jsx";
+import { Clientes } from "./Clientes.jsx";
 import { DevTools } from "../components/DevTools.jsx";
 
 const INPUT = () => ({ width: "100%", padding: "7px 10px", fontSize: 13, border: `1px solid ${THEME.border}`, borderRadius: 7, outline: "none", boxSizing: "border-box", background: THEME.card, color: THEME.text });
@@ -227,19 +228,8 @@ export function Main() {
       {/* ── Main content area ── */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto", minWidth: 0 }}>
 
-        {/* ── Topbar strip: theme toggle + QA reset ── */}
+        {/* ── Topbar strip: theme toggle ── */}
         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, padding: "8px 20px", borderBottom: `1px solid ${THEME.border}`, background: THEME.sidebar, flexShrink: 0 }}>
-          {/* QA reset — dev builds only */}
-          {import.meta.env.DEV && (
-            <button
-              onClick={handleQAReset}
-              title="Repõe todos os dados mock ao estado original (apenas em desenvolvimento)"
-              style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", fontSize: 11, fontWeight: 600, background: "#2d0a0a", color: "#f87171", border: "1px solid #ef444444", borderRadius: 6, cursor: "pointer" }}
-            >
-              <Icon name="x" size={11} color="#f87171" /> Repor dados mock
-            </button>
-          )}
-
           {/* Dark / light mode toggle */}
           <button
             onClick={toggleTheme}
@@ -259,6 +249,7 @@ export function Main() {
           <Route path="/processos"  element={<Processos {...sharedProps} />} />
           <Route path="/tarefas"    element={<Tarefas   {...sharedProps} />} />
           <Route path="/inbox"      element={<Inbox     {...sharedProps} />} />
+          <Route path="/clientes"   element={<Clientes  processos={processos} onSelectProcesso={setSelected} />} />
           <Route path="/arquivo"    element={<Arquivo   {...sharedProps} />} />
           <Route path="*"           element={<Navigate to="/processos" replace />} />
         </Routes>
@@ -300,7 +291,7 @@ export function Main() {
           onSave={handleProfileSave}
         />
       )}
-      <Toast />
+      <Toast currentUser={currentUser} />
 
       {/* DEV ONLY — remove DevTools import and this block before production */}
       {import.meta.env.DEV && (
