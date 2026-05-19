@@ -14,18 +14,19 @@ All screens fully interactive with mock data. Dev server: `cd frontend && npm ru
 | `src/pages/Login.jsx` | Login — mock credentials, saves name to localStorage |
 | `src/pages/Main.jsx` | Layout shell — sidebar + route outlet, shared state, global modals |
 | `src/pages/Processos.jsx` | Dashboard — stats bar, filters, table/kanban views |
-| `src/pages/Tarefas.jsx` | Task management — full task model, 4 actions (Abrir Processo, Concluir, Passar, Escalar/Retomar), history timeline |
-| `src/pages/Inbox.jsx` | Email triage — preview panel with full body, 4 actions; Confirmar como Processo creates Pré-Entrada task (not a process) |
+| `src/pages/Tarefas.jsx` | Task management — full task model, validation workflow actions, history timeline |
+| `src/pages/Inbox.jsx` | Email triage — preview panel with full body, 4 actions; Confirmar como Processo creates Validação de Processo task |
+| `src/pages/Clientes.jsx` | Client list derived from processos — table + detail drawer with process history |
 | `src/pages/Arquivo.jsx` | Archived processes — read-only table |
-| `src/components/Sidebar.jsx` | Persistent left nav — 3 zones, badges, user chip, logout |
+| `src/components/Sidebar.jsx` | Persistent left nav — 3 zones, badges, user chip, logout; Clientes enabled |
 | `src/components/StatsBar.jsx` | 6 clickable stat cards incl. Transitados — user-specific in Meus processos |
 | `src/components/Toolbar.jsx` | Search + filters + column visibility toggle + table/kanban toggle |
 | `src/components/TableView.jsx` | Sortable table, per-column filters, priority inline change, FU conditional |
 | `src/components/KanbanView.jsx` | Kanban with drag-and-drop; non-owner cards locked |
 | `src/components/DetailDrawer.jsx` | Right panel: process number, Comprador, Consulta checklist, Excel link, FU conditional, reassign for supervisor/owner |
-| `src/components/AdminPanel.jsx` | Slide-over: Users, Estados, Prioridades, Funções, Atribuição de Tarefas (process roles + task type assignment), Marca, Importar |
+| `src/components/AdminPanel.jsx` | Slide-over: Users, Estados, Prioridades, Funções, Atribuição de Tarefas (process roles + task type assignment incl. Validação de Processo), Marca, Importar |
 | `src/components/SupervisorWidget.jsx` | Summary widget: stat cards + escalated tasks section (clickable → TaskDrawer) |
-| `src/components/Toast.jsx` | Auto email notification demo |
+| `src/components/Toast.jsx` | "Nova tarefa atribuída" notification — shows task type, client, assigning user |
 | `src/components/Primitives.jsx` | Avatar (photo support), badges — all read from store |
 | `src/theme.js` | Dark/light theme system — mutable THEME object, applyTheme(), persisted to localStorage |
 
@@ -123,17 +124,33 @@ Third iteration: "Confirmar como Processo" in the Inbox now creates a **Validaç
 
 ### DEV ONLY testing tools — `src/components/DevTools.jsx`
 
-Five QA tools mounted only when `import.meta.env.DEV === true`. Absent from production builds (confirmed 0 matches in dist bundle).
+Seven QA tools mounted only when `import.meta.env.DEV === true`. Absent from production builds (confirmed 0 matches in dist bundle).
 
-| Tool | What it does |
-|------|-------------|
-| Trocar utilizador | Instantly switches logged-in session to any mock user without going through login |
-| Gerar email aleatório | Adds a random inbound email to the Inbox with AI suggestion badge |
-| Limpar Inbox e Tarefas | Resets both inbox and tasks to empty — clean slate for flow testing |
-| Limpar dados admin | Clears all admin config (keeps current user) — simulates fresh installation |
-| Repor todos os dados mock | Master reset — restores all processos, tarefas, inbox, and admin data to mock baseline |
+| # | Tool | What it does |
+|---|------|-------------|
+| 1 | Trocar utilizador | Instantly switches logged-in session to any mock user without going through login |
+| 2 | Gerar email aleatório | Adds a random inbound email to the Inbox; appears in real time (Inbox reads prop directly, no local state copy) |
+| 3 | Gerar processo aleatório | Adds a random processo with sequential 2605NNN ID, random client/equipment from built-in lists, team from store |
+| 4 | Limpar Inbox e Tarefas | Resets both inbox and tasks to empty — clean slate for flow testing |
+| 5 | Limpar Processos | Clears the processo list entirely |
+| 6 | Limpar dados admin | Clears all admin config (keeps current user) — simulates fresh installation |
+| 7 | Repor todos os dados mock | Master reset — restores all processos, tarefas, inbox, and admin data to mock baseline |
 
 **⚠ Must be deleted before Stage 2 client review.** Delete `src/components/DevTools.jsx` and remove its import from `src/pages/Main.jsx`.
+
+### Pre-QA fixes applied during human review
+
+Fixes applied between static QA and manual browser review sign-off:
+
+| Fix | Files | Commit |
+|-----|-------|--------|
+| Topbar "Repor dados mock" button removed (duplicated in DEV panel) | `Main.jsx` | 26cf8c4 |
+| Toast changed from "novo email" to "nova tarefa atribuída" — shows type badge, client, assigning user, note | `Toast.jsx`, `mock/data.js` | 26cf8c4 |
+| Clientes page built — table derived from processos, detail drawer with process history | `Clientes.jsx` | 26cf8c4 |
+| Sidebar Clientes item enabled (was disabled/greyed out) | `Sidebar.jsx` | 26cf8c4 |
+| Inbox real-time update fixed — removed local `emails` state, reads `inboxEmails` prop directly | `Inbox.jsx` | 4864a32 |
+| DEV Tool 3 added: Gerar processo aleatório | `DevTools.jsx` | 4864a32 |
+| DEV Tool 5 added: Limpar Processos | `DevTools.jsx` | 4864a32 |
 
 ### Stage 1 status — complete, in human review
 
@@ -143,10 +160,12 @@ Five QA tools mounted only when `import.meta.env.DEV === true`. Absent from prod
 | Mission Control dark theme redesign | ✅ Complete |
 | Task model (owner, history, escalation) | ✅ Complete |
 | Inbox validation workflow | ✅ Complete |
+| Clientes page | ✅ Complete |
 | No-deletion rule (architecture rule 6) | ✅ Enforced |
 | `docs/build-brief.md` updated | ✅ Current |
-| DEV ONLY testing tools | ✅ Built, awaiting deletion pre-delivery |
+| DEV ONLY testing tools (7 tools) | ✅ Built, awaiting deletion pre-delivery |
 | Static QA (code analysis + build) | ✅ Complete — 1 bug found and fixed (see below) |
+| Pre-QA fixes from human review | ✅ Applied (see table above) |
 | Human browser review | 🔄 In progress — owner testing manually |
 | Stage 1 closed | ⏳ Pending human review sign-off |
 
@@ -159,7 +178,7 @@ Full static analysis pass was run across all source files against the QA plan ch
 
 **All other checks passed:**
 - Login, auth guard, 3 demo profiles — correct
-- DevTools: all 5 tools wired, `import.meta.env.DEV` guard confirmed, absent from dist bundle
+- DevTools: all tools wired, `import.meta.env.DEV` guard confirmed, absent from dist bundle
 - Processos filters, Meus/Todos tabs, sort, column visibility — correct
 - SupervisorWidget `onOpenTask` wiring, privilege flags — correct
 - DetailDrawer: FU conditional (`status >= 9`), Consulta checklist (`status === 5 && p.consulta`), `canReassign` — correct
@@ -170,26 +189,19 @@ Full static analysis pass was run across all source files against the QA plan ch
 - T009/T010 field names match exactly what TaskDrawer reads — confirmed
 - No-deletion rule: no `delete`/`remove` in any task/email/process handler — confirmed
 - Arquivo: read-only, opens DetailDrawer — correct
-- Theme toggle and QA reset — correct
+- Theme toggle — correct
 
 ### Next action
 **Human browser review in progress. Do not make code changes unless the manual review identifies a specific failure.**
 
 When human review is complete and all issues resolved:
-1. Fix any failures identified during browser review
+1. Fix any remaining failures identified during browser review
 2. Delete `src/components/DevTools.jsx` and remove its import from `src/pages/Main.jsx`
 3. Final commit: `git commit -m "Stage 1 complete — frontend closed"`
 4. Push to GitHub
 5. Build v3 deliverable (vite-plugin-singlefile → patch → `delivery/v3/`)
 6. Write `delivery/v3/Instruções — Smart CRM Promaster v3.md`
 7. Proceed to Stage 2: schema finalisation (`database/schema.sql`)
-
-When QA is complete:
-1. Fix any failures identified during QA
-2. Delete `src/components/DevTools.jsx` and remove its import from `src/pages/Main.jsx`
-3. Final commit: `git commit -m "Stage 1 complete — frontend closed"`
-4. Push to GitHub
-5. Proceed to Stage 2: schema finalisation (`database/schema.sql`) using confirmed status list, user list, and SLA rules from open questions A–F in `docs/build-brief.md`
 
 Dev server auto-starts on login via launch agent → http://localhost:5299
 
