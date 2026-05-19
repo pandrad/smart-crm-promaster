@@ -46,8 +46,10 @@ frontend/src/
 │                          Inbox.jsx, Arquivo.jsx
 ├── data.js             — seed arrays only (STAGES, FOLLOWUP_STATUSES, USERS)
 │                          imported by store.js alone — no components touch it
-├── store.js            — localStorage runtime state; seeds from data.js
-├── theme.js            — dark theme colour constants
+├── store.js            — localStorage runtime state; seeds from data.js;
+│                          also holds getTaskAssignment() per-type default owners
+├── theme.js            — dark/light theme system; mutable THEME object,
+│                          applyTheme(), getStoredTheme(), saveTheme()
 ├── utils.js            — pure utilities: daysLeft()
 └── icons.jsx           — inline SVG icons
 ```
@@ -56,7 +58,7 @@ frontend/src/
 - `data.js` — seeds only, one consumer (`store.js`)
 - `mock/data.js` — all hardcoded demo content, no logic
 - `utils.js` — pure functions, no data
-- `theme.js` — colour constants only, no logic
+- `theme.js` — dark/light colour system, no application data
 - `store.js` — admin-editable runtime state, localStorage-backed
 - `api/client.js` — data-fetching layer; currently returns mock data, ready for real API
 - Components import `daysLeft` from `utils.js`, `PROCESSOS` from `mock/data.js`, everything else from `store`
@@ -106,15 +108,56 @@ Second iteration based on confirmed client feedback. Tarefas is now the primary 
 | E | Wiring: shell-level TaskDrawer in Main, onOpenTask through Processos → SupervisorWidget, AdminPanel task type assignment section added alongside existing process role section, sidebar badge fixed | 3fd861c |
 | Fix | QA reset button fixed (themeVersion bump, all keys cleared), renamed to "Repor dados mock" | 75085ae |
 
-### Next action
-**Parked pending thorough browser QA. Do not make code changes until QA identifies specific issues.**
+### Inbox validation workflow — implemented
 
-Next session:
-1. Run the full interactive element checklist end-to-end in the browser at http://localhost:5299
-2. Test all three login profiles (admin, supervisor, adelina)
-3. Use "Repor dados mock" button (top bar, dev only) to reset state between test runs
-4. Fix any failures found — code changes only after QA identifies specific issues
-5. If all checks pass → prepare updated client deliverable (v3, single-file HTML build)
+Third iteration: "Confirmar como Processo" in the Inbox now creates a **Validação de Processo** task instead of a Pré-Entrada task. The Resp. Cotação validates before any process is opened. Core principle: nothing is ever deleted — every action, note, and status change is permanently recorded in the task timeline.
+
+| What changed | Files |
+|---|---|
+| New task type `Validação de Processo` with `triagedBy` + `validatorOwner` fields | `Tarefas.jsx`, `store.js` |
+| New statuses: `Devolvido`, `Cancelado` | `Tarefas.jsx` |
+| 4 new modals: `ValidarModal`, `DevolverModal`, `ResubmeterModal`, `CancelarTarefaModal` | `Tarefas.jsx` |
+| 3 new actions in TaskDrawer (validator: Validar/Devolver; triage author: Resubmeter; owner only: Cancelar) | `Tarefas.jsx` |
+| `handlePreEntrada` creates Validação task (not Pré-Entrada); email marked `triaged` not `processed` | `Inbox.jsx` |
+| T009 (Devolvido + full back-and-forth thread) and T010 (Por Fazer) mock tasks; E003 + E006 marked triaged | `mock/data.js` |
+
+### DEV ONLY testing tools — `src/components/DevTools.jsx`
+
+Five QA tools mounted only when `import.meta.env.DEV === true`. Absent from production builds (confirmed 0 matches in dist bundle).
+
+| Tool | What it does |
+|------|-------------|
+| Trocar utilizador | Instantly switches logged-in session to any mock user without going through login |
+| Gerar email aleatório | Adds a random inbound email to the Inbox with AI suggestion badge |
+| Limpar Inbox e Tarefas | Resets both inbox and tasks to empty — clean slate for flow testing |
+| Limpar dados admin | Clears all admin config (keeps current user) — simulates fresh installation |
+| Repor todos os dados mock | Master reset — restores all processos, tarefas, inbox, and admin data to mock baseline |
+
+**⚠ Must be deleted before Stage 2 client review.** Delete `src/components/DevTools.jsx` and remove its import from `src/pages/Main.jsx`.
+
+### Stage 1 status — complete, in QA
+
+| Item | Status |
+|------|--------|
+| Frontend build (all screens) | ✅ Complete |
+| Mission Control dark theme redesign | ✅ Complete |
+| Task model (owner, history, escalation) | ✅ Complete |
+| Inbox validation workflow | ✅ Complete |
+| No-deletion rule (architecture rule 6) | ✅ Enforced |
+| `docs/build-brief.md` updated | ✅ Current |
+| DEV ONLY testing tools | ✅ Built, awaiting deletion pre-delivery |
+| Browser QA | 🔄 In progress |
+| Stage 1 closed | ⏳ Pending QA sign-off |
+
+### Next action
+**Currently in QA and human review. Do not make code changes unless QA identifies a specific failure.**
+
+When QA is complete:
+1. Fix any failures identified during QA
+2. Delete `src/components/DevTools.jsx` and remove its import from `src/pages/Main.jsx`
+3. Final commit: `git commit -m "Stage 1 complete — frontend closed"`
+4. Push to GitHub
+5. Proceed to Stage 2: schema finalisation (`database/schema.sql`) using confirmed status list, user list, and SLA rules from open questions A–F in `docs/build-brief.md`
 
 Dev server auto-starts on login via launch agent → http://localhost:5299
 
@@ -161,9 +204,17 @@ These apply to every change made in every session, no exceptions:
 4. **All statuses, users, priorities, and follow-up statuses must be read from `store.js`.** Never hardcode these values inline in a component, even as a fallback or placeholder. Always call the appropriate `store.get*()` method.
 5. **`/frontend` and `/backend` are completely isolated.** Nothing in `/frontend` may import from or reference `/backend`. Nothing in `/backend` may import from or reference `/frontend`. They communicate only via the HTTP API.
 
+6. **No data is ever permanently deleted.** This is the most important business rule in the entire application. Processes, tasks, emails, notes, attachments, and activity log entries are never deleted from the system. Every action is permanently recorded.
+   - **Cancelado** = record marked with status `Cancelado` and a mandatory reason field. The record stays, full history visible.
+   - **Arquivado** = record moved to archive view. The record stays, accessible via the Arquivo section.
+   - **Triaged** = inbox email moved to processed state. The record stays, accessible in processed emails view.
+   - The words `delete` and `remove` must never appear in any function name, API endpoint, or database operation that touches process, task, email, note, or activity log data.
+   - The only permitted exception is the **DEV ONLY** "Repor dados mock" button, which exists solely for mock data testing and must be removed before any production deployment (`import.meta.env.DEV` guard ensures it never appears in production builds).
+
 Violation of any of these rules must be corrected before the change is committed, regardless of how small or temporary the change appears to be.
 
 ## References
 
-- UI prototype: `docs/prototype.html`
-- Full brief: `docs/build-brief.md`
+- Current design reference: `docs/mockup-mission-control.html` (Mission Control layout — approved)
+- Original light-theme prototype: `docs/prototype.html`
+- Full brief (updated to reflect current state): `docs/build-brief.md`

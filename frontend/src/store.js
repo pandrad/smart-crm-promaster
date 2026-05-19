@@ -67,14 +67,15 @@ export const store = {
   // Configured via the "Atribuição de Tarefas" admin tab (task section).
   getTaskAssignment() {
     return load("crm_task_assignment", {
-      "Pré-Entrada":     "Adelina Rodrigues",
-      "Desconto":        "Marta Costa",
-      "Status Encomenda":"Tiago Pinto",
-      "Contas Correntes":"Adelina Rodrigues",
-      "Cliente Novo":    "Vasco Lourenço",
-      "Diversos":        null,
-      "Follow-up":       "João Silva",
-      "Escalação":       null,
+      "Validação de Processo": "Adelina Rodrigues", // Resp. Cotação validates before opening
+      "Pré-Entrada":           "Adelina Rodrigues",
+      "Desconto":              "Marta Costa",
+      "Status Encomenda":      "Tiago Pinto",
+      "Contas Correntes":      "Adelina Rodrigues",
+      "Cliente Novo":          "Vasco Lourenço",
+      "Diversos":              null,
+      "Follow-up":             "João Silva",
+      "Escalação":             null,
     });
   },
   saveTaskAssignment(rules) { save("crm_task_assignment", rules); },

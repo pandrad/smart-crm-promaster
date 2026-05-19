@@ -515,6 +515,89 @@ export const TAREFAS = [
       { actor: "Tiago Pinto", action: "Escalada", note: "Escalado para Admin — cliente exige 10% de desconto sobre €165.000. Ver T003 para histórico completo.", ts: "10/05 11:45" },
     ],
   },
+
+  // T009 — Validação de Processo: Devolvido — shows a full back-and-forth exchange.
+  // Originated from E003 (Sérgio Maia / Vendap II, already triaged in INBOX_EMAILS).
+  // Triaged by Adelina; sent back by Marta (Resp. Cotação) because brand/model missing;
+  // Adelina updated with details and resubmitted; still awaiting final validation.
+  {
+    id: "T009",
+    type: "Validação de Processo",
+    status: "Devolvido",
+    owner: "Adelina Rodrigues",         // returned to the person who triaged it
+    triagedBy: "Adelina Rodrigues",     // person who originally triaged the inbox email
+    validatorOwner: "Marta Costa",      // Resp. Cotação assigned to validate
+    client: "Vendap II",
+    originEmail: {
+      sender: "sergio.maia@vendap.co.ao",
+      senderName: "Sérgio Maia",
+      subject: "Peças sobressalentes JCB — pedido adicional",
+      preview: "Boa tarde, para além da encomenda em curso gostaríamos de solicitar cotação para peças sobressalentes…",
+      body: "Boa tarde,\n\nPara além da encomenda em curso (processo 2605004), gostaríamos de solicitar cotação para as seguintes peças sobressalentes de JCB JS220:\n\n- 2 filtros de óleo hidráulico (ref. 32/925346)\n- 1 bomba de água completa (ref. 02/800200)\n- Correia de transmissão principal\n\nNecessitamos que a proposta inclua preço unitário, prazo de entrega e origem (original/compatível).\n\nA urgência é moderada — precisamos fechar esta encomenda antes do fim do mês.\n\nCom os melhores cumprimentos,\nSérgio Maia\nResponsável de Compras\nVendap II",
+      attachments: [],
+    },
+    originProcesso: null,
+    description: "Este email aguarda validação para abertura de processo.\n\nCliente: Vendap II · Remetente: Sérgio Maia\nAssunto: Peças sobressalentes JCB — pedido adicional\nSugestão IA: Pré-Entrada · Pedido de Cotação (87%)",
+    escalationNote: null,
+    priority: "Normal",
+    created: "15/05/2026",
+    due: "17/05/2026",
+    history: [
+      {
+        actor: "Adelina Rodrigues",
+        action: "Criada via triagem",
+        note: "Email de Sérgio Maia (Vendap II) confirmado para abertura de processo. Enviado para validação.",
+        ts: "15/05 11:06",
+      },
+      {
+        actor: "Marta Costa",
+        action: "Devolvido",
+        note: "Falta informação essencial para abrir o processo: marca e modelo do equipamento não estão especificados no email. O cliente menciona 'peças de JCB JS220' mas precisamos confirmar se é uma nova referência ou ligada ao processo 2605004. Por favor contactar o cliente e confirmar antes de prosseguir.",
+        ts: "15/05 14:22",
+      },
+      {
+        actor: "Adelina Rodrigues",
+        action: "Actualizado",
+        note: "Contactei o Sérgio Maia por telefone. Confirmou que as peças são para o JCB JS220 já existente (processo 2605004) — não é equipamento novo. Trata-se de um pedido de peças sobressalentes adicional à encomenda em curso. Actualizei a descrição. Resubmeto para validação.",
+        ts: "15/05 16:45",
+      },
+    ],
+  },
+
+  // T010 — Validação de Processo: Por Fazer — awaiting validation by Resp. Cotação.
+  // Originated from E006 (Henrique Dias / Grupo Construções do Sul, already triaged).
+  // Triaged by João Silva; assigned to Adelina for validation.
+  {
+    id: "T010",
+    type: "Validação de Processo",
+    status: "Por Fazer",
+    owner: "Adelina Rodrigues",         // Resp. Cotação assigned to validate
+    triagedBy: "João Silva",            // person who triaged the inbox email
+    validatorOwner: "Adelina Rodrigues",
+    client: "Grupo Construções do Sul SARL",
+    originEmail: {
+      sender: "henrique.dias@gcs.co.ao",
+      senderName: "Henrique Dias",
+      subject: "Seguimento proposta KOMATSU PC490LC",
+      preview: "Boa tarde, já passaram 3 semanas desde o nosso pedido inicial de cotação para KOMATSU PC490LC…",
+      body: "Boa tarde,\n\nJá passaram 3 semanas desde o nosso pedido inicial de cotação para KOMATSU PC490LC (processo 2604001, transitado de Abril). Necessitamos de actualização urgente sobre o estado da proposta.\n\nO nosso projecto tem uma janela de adjudicação que fecha no fim de Maio. Se não tivermos proposta até lá, teremos de considerar fornecedores alternativos.\n\nPor favor confirmar:\n1. Se a proposta está em preparação\n2. Data prevista de envio\n3. Qualquer questão pendente da nossa parte\n\nAguardamos resposta com urgência.\n\nCom os melhores cumprimentos,\nHenrique Dias\nResponsável de Aquisições\nGrupo Construções do Sul SARL",
+      attachments: [],
+    },
+    originProcesso: null,
+    description: "Este email aguarda validação para abertura de processo.\n\nCliente: Grupo Construções do Sul SARL · Remetente: Henrique Dias\nAssunto: Seguimento proposta KOMATSU PC490LC\nSugestão IA: Pré-Entrada · Seguimento (82%)",
+    escalationNote: null,
+    priority: "Alta",
+    created: "15/05/2026",
+    due: "17/05/2026",
+    history: [
+      {
+        actor: "João Silva",
+        action: "Criada via triagem",
+        note: "Email de Henrique Dias (GCS) confirmado para abertura de processo — seguimento urgente KOMATSU PC490LC. Enviado para validação por Adelina.",
+        ts: "15/05 15:48",
+      },
+    ],
+  },
 ];
 
 // ── Inbox emails ──────────────────────────────────────────────────────────────
@@ -567,7 +650,8 @@ export const INBOX_EMAILS = [
     isInternal: false,
     isNewClient: false,
     aiSuggestion: { type: "Pré-Entrada", category: "Pedido de Cotação", confidence: 0.87 },
-    status: "pending",
+    status: "triaged",     // triaged → validation task T009 created
+    triagedTaskId: "T009", // link to the validation task
   },
   {
     id: "E004",
@@ -612,7 +696,8 @@ export const INBOX_EMAILS = [
     isInternal: false,
     isNewClient: false,
     aiSuggestion: { type: "Pré-Entrada", category: "Seguimento", confidence: 0.82 },
-    status: "pending",
+    status: "triaged",     // triaged → validation task T010 created
+    triagedTaskId: "T010", // link to the validation task
   },
   {
     id: "E007",

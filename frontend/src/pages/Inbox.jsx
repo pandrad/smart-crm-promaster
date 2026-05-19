@@ -221,15 +221,15 @@ function EmailPreviewPanel({ email, processos, tarefas, currentUser, onClose, on
             <div style={{ ...LABEL, marginBottom: 10 }}>Triagem</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
 
-              {/* Confirmar como Processo → creates Pré-Entrada task */}
+              {/* Confirmar como Processo → creates Validação de Processo task */}
               <button
                 onClick={() => onAction("preEntrada", email.id)}
-                style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", fontSize: 13, fontWeight: 600, background: "#1e3a5f", color: "#60a5fa", border: "1px solid #60a5fa44", borderRadius: 9, cursor: "pointer", textAlign: "left" }}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", fontSize: 13, fontWeight: 600, background: "#0c1a2e", color: "#93c5fd", border: "1px solid #60a5fa44", borderRadius: 9, cursor: "pointer", textAlign: "left" }}
               >
-                <Icon name="plus" size={14} color="#60a5fa" />
+                <Icon name="plus" size={14} color="#93c5fd" />
                 <div>
                   <div>Confirmar como Processo</div>
-                  <div style={{ fontSize: 11, fontWeight: 400, color: "#93c5fd", marginTop: 1 }}>Cria tarefa Pré-Entrada · processo gerado ao concluir</div>
+                  <div style={{ fontSize: 11, fontWeight: 400, color: "#60a5fa", marginTop: 1 }}>Cria tarefa de validação · Resp. Cotação valida antes de abrir</div>
                 </div>
               </button>
 
@@ -335,43 +335,59 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
 
   // ── Triage actions ────────────────────────────────────────────────────────
 
-  // "Confirmar como Processo" → creates a Pré-Entrada task, NOT a process
+  // "Confirmar como Processo" → creates a Validação de Processo task.
+  // The validator (Resp. Cotação) will review and either open the process or return it.
+  // No process is created here. Email is marked "triaged" (not deleted, accessible in processed view).
   function handlePreEntrada(emailId) {
     const email = emails.find(e => e.id === emailId);
     if (!email) return;
 
-    const owner = ownerForType("Pré-Entrada");
-    const seq   = String(tarefas.length + 1).padStart(3, "0");
+    const validatorOwner = ownerForType("Validação de Processo");
+    const seq = String(tarefas.length + 1).padStart(3, "0");
+    const taskId = `T${seq}`;
 
     const newTarefa = {
-      id:            `T${seq}`,
-      type:          "Pré-Entrada",
-      status:        "Por Fazer",
-      owner,
-      client:        email.senderName,
+      id:              taskId,
+      type:            "Validação de Processo",
+      status:          "Por Fazer",
+      owner:           validatorOwner,        // Resp. Cotação validates first
+      triagedBy:       currentUser?.name || "Sistema", // who triaged from inbox
+      validatorOwner:  validatorOwner,        // stored separately so Devolver knows who to return to
+      client:          email.senderName,
       originEmail: {
-        sender:      email.sender,
-        senderName:  email.senderName,
-        subject:     email.subject,
-        preview:     email.preview,
-        body:        email.body || "",
-        attachments: email.attachments || [],
+        sender:        email.sender,
+        senderName:    email.senderName,
+        subject:       email.subject,
+        preview:       email.preview,
+        body:          email.body || "",
+        attachments:   email.attachments || [],
       },
-      originProcesso: null,
-      description:   `Email de ${email.senderName}: ${email.subject}`,
-      escalationNote: null,
-      priority:      "Normal",
-      created:       "15/05/2026",
-      due:           "17/05/2026",
+      originProcesso:  null,
+      description:     `Este email aguarda validação para abertura de processo.\n\nCliente: ${email.senderName} · Remetente: ${email.sender}\nAssunto: ${email.subject}\nSugestão IA: ${email.aiSuggestion?.type || "Pré-Entrada"} · ${email.aiSuggestion?.category || "Pedido de Cotação"} (${Math.round((email.aiSuggestion?.confidence || 0) * 100)}%)`,
+      escalationNote:  null,
+      priority:        "Normal",
+      created:         "15/05/2026",
+      due:             "17/05/2026",
       history: [
-        { actor: currentUser?.name || "Sistema", action: "Criada via Inbox", note: email.subject, ts: nowTs() },
+        {
+          actor:  currentUser?.name || "Sistema",
+          action: "Criada via triagem",
+          note:   `Email de ${email.senderName} confirmado para abertura de processo. Enviado para validação.`,
+          ts:     nowTs(),
+        },
       ],
     };
 
     const nextTarefas = [...tarefas, newTarefa];
     setTarefas(nextTarefas);
     store.saveTarefas(nextTarefas);
-    markEmailProcessed(emailId);
+    // Mark email as "triaged" — remains accessible, never deleted
+    const next = emails.map(e => e.id === emailId
+      ? { ...e, status: "triaged", triagedTaskId: taskId }
+      : e
+    );
+    syncEmails(next);
+    setSelectedEmail(null);
   }
 
   // "Confirmar como Tarefa" → creates a task of the chosen type

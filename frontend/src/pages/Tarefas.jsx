@@ -6,28 +6,32 @@ import { Avatar, Tag } from "../components/Primitives.jsx";
 import { Icon } from "../icons.jsx";
 
 export const TASK_TYPES = [
+  "Validação de Processo",
   "Pré-Entrada", "Desconto", "Status Encomenda",
   "Contas Correntes", "Cliente Novo", "Diversos", "Follow-up", "Escalação",
 ];
-export const TASK_STATUSES = ["Por Fazer", "Em Curso", "Bloqueado", "Concluído", "Escalado"];
+export const TASK_STATUSES = ["Por Fazer", "Em Curso", "Bloqueado", "Concluído", "Escalado", "Devolvido", "Cancelado"];
 
 export const TYPE_COLORS = {
-  "Pré-Entrada":     { bg: "#1e3a5f",        color: "#60a5fa"      },
-  "Status Encomenda":{ bg: THEME.successBg,   color: THEME.success  },
-  "Desconto":        { bg: THEME.warningBg,   color: THEME.warning  },
-  "Cliente Novo":    { bg: "#2e1065",         color: "#c084fc"      },
-  "Contas Correntes":{ bg: "#1c1005",         color: "#fb923c"      },
-  "Follow-up":       { bg: "#0c2231",         color: "#38bdf8"      },
-  "Escalação":       { bg: THEME.dangerBg,    color: THEME.danger   },
-  "Diversos":        { bg: THEME.sidebar,     color: THEME.textMuted},
+  "Validação de Processo": { bg: "#0c1a2e",        color: "#93c5fd"      },
+  "Pré-Entrada":           { bg: "#1e3a5f",        color: "#60a5fa"      },
+  "Status Encomenda":      { bg: THEME.successBg,  color: THEME.success  },
+  "Desconto":              { bg: THEME.warningBg,  color: THEME.warning  },
+  "Cliente Novo":          { bg: "#2e1065",        color: "#c084fc"      },
+  "Contas Correntes":      { bg: "#1c1005",        color: "#fb923c"      },
+  "Follow-up":             { bg: "#0c2231",        color: "#38bdf8"      },
+  "Escalação":             { bg: THEME.dangerBg,   color: THEME.danger   },
+  "Diversos":              { bg: THEME.sidebar,    color: THEME.textMuted},
 };
 
 export const STATUS_COLORS = {
-  "Por Fazer": { bg: THEME.sidebar,   color: THEME.textMuted },
-  "Em Curso":  { bg: "#1e3a5f",       color: "#60a5fa"       },
-  "Bloqueado": { bg: THEME.dangerBg,  color: THEME.danger    },
-  "Concluído": { bg: THEME.successBg, color: THEME.success   },
-  "Escalado":  { bg: "#2d0a2d",       color: "#e879f9"       },
+  "Por Fazer":  { bg: THEME.sidebar,   color: THEME.textMuted },
+  "Em Curso":   { bg: "#1e3a5f",       color: "#60a5fa"       },
+  "Bloqueado":  { bg: THEME.dangerBg,  color: THEME.danger    },
+  "Concluído":  { bg: THEME.successBg, color: THEME.success   },
+  "Escalado":   { bg: "#2d0a2d",       color: "#e879f9"       },
+  "Devolvido":  { bg: "#1c1005",       color: "#fb923c"       },
+  "Cancelado":  { bg: THEME.sidebar,   color: THEME.textDim   },
 };
 
 const LABEL = { fontSize: 10, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 };
@@ -38,6 +42,157 @@ function nowTs() {
     .toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
     .replace(",", "");
 }
+
+// ── Validar e Criar Processo modal ────────────────────────────────────────────
+function ValidarModal({ task, onClose, onSave }) {
+  const email = task.originEmail;
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, borderRadius: 14, width: 460, maxWidth: "95vw", border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Validar e Criar Processo</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
+        </div>
+        <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "12px 14px" }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: THEME.text, marginBottom: 4 }}>
+              {task.client || email?.senderName}
+            </div>
+            {email && <div style={{ fontSize: 11, color: THEME.textDim }}>{email.subject}</div>}
+          </div>
+          <div style={{ fontSize: 13, color: THEME.textMuted, lineHeight: 1.6 }}>
+            Ao confirmar, um número de processo será gerado automaticamente e o processo criado com estado <strong style={{ color: THEME.text }}>Entrada</strong>. Esta tarefa de validação ficará marcada como Concluída e o histórico completo é preservado.
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
+            <button onClick={() => { onSave(); onClose(); }} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              Validar e Criar Processo
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Devolver com Notas modal ───────────────────────────────────────────────────
+function DevolverModal({ onClose, onSave }) {
+  const [note, setNote] = useState("");
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, borderRadius: 14, width: 440, maxWidth: "95vw", border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Devolver com Notas</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
+        </div>
+        <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ background: THEME.warningBg, border: `1px solid ${THEME.warning}44`, borderRadius: 7, padding: "8px 12px", fontSize: 12, color: THEME.warning }}>
+            A tarefa será devolvida ao responsável pela triagem. Indique exactamente o que falta ou precisa de esclarecimento.
+          </div>
+          <div>
+            <label style={{ fontSize: 10, fontWeight: 600, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>
+              O que falta ou precisa de esclarecimento <span style={{ color: THEME.danger }}>*</span>
+            </label>
+            <textarea
+              value={note} onChange={e => setNote(e.target.value)}
+              rows={4} placeholder="Descreva o que está em falta ou o que precisa de ser clarificado antes de criar o processo…"
+              style={{ ...INPUT_STYLE, resize: "vertical", fontFamily: "inherit", lineHeight: 1.5 }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
+            <button
+              onClick={() => { if (note.trim()) { onSave(note.trim()); onClose(); } }}
+              disabled={!note.trim()}
+              style={{ background: note.trim() ? THEME.warning : THEME.border, color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: note.trim() ? "pointer" : "default" }}
+            >
+              Devolver
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Cancelar Tarefa modal ─────────────────────────────────────────────────────
+function CancelarTarefaModal({ onClose, onSave }) {
+  const [reason, setReason] = useState("");
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, borderRadius: 14, width: 420, maxWidth: "95vw", border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Cancelar Tarefa</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
+        </div>
+        <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ background: THEME.dangerBg, border: `1px solid ${THEME.danger}44`, borderRadius: 7, padding: "8px 12px", fontSize: 12, color: THEME.danger }}>
+            A tarefa será marcada como Cancelada. O histórico completo permanece visível — nada é eliminado.
+          </div>
+          <div>
+            <label style={{ fontSize: 10, fontWeight: 600, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>
+              Motivo do cancelamento <span style={{ color: THEME.danger }}>*</span>
+            </label>
+            <textarea
+              value={reason} onChange={e => setReason(e.target.value)}
+              rows={3} placeholder="Indique o motivo do cancelamento…"
+              style={{ ...INPUT_STYLE, resize: "vertical", fontFamily: "inherit", lineHeight: 1.5 }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Voltar</button>
+            <button
+              onClick={() => { if (reason.trim()) { onSave(reason.trim()); onClose(); } }}
+              disabled={!reason.trim()}
+              style={{ background: reason.trim() ? THEME.danger : THEME.border, color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: reason.trim() ? "pointer" : "default" }}
+            >
+              Confirmar cancelamento
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Resubmeter modal (after Devolvido) ────────────────────────────────────────
+function ResubmeterModal({ onClose, onSave }) {
+  const [note, setNote] = useState("");
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, borderRadius: 14, width: 440, maxWidth: "95vw", border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Resubmeter para Validação</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
+        </div>
+        <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div>
+            <label style={{ fontSize: 10, fontWeight: 600, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>
+              Nota de actualização <span style={{ color: THEME.danger }}>*</span>
+            </label>
+            <textarea
+              value={note} onChange={e => setNote(e.target.value)}
+              rows={3} placeholder="Descreva o que foi actualizado ou esclarecido…"
+              style={{ ...INPUT_STYLE, resize: "vertical", fontFamily: "inherit", lineHeight: 1.5 }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
+            <button
+              onClick={() => { if (note.trim()) { onSave(note.trim()); onClose(); } }}
+              disabled={!note.trim()}
+              style={{ background: note.trim() ? THEME.accent : THEME.border, color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: note.trim() ? "pointer" : "default" }}
+            >
+              Resubmeter
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const INPUT_STYLE = { width: "100%", padding: "7px 10px", fontSize: 13, border: `1px solid ${THEME.border}`, borderRadius: 7, outline: "none", boxSizing: "border-box", background: THEME.sidebar, color: THEME.text };
 
 // ── Concluir modal ────────────────────────────────────────────────────────────
 function ConcluirModal({ onClose, onSave }) {
@@ -202,9 +357,15 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   const isSupervisor = currentUser?.role === "supervisor";
   const isPrivileged = isAdmin || isSupervisor;
   const isOwner      = t.owner === currentUser?.name;
-  const isDone       = t.status === "Concluído";
+  const isDone       = t.status === "Concluído" || t.status === "Cancelado";
   const isEscalated  = t.status === "Escalado";
   const isPre        = t.type   === "Pré-Entrada";
+  const isValidation = t.type   === "Validação de Processo";
+  const isDevolvido  = t.status === "Devolvido";
+  // For validation tasks: the validator is the one who can approve/return
+  const isValidator  = isValidation && (t.validatorOwner === currentUser?.name || isPrivileged);
+  // The triage author can resubmit after Devolvido
+  const isTriagedBy  = isValidation && (t.triagedBy === currentUser?.name);
 
   const tc = TYPE_COLORS[t.type]    || TYPE_COLORS["Diversos"];
   const sc = STATUS_COLORS[t.status] || STATUS_COLORS["Por Fazer"];
@@ -295,6 +456,67 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     update(
       { owner: currentUser?.name, status: "Em Curso", escalationNote: null },
       { actor: currentUser?.name, action: "Retomada", note: "Supervisor assumiu a tarefa." }
+    );
+  }
+
+  // ── Validation task actions ────────────────────────────────────────────────
+
+  // Action: Validar e Criar Processo (validator only)
+  function handleValidar() {
+    const existing = (processos || []).map(p => p.id).filter(id => id.startsWith("2605"));
+    const max = existing.reduce((m, id) => Math.max(m, parseInt(id.slice(4)) || 0), 10);
+    const newId = `2605${String(max + 1).padStart(3, "0")}`;
+    const email = t.originEmail;
+    const storeUsers = store.getUsers();
+    const ownerUser = storeUsers.find(u => u.role === "cotacao" && u.active !== false);
+
+    const newProcesso = {
+      id: newId,
+      created: "15/05/2026", deadline: "22/05/2026", priority: t.priority || "Normal",
+      status: 1,
+      client: t.client || email?.senderName || "",
+      ref: "", brand: "", model: "", vin: "",
+      owner: ownerUser?.name || "Adelina Rodrigues",
+      comm: storeUsers.find(u => u.role === "comercial" && u.active !== false)?.name || "João Morais",
+      compra: storeUsers.find(u => u.role === "compra"   && u.active !== false)?.name || "Carlos Andrade",
+      comprador: t.client || email?.senderName || "",
+      price: null, emails: 1,
+      note: `Aberto após validação da tarefa ${t.id}`,
+      archived: false, carryover: false, excelLink: "Excel Modelo.xlsx",
+      timeline: [
+        { icon: "mail",  color: "#60a5fa", time: "15/05 12:00", text: `Email original de ${email?.senderName || t.client}: ${email?.subject || ""}` },
+        { icon: "check", color: "#4ade80", time: nowTs(),       text: `Processo validado e aberto por ${currentUser?.name} (tarefa ${t.id})` },
+      ],
+    };
+
+    if (setProcessos) setProcessos(prev => [...prev, newProcesso]);
+    update(
+      { status: "Concluído", originProcesso: newId },
+      { actor: currentUser?.name, action: "Validado", note: `Processo ${newId} criado com estado Entrada.` }
+    );
+  }
+
+  // Action: Devolver com Notas (validator only)
+  function handleDevolver(note) {
+    update(
+      { status: "Devolvido", owner: t.triagedBy || t.owner },
+      { actor: currentUser?.name, action: "Devolvido", note }
+    );
+  }
+
+  // Action: Resubmeter (triaged-by person after Devolvido)
+  function handleResubmeter(note) {
+    update(
+      { status: "Por Fazer", owner: t.validatorOwner || t.owner },
+      { actor: currentUser?.name, action: "Resubmetido", note }
+    );
+  }
+
+  // Action: Cancelar Tarefa (assigned person only — never admin/supervisor on someone else's)
+  function handleCancelar(reason) {
+    update(
+      { status: "Cancelado" },
+      { actor: currentUser?.name, action: "Cancelado", note: reason }
     );
   }
 
@@ -440,67 +662,120 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
           {/* ── Action buttons ── */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
 
-            {/* Primary action: Abrir Processo (Pré-Entrada) OR Marcar como Concluído */}
-            {!isDone && (
-              isPre ? (
-                <button
-                  onClick={() => setModal("abrirProcesso")}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-                >
-                  <Icon name="plus" size={14} color="white" /> Abrir Processo
-                </button>
-              ) : (
-                <button
-                  onClick={() => setModal("concluir")}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.success, color: "white", border: "none", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-                >
-                  <Icon name="check" size={14} color="white" /> Marcar como Concluído
-                </button>
-              )
-            )}
-
-            {isDone && (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textDim, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 10, fontSize: 13 }}>
-                <Icon name="check" size={14} color={THEME.textDim} /> Concluído
-              </div>
-            )}
-
-            {/* Retomar — supervisor/admin on escalated task */}
-            {isEscalated && isPrivileged && (
-              <button
-                onClick={handleRetomar}
-                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#2d0a2d", color: "#e879f9", border: "1px solid #e879f944", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-              >
-                <Icon name="check" size={14} color="#e879f9" /> Retomar
-              </button>
-            )}
-
-            {/* Secondary row */}
-            {!isDone && (
-              <div style={{ display: "flex", gap: 8 }}>
-                {/* Passar */}
-                <button
-                  onClick={() => setModal("passar")}
-                  style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
-                >
-                  <Icon name="edit" size={13} color={THEME.textMuted} /> Passar
-                </button>
-
-                {/* Escalar — only for non-privileged users, non-escalated tasks */}
-                {!isPrivileged && !isEscalated && (
+            {/* ── Validation task actions (shown instead of normal actions for this type) ── */}
+            {isValidation && !isDone && (
+              <>
+                {/* Validar e Criar Processo — validator only, when Por Fazer or after resubmit */}
+                {isValidator && !isDevolvido && (
                   <button
-                    onClick={() => setModal("escalar")}
-                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.dangerBg, color: THEME.danger, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+                    onClick={() => setModal("validar")}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
                   >
-                    <Icon name="escalate" size={13} color={THEME.danger} /> Escalar
+                    <Icon name="check" size={14} color="white" /> Validar e Criar Processo
                   </button>
                 )}
+
+                {/* Devolver com Notas — validator only, when Por Fazer */}
+                {isValidator && !isDevolvido && (
+                  <button
+                    onClick={() => setModal("devolver")}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.warningBg, color: THEME.warning, border: `1px solid ${THEME.warning}44`, borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                  >
+                    <Icon name="edit" size={14} color={THEME.warning} /> Devolver com Notas
+                  </button>
+                )}
+
+                {/* Resubmeter — triage author only, when Devolvido */}
+                {isDevolvido && isTriagedBy && (
+                  <button
+                    onClick={() => setModal("resubmeter")}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#1e3a5f", color: "#60a5fa", border: "1px solid #60a5fa44", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                  >
+                    <Icon name="plus" size={14} color="#60a5fa" /> Resubmeter para Validação
+                  </button>
+                )}
+
+                {/* Cancelar — assigned person only */}
+                {isOwner && (
+                  <button
+                    onClick={() => setModal("cancelar")}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.dangerBg, color: THEME.danger, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+                  >
+                    <Icon name="x" size={13} color={THEME.danger} /> Cancelar Tarefa
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* ── Standard task actions (hidden for Validação de Processo) ── */}
+            {!isValidation && (
+              <>
+                {/* Primary action: Abrir Processo (Pré-Entrada) OR Marcar como Concluído */}
+                {!isDone && (
+                  isPre ? (
+                    <button
+                      onClick={() => setModal("abrirProcesso")}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                    >
+                      <Icon name="plus" size={14} color="white" /> Abrir Processo
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setModal("concluir")}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.success, color: "white", border: "none", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                    >
+                      <Icon name="check" size={14} color="white" /> Marcar como Concluído
+                    </button>
+                  )
+                )}
+
+                {/* Retomar — supervisor/admin on escalated task */}
+                {isEscalated && isPrivileged && (
+                  <button
+                    onClick={handleRetomar}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#2d0a2d", color: "#e879f9", border: "1px solid #e879f944", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                  >
+                    <Icon name="check" size={14} color="#e879f9" /> Retomar
+                  </button>
+                )}
+
+                {/* Secondary row */}
+                {!isDone && (
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={() => setModal("passar")}
+                      style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+                    >
+                      <Icon name="edit" size={13} color={THEME.textMuted} /> Passar
+                    </button>
+                    {!isPrivileged && !isEscalated && (
+                      <button
+                        onClick={() => setModal("escalar")}
+                        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.dangerBg, color: THEME.danger, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+                      >
+                        <Icon name="escalate" size={13} color={THEME.danger} /> Escalar
+                      </button>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Completed / Cancelled state label */}
+            {isDone && (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textDim, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 10, fontSize: 13 }}>
+                <Icon name="check" size={14} color={THEME.textDim} />
+                {t.status === "Cancelado" ? "Cancelado — histórico preservado" : "Concluído"}
               </div>
             )}
           </div>
         </div>
       </div>
 
+      {modal === "validar"       && <ValidarModal       task={t} onClose={() => setModal(null)} onSave={handleValidar} />}
+      {modal === "devolver"      && <DevolverModal      onClose={() => setModal(null)} onSave={handleDevolver} />}
+      {modal === "resubmeter"    && <ResubmeterModal    onClose={() => setModal(null)} onSave={handleResubmeter} />}
+      {modal === "cancelar"      && <CancelarTarefaModal onClose={() => setModal(null)} onSave={handleCancelar} />}
       {modal === "concluir"      && <ConcluirModal      onClose={() => setModal(null)} onSave={handleConcluir} />}
       {modal === "abrirProcesso" && <AbrirProcessoModal task={t} onClose={() => setModal(null)} onSave={handleAbrirProcesso} />}
       {modal === "passar"        && <PassarModal        users={users} onClose={() => setModal(null)} onSave={handlePassar} />}
@@ -538,10 +813,10 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
     return true;
   });
 
-  // Active count for subtitle
+  // Active count for subtitle — includes Devolvido (needs attention from triage author)
   const activeCount = scope.filter(t =>
     t.status === "Por Fazer" || t.status === "Em Curso" ||
-    t.status === "Bloqueado" || t.status === "Escalado"
+    t.status === "Bloqueado" || t.status === "Escalado" || t.status === "Devolvido"
   ).length;
 
   function handleUpdate(updated) {

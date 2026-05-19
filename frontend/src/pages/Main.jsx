@@ -14,6 +14,7 @@ import { Processos } from "./Processos.jsx";
 import { Tarefas, TaskDrawer } from "./Tarefas.jsx";
 import { Inbox } from "./Inbox.jsx";
 import { Arquivo } from "./Arquivo.jsx";
+import { DevTools } from "../components/DevTools.jsx";
 
 const INPUT = () => ({ width: "100%", padding: "7px 10px", fontSize: 13, border: `1px solid ${THEME.border}`, borderRadius: 7, outline: "none", boxSizing: "border-box", background: THEME.card, color: THEME.text });
 
@@ -129,6 +130,13 @@ export function Main() {
   function handleLogout() {
     localStorage.removeItem("crm_user");
     navigate("/login");
+  }
+
+  // DEV ONLY — user switcher: swaps session without going through login
+  function handleSwitchUser(user) {
+    localStorage.setItem("crm_user", JSON.stringify(user));
+    setCurrentUser(user);
+    setThemeVersion(v => v + 1);
   }
 
   // ── Repor dados mock — apenas em desenvolvimento ──────────────────────────
@@ -293,6 +301,18 @@ export function Main() {
         />
       )}
       <Toast />
+
+      {/* DEV ONLY — remove DevTools import and this block before production */}
+      {import.meta.env.DEV && (
+        <DevTools
+          currentUser={currentUser}
+          onSwitchUser={handleSwitchUser}
+          setProcessos={setProcessos}
+          setTarefas={setTarefas}
+          setInboxEmails={setInboxEmails}
+          setThemeVersion={setThemeVersion}
+        />
+      )}
     </div>
   );
 }
