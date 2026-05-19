@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart CRM — Notas de Versão v3 · Promaster</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px; line-height: 1.7; color: #1e293b;
+    background: #f8fafc; margin: 0; padding: 0;
+  }
+  .page { max-width: 860px; margin: 40px auto 80px; background: white;
+    border-radius: 12px; border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06); padding: 48px 56px; }
+  h1 { font-size: 26px; font-weight: 800; color: #0f172a;
+    border-bottom: 3px solid #2563eb; padding-bottom: 10px; margin: 0 0 24px; }
+  h2 { font-size: 18px; font-weight: 700; color: #0f172a;
+    border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin: 36px 0 14px; }
+  h3 { font-size: 15px; font-weight: 700; color: #2563eb; margin: 24px 0 8px; }
+  h4 { font-size: 14px; font-weight: 600; color: #475569; margin: 16px 0 6px; }
+  p  { margin: 6px 0 10px; color: #334155; }
+  code { background: #f1f5f9; border-radius: 4px; padding: 2px 6px;
+    font-family: "SF Mono", Menlo, monospace; font-size: 12.5px; color: #0f172a; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0 18px; font-size: 13px; }
+  th { background: #f1f5f9; font-weight: 600; color: #0f172a;
+    border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; }
+  td { border: 1px solid #e2e8f0; padding: 7px 12px; color: #334155; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  ul  { margin: 8px 0 12px 0; padding-left: 22px; }
+  li  { margin: 4px 0; color: #334155; }
+  blockquote { border-left: 3px solid #2563eb; margin: 12px 0;
+    padding: 8px 16px; background: #eff6ff; color: #1e40af;
+    border-radius: 0 8px 8px 0; font-size: 13px; }
+  .note { border-left: 3px solid #f59e0b; margin: 12px 0;
+    padding: 8px 16px; background: #fffbeb; color: #92400e;
+    border-radius: 0 8px 8px 0; font-size: 13px; }
+  hr  { border: none; border-top: 1px solid #e2e8f0; margin: 28px 0; }
+  strong { color: #0f172a; }
+  em { color: #475569; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 9999px;
+    font-size: 11px; font-weight: 700; vertical-align: middle; }
+  .badge-new { background: #dcfce7; color: #166534; }
+  .badge-updated { background: #dbeafe; color: #1e40af; }
+  .badge-fixed { background: #fef3c7; color: #92400e; }
+  .footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #e2e8f0;
+    font-size: 12px; color: #94a3b8; text-align: center; }
+  @media (max-width: 700px) { .page { padding: 24px 20px; margin: 16px; } }
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; border: none; padding: 0; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Smart CRM — Promaster · Versão 3</h1>
+<p><em>Notas de versão e guia de utilização · Maio 2026</em></p>
+
+<hr/>
+
+<h2>Como abrir</h2>
+<ol>
+  <li>Abra o ficheiro <strong><code>Smart CRM — Promaster v3.html</code></strong> em qualquer navegador (Chrome, Edge ou Firefox recomendados).</li>
+  <li>Não é necessária ligação à Internet nem instalar nada.</li>
+  <li>Todos os dados são fictícios e servem apenas para demonstração.</li>
+</ol>
+
+<h2>Acessos de demonstração</h2>
+<table>
+  <tr><th>Perfil</th><th>Email</th><th>Palavra-passe</th><th>Permissões</th></tr>
+  <tr><td><strong>Administrador</strong></td><td><code>admin@promaster.co</code></td><td><code>admin123</code></td><td>Acesso total — painel de administração, reatribuição de qualquer processo ou tarefa, alteração de prioridades</td></tr>
+  <tr><td><strong>Supervisor</strong></td><td><code>supervisor@promaster.co</code></td><td><code>super123</code></td><td>Pode reatribuir, alterar prioridades, ver widget de resumo, validar processos — sem acesso à configuração do sistema</td></tr>
+  <tr><td><strong>Utilizador standard</strong></td><td><code>adelina@promaster.co</code></td><td><code>pass123</code></td><td>Acesso ao dashboard, gere os seus próprios processos e tarefas</td></tr>
+</table>
+<blockquote>Recomendamos testar com os três perfis para ver as diferenças de permissão, especialmente no fluxo de validação de processos descrito abaixo.</blockquote>
+
+<hr/>
+
+<h2>O que há de novo nesta versão <span class="badge badge-new">v3</span></h2>
+
+<p>Esta versão acrescenta três melhorias significativas ao protótipo v2:</p>
+
+<h3>1. Fluxo de validação de processos (Inbox → Tarefas) <span class="badge badge-new">Novo</span></h3>
+<p>O comportamento do botão <strong>"Confirmar como Processo"</strong> no Inbox foi redesenhado para reflectir o processo real da Promaster. Em vez de criar um processo imediatamente, o email é enviado para validação pelo Resp. Cotação antes de ser aberto.</p>
+
+<p><strong>Como funciona:</strong></p>
+<ol>
+  <li>Qualquer utilizador faz triagem de um email no Inbox e clica <strong>"Confirmar como Processo"</strong>.</li>
+  <li>É criada automaticamente uma tarefa do tipo <strong>Validação de Processo</strong>, atribuída ao Resp. Cotação configurado no painel de administração. Nenhum número de processo é gerado ainda.</li>
+  <li>O Resp. Cotação abre a tarefa em <strong>Tarefas</strong> e tem duas opções:
+    <ul>
+      <li><strong>Validar e Criar Processo</strong> — gera um número AAMMMNNN, cria o processo com estado Entrada. A tarefa fica marcada como Concluída.</li>
+      <li><strong>Devolver com Notas</strong> — devolve a tarefa ao utilizador que fez a triagem com uma nota obrigatória (ex: "falta informação", "email duplicado").</li>
+    </ul>
+  </li>
+  <li>O utilizador que fez a triagem, ao receber a devolução, pode <strong>Resubmeter para Validação</strong> após corrigir a informação — com nota obrigatória.</li>
+  <li>Este ciclo pode repetir-se quantas vezes for necessário. Cada acção fica registada no histórico da tarefa com o nome do actor, acção, nota e timestamp.</li>
+</ol>
+
+<p><strong>Regras importantes:</strong></p>
+<ul>
+  <li><strong>Cancelar Tarefa</strong> — disponível apenas para o responsável actual da tarefa; requer motivo obrigatório. A tarefa fica marcada como Cancelada mas permanece visível no histórico.</li>
+  <li><strong>Nada é apagado</strong> — emails triados, tarefas concluídas ou canceladas, e todas as notas ficam permanentemente registados. Apenas o estado muda.</li>
+</ul>
+
+<h3>2. Página de Clientes <span class="badge badge-new">Novo</span></h3>
+<p>A secção <strong>Clientes</strong> na sidebar está agora activa. Mostra uma lista de todos os clientes derivada automaticamente dos processos (activos e arquivo), com:</p>
+<ul>
+  <li>Nome do cliente e contacto (comprador)</li>
+  <li>Número total de processos e quantos estão em aberto</li>
+  <li>Valor total acumulado</li>
+  <li>Último processo e respectivo estado</li>
+</ul>
+<p>Clique em qualquer linha para abrir o painel de detalhe do cliente, que mostra as estatísticas e o histórico completo de processos. Clicar num processo abre directamente o painel de detalhe desse processo.</p>
+
+<h3>3. Notificação de nova tarefa <span class="badge badge-updated">Actualizado</span></h3>
+<p>A notificação automática que aparece no canto inferior direito foi actualizada. Em vez de simular a chegada de um email, simula agora a atribuição de uma <strong>nova tarefa</strong> ao utilizador com sessão iniciada — mostrando o tipo, o cliente, quem atribuiu e a nota.</p>
+
+<hr/>
+
+<h2>Guia completo da aplicação</h2>
+
+<h3>Navegação lateral (sidebar)</h3>
+<p>A barra lateral esquerda está sempre visível e organiza-se em três zonas:</p>
+<p><strong>Principal</strong></p>
+<ul>
+  <li><strong>Processos</strong> — lista principal de cotações (badge: processos em aberto)</li>
+  <li><strong>Tarefas</strong> — todas as tarefas atribuídas ao utilizador (badge: tarefas activas)</li>
+  <li><strong>Inbox</strong> — emails a aguardar triagem (badge: emails pendentes)</li>
+</ul>
+<p><strong>Gestão</strong></p>
+<ul>
+  <li><strong>Clientes</strong> — lista de clientes derivada dos processos <span class="badge badge-new">Novo</span></li>
+  <li><strong>Arquivo</strong> — processos arquivados (mais de 3 anos, só de leitura)</li>
+</ul>
+<p><strong>Sistema</strong> <em>(apenas Admin e Supervisor)</em></p>
+<ul>
+  <li><strong>Administração</strong> — abre o painel de configuração do sistema</li>
+</ul>
+
+<hr/>
+
+<h3>Processos</h3>
+
+<h4>Barra de estatísticas</h4>
+<p>Seis cartões clicáveis que filtram a lista: Todos · Em Aberto · Em Atraso · Urgentes · Ganhos · Transitados. Clique para filtrar, clique novamente para limpar.</p>
+
+<h4>Meus processos / Todos os processos</h4>
+<p>Alterna entre os processos onde o utilizador tem um papel atribuído e a visão global. As estatísticas actualizam-se em conformidade.</p>
+
+<h4>Vista em tabela</h4>
+<ul>
+  <li>Clique em qualquer cabeçalho de coluna para ordenar (ascendente / descendente)</li>
+  <li>Ícone de filtro em cada coluna para filtrar por valores distintos; vários filtros activos em simultâneo</li>
+  <li>Coluna <strong>Prio</strong> — Admin e Supervisor podem alterar a prioridade directamente na linha</li>
+  <li>Coluna <strong>Follow Up</strong> — só aparece quando o processo está em estado Enviado ou Encomenda</li>
+  <li>Botão de olho — mostra/esconde colunas; preferência guardada por utilizador</li>
+</ul>
+
+<h4>Vista Kanban</h4>
+<p>Colunas por estado. Arraste para mover um processo. Cartões de processos não atribuídos ao utilizador aparecem bloqueados (cadeado) e não podem ser arrastados.</p>
+
+<h4>Painel de detalhe</h4>
+<p>Clique numa linha ou cartão para abrir o painel lateral com:</p>
+<ul>
+  <li>Número do processo em destaque (monospace, grande)</li>
+  <li>Comprador em posição de destaque</li>
+  <li><strong>Consulta</strong> — lista de verificação com dois passos obrigatórios (Pedido ao fornecedor / Resposta do fornecedor), visível apenas quando o estado é <em>Consulta</em>; cada passo regista o timestamp e alerta se o SLA foi excedido</li>
+  <li>Equipa com botão <strong>Reatribuir</strong> (visível para Admin, Supervisor, e o próprio responsável)</li>
+  <li>Barra de pipeline visual</li>
+  <li>Histórico de eventos</li>
+  <li>Follow-up — só visível em estado ≥ Enviado</li>
+  <li>Botões: <strong>Enviar Email</strong> e <strong>Alterar Estado</strong></li>
+</ul>
+
+<h4>Widget de supervisão</h4>
+<p><em>(Admin e Supervisor)</em> — aparece acima das estatísticas. Mostra processos abertos/fechados este mês, processos em atraso, tarefas pendentes, e os três processos mais atrasados.</p>
+
+<hr/>
+
+<h3>Tarefas</h3>
+
+<p>Utilizadores standard vêem apenas as suas próprias tarefas. Admins e Supervisores vêem todas.</p>
+
+<p><strong>Tipos de tarefa:</strong> Validação de Processo · Pré-Entrada · Desconto · Status Encomenda · Contas Correntes · Cliente Novo · Follow-up · Escalação · Diversos</p>
+
+<p><strong>Estados:</strong> Por Fazer · Em Curso · Bloqueado · Concluído · Escalado · Devolvido · Cancelado</p>
+
+<h4>Acções disponíveis por tipo de tarefa</h4>
+
+<p><strong>Tarefas normais (todos os tipos excepto Validação de Processo):</strong></p>
+<ul>
+  <li><strong>Marcar como Concluído</strong> — nota opcional; tarefa fica permanentemente registada</li>
+  <li><strong>Passar</strong> — reatribui a tarefa a outro utilizador com nota obrigatória</li>
+  <li><strong>Escalar</strong> — eleva para Supervisor/Admin com nota obrigatória (visível em utilizadores standard)</li>
+  <li><strong>Retomar</strong> — Admin/Supervisor assumem uma tarefa escalada</li>
+  <li><strong>Abrir Processo</strong> — disponível apenas em tarefas do tipo Pré-Entrada; gera número de processo</li>
+</ul>
+
+<p><strong>Tarefas de Validação de Processo (fluxo especial):</strong></p>
+<ul>
+  <li><strong>Validar e Criar Processo</strong> — Resp. Cotação aprova; processo criado com estado Entrada</li>
+  <li><strong>Devolver com Notas</strong> — Resp. Cotação devolve com nota obrigatória</li>
+  <li><strong>Resubmeter para Validação</strong> — utilizador que fez triagem resubmete após devolução</li>
+  <li><strong>Cancelar Tarefa</strong> — responsável actual cancela com motivo obrigatório; registo permanente</li>
+</ul>
+
+<h4>Painel de tarefa</h4>
+<p>Clique em qualquer linha para abrir o painel lateral com: campos completos, histórico de todas as acções com notas e timestamps, e o email de origem (clique para expandir/colapsar).</p>
+
+<hr/>
+
+<h3>Inbox</h3>
+
+<p>Emails recebidos a aguardar triagem. Emails internos (entre membros da equipa) são excluídos automaticamente.</p>
+<p>Cada email mostra: remetente, assunto, pré-visualização, hora, e a <strong>sugestão da IA</strong> (tipo sugerido e percentagem de confiança).</p>
+<p>Clique em qualquer email para abrir o painel lateral com o corpo completo e as quatro acções de triagem:</p>
+
+<table>
+  <tr><th>Acção</th><th>O que acontece</th></tr>
+  <tr>
+    <td><strong>Confirmar como Processo</strong></td>
+    <td>Cria uma tarefa de Validação de Processo para o Resp. Cotação. Nenhum número de processo é gerado ainda. O email desaparece do Inbox (fica acessível em histórico).</td>
+  </tr>
+  <tr>
+    <td><strong>Confirmar como Tarefa</strong></td>
+    <td>Abre selector de tipo; cria a tarefa directamente. O email desaparece do Inbox.</td>
+  </tr>
+  <tr>
+    <td><strong>Associar a Processo</strong></td>
+    <td>Associa o email a um número de processo existente (campo de texto com validação).</td>
+  </tr>
+  <tr>
+    <td><strong>Diversos</strong></td>
+    <td>Remove o email da lista de pendentes — não cria processo nem tarefa.</td>
+  </tr>
+</table>
+
+<p><strong>Cliente não reconhecido</strong> — quando o remetente não está na base de dados, aparece um banner com a opção de criar uma ficha de cliente (nome e email).</p>
+
+<hr/>
+
+<h3>Clientes <span class="badge badge-new">Novo</span></h3>
+
+<p>Lista de todos os clientes derivada automaticamente dos processos (activos e arquivo). Pesquisa por nome ou contacto.</p>
+<p>Clique numa linha para abrir o painel do cliente com estatísticas (total de processos, em aberto, valor acumulado) e a lista completa de processos. Cada processo na lista abre directamente o painel de detalhe correspondente.</p>
+
+<hr/>
+
+<h3>Arquivo</h3>
+<p>Processos com mais de 3 anos. Apenas de leitura. Clique numa linha para abrir o painel de detalhe completo.</p>
+
+<hr/>
+
+<h3>Painel de Administração</h3>
+<p><em>Disponível para Admin e Supervisor — clique em Administração na sidebar.</em></p>
+
+<table>
+  <tr><th>Aba</th><th>O que configura</th></tr>
+  <tr><td><strong>Utilizadores</strong></td><td>Adicionar, editar, desactivar/activar; definir função, foto e palavra-passe inicial</td></tr>
+  <tr><td><strong>Estados</strong></td><td>Criar, editar, reordenar e colorir fases do processo; arrastar para reordenar</td></tr>
+  <tr><td><strong>Follow-Up</strong></td><td>Gerir os estados de follow-up disponíveis para processos em Enviado/Encomenda</td></tr>
+  <tr><td><strong>Prioridades</strong></td><td>Definir níveis de prioridade com cores</td></tr>
+  <tr><td><strong>Funções</strong></td><td>Criar e editar funções disponíveis para atribuição a utilizadores</td></tr>
+  <tr><td><strong>Atribuição de Tarefas</strong></td><td>Para cada tipo de tarefa (incluindo Validação de Processo), definir o responsável por defeito</td></tr>
+  <tr><td><strong>Marca</strong></td><td>Carregar logótipo (com zoom/reposicionamento), definir nome e cor de destaque</td></tr>
+  <tr><td><strong>Importar</strong></td><td>Importação em bloco de processos a partir de CSV/Excel</td></tr>
+</table>
+
+<hr/>
+
+<h3>Perfil do utilizador</h3>
+<p>Clique no chip do utilizador no fundo da sidebar: alterar nome, carregar fotografia, definir nova palavra-passe.</p>
+
+<h3>Tema claro / escuro</h3>
+<p>Botão no topo (ícone de sol/lua). A preferência é guardada e aplicada na próxima sessão.</p>
+
+<hr/>
+
+<h2>Perguntas em aberto (a confirmar antes da próxima fase)</h2>
+
+<table>
+  <tr><th>#</th><th>Questão</th></tr>
+  <tr><td>A</td><td><strong>Atribuição automática</strong> — a lógica de rotação (round-robin) está correcta? Existem regras por tipo de equipamento ou por cliente?</td></tr>
+  <tr><td>B</td><td><strong>Lista completa de utilizadores</strong> — nomes, emails e funções de todos os colaboradores (~10–15 pessoas)</td></tr>
+  <tr><td>C</td><td><strong>Lista completa de estados</strong> — confirmar se as 11 fases actuais estão correctas ou se há ajustes</td></tr>
+  <tr><td>D</td><td><strong>Prazos SLA por fase</strong> — quantos dias cada fase pode durar antes de disparar um alerta de urgência?</td></tr>
+  <tr><td>E</td><td><strong>Responsável pelos alertas de atraso</strong> — quem recebe a notificação quando um processo entra em atraso?</td></tr>
+  <tr><td>F</td><td><strong>Exportação do SharePoint</strong> — é possível exportar os processos para Excel/CSV? Uma amostra de 10–20 linhas reais seria ideal para construir a ferramenta de importação.</td></tr>
+</table>
+
+<hr/>
+
+<h2>Próximos passos</h2>
+<p>Após a vossa revisão e feedback desta versão:</p>
+<ol>
+  <li><strong>Ajustes ao protótipo</strong> com base no feedback desta sessão</li>
+  <li><strong>Finalização do esquema da base de dados</strong> com os estados, utilizadores e SLAs confirmados</li>
+  <li><strong>Configuração do Azure AD</strong> para ligação ao Outlook da Promaster (<code>info@promaster.co</code>)</li>
+  <li><strong>Desenvolvimento do backend</strong> (FastAPI + PostgreSQL via Supabase)</li>
+  <li><strong>Ligação da interface aos dados reais</strong></li>
+</ol>
+
+<div class="footer">
+  <p>Smart CRM — Promaster · Versão 3 · Maio 2026</p>
+  <p>Desenvolvido por Pedro Andrade · <a href="mailto:pandrad@gmail.com" style="color:#2563eb;">pandrad@gmail.com</a></p>
+</div>
+
+</div>
+</body>
+</html>
