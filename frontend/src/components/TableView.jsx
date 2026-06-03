@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { daysLeft } from "../utils.js";
+import { daysLeft, useWindowSize } from "../utils.js";
 import { store } from "../store.js";
 import { THEME } from "../theme.js";
 import { Avatar, UrgencyTag, StageBadge, FUBadge } from "./Primitives.jsx";
@@ -142,6 +142,7 @@ function TH({ colKey, label, sortState, onSort, rows, colFilters, onColFilter, c
 
 // ── Main component ────────────────────────────────────────────────────────────
 export function TableView({ rows, onSelect, users = [], currentUser = {}, sortState = { col: null, dir: "asc" }, onSortChange, colFilters = {}, onColFilterChange, onPriorityChange }) {
+  const { isMobile } = useWindowSize();
   const photoOf = name => users.find(u => u.name === name)?.photo;
   const isAdmin      = currentUser.role === "admin";
   const isSupervisor = currentUser.role === "supervisor";
@@ -158,6 +159,44 @@ export function TableView({ rows, onSelect, users = [], currentUser = {}, sortSt
   const rowHover = THEME.sidebarHover;
   const theadBg  = THEME.sidebar;
 
+  // ── Mobile card list ──────────────────────────────────────────────────────────
+  if (isMobile) {
+    return (
+      <div style={{ padding: "0 14px 32px", display: "flex", flexDirection: "column", gap: 8 }}>
+        {rows.length === 0 && (
+          <p style={{ textAlign: "center", color: THEME.textDim, padding: "40px 0", fontSize: 13 }}>Nenhum processo encontrado</p>
+        )}
+        {rows.map(p => (
+          <div
+            key={p.id}
+            onClick={() => onSelect(p)}
+            style={{ background: THEME.card, borderRadius: 10, border: `1px solid ${THEME.border}`, padding: "12px 14px", cursor: "pointer", display: "flex", flexDirection: "column", gap: 8 }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <span style={{ fontFamily: "monospace", fontSize: 12, color: THEME.textDim }}>{p.id}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {p.priority === "Alta" && <span style={{ width: 8, height: 8, borderRadius: "50%", background: THEME.danger, display: "inline-block" }} />}
+                <StageBadge id={p.status} />
+              </div>
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: THEME.text }}>{p.client}</div>
+            {(p.brand || p.model) && (
+              <div style={{ fontSize: 12, color: THEME.textMuted }}>{[p.brand, p.model].filter(Boolean).join(" · ")}</div>
+            )}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Avatar name={p.owner} size={22} photo={photoOf(p.owner)} />
+                <span style={{ fontSize: 12, color: THEME.textMuted }}>{p.owner.split(" ")[0]}</span>
+              </div>
+              <UrgencyTag deadline={p.deadline} />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // ── Desktop table ─────────────────────────────────────────────────────────────
   return (
     <div style={{ padding: "0 24px 32px" }}>
       <div style={{ background: THEME.card, borderRadius: 12, border: `1px solid ${THEME.border}`, overflowX: "auto" }}>

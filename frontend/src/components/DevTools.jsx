@@ -8,6 +8,7 @@
 
 import { useState } from "react";
 import { store } from "../store.js";
+import { useWindowSize } from "../utils.js";
 import { PROCESSOS, TAREFAS, INBOX_EMAILS } from "../mock/data.js";
 import { THEME } from "../theme.js";
 import { Avatar } from "./Primitives.jsx";
@@ -179,6 +180,7 @@ export function DevTools({
   setInboxEmails,
   setThemeVersion,
 }) {
+  const { isMobile } = useWindowSize();
   const [collapsed, setCollapsed] = useState(false);
 
   // ── Tool 2: Generate random inbox email ──────────────────────────────────
@@ -296,7 +298,11 @@ export function DevTools({
 
   return (
     <div style={{
-      position: "fixed", bottom: 16, right: 16, zIndex: 9999,
+      position: "fixed",
+      bottom: isMobile ? "auto" : 16,
+      top:    isMobile ? 72    : "auto",
+      right:  isMobile ? 8    : 16,
+      zIndex: 9999,
       width: collapsed ? "auto" : 224,
       background: "#020617",
       border: "1px solid #dc2626",

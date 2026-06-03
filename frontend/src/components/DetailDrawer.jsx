@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { daysLeft } from "../utils.js";
+import { daysLeft, useWindowSize } from "../utils.js";
 import { store } from "../store.js";
 import { THEME } from "../theme.js";
 import { Avatar, StageBadge, FUBadge, Tag } from "./Primitives.jsx";
@@ -35,16 +35,22 @@ function SectionLabel({ children }) {
   return <div style={{ ...LABEL, marginBottom: 8 }}>{children}</div>;
 }
 
+function mobileModal(isMobile, desktopWidth = 500) {
+  if (!isMobile) return { width: desktopWidth, maxWidth: "95vw", borderRadius: 14 };
+  return { width: "100%", maxWidth: "100%", borderRadius: "16px 16px 0 0", position: "fixed", bottom: 0, left: 0, right: 0, maxHeight: "92dvh", overflowY: "auto" };
+}
+
 // ── Email modal (all logic preserved, dark theme) ─────────────────────────────
 function EmailModal({ p, onClose }) {
+  const { isMobile } = useWindowSize();
   const [to,      setTo]      = useState(p.comprador || p.req || "");
   const [subject, setSubject] = useState(`Re: Cotação ${p.brand}${p.model ? " " + p.model : ""} — Proc. ${p.id}`);
   const [body,    setBody]    = useState(`Exmo(a) Sr(a) ${p.comprador || p.req || ""},\n\nEm resposta ao seu pedido de cotação, ...\n\nCom os melhores cumprimentos,`);
   const [sent,    setSent]    = useState(false);
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ background: THEME.card, borderRadius: 14, width: 500, maxWidth: "95vw", border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden" }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden", ...mobileModal(isMobile, 500) }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
           <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Enviar Email</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
@@ -81,6 +87,7 @@ function EmailModal({ p, onClose }) {
 
 // ── Change status modal — reads from store, FU only when target status >= 9 ──
 function ChangeStatusModal({ p, onClose, onSave }) {
+  const { isMobile } = useWindowSize();
   const stages  = store.getStages();
   const fuList  = store.getFUStatuses();
   const [status, setStatus] = useState(p.status);
@@ -89,8 +96,8 @@ function ChangeStatusModal({ p, onClose, onSave }) {
   const showFU = status >= 9;
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ background: THEME.card, borderRadius: 14, width: 420, maxWidth: "95vw", maxHeight: "90vh", overflowY: "auto", border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", ...mobileModal(isMobile, 420) }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
           <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Alterar Estado</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
@@ -135,6 +142,7 @@ function ChangeStatusModal({ p, onClose, onSave }) {
 
 // ── Reassign modal — admin, supervisor, or own-process owner ─────────────────
 function ReassignModal({ p, users, onClose, onSave }) {
+  const { isMobile } = useWindowSize();
   const active = users.filter(u => u.active !== false);
   // Supervisor can also reassign — include supervisor role in eligible pools
   const byRole = role => active.filter(u => u.role === role || u.role === "admin" || u.role === "supervisor");
@@ -146,8 +154,8 @@ function ReassignModal({ p, users, onClose, onSave }) {
   const SEL = { ...INPUT, marginTop: 4 };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ background: THEME.card, borderRadius: 14, width: 400, maxWidth: "95vw", border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden" }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden", ...mobileModal(isMobile, 400) }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
           <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Reatribuir processo</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
@@ -249,6 +257,7 @@ function ConsultaChecklist({ consulta, onChange }) {
 
 // ── Main drawer ───────────────────────────────────────────────────────────────
 export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], currentUser = {} }) {
+  const { isMobile } = useWindowSize();
   const [p,            setP]            = useState(initialP);
   const [emailOpen,    setEmailOpen]    = useState(false);
   const [statusOpen,   setStatusOpen]   = useState(false);
@@ -284,10 +293,20 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 40 }} />
 
-      <div style={{ position: "fixed", top: 0, right: 0, height: "100vh", width: 500, maxWidth: "96vw", background: THEME.bg, zIndex: 50, overflowY: "auto", boxShadow: "-4px 0 40px rgba(0,0,0,0.5)", borderLeft: `1px solid ${THEME.border}` }}>
+      <div style={isMobile
+        ? { position: "fixed", bottom: 0, left: 0, right: 0, height: "92dvh", background: THEME.bg, zIndex: 50, overflowY: "auto", boxShadow: "0 -4px 40px rgba(0,0,0,0.5)", borderRadius: "16px 16px 0 0", borderTop: `1px solid ${THEME.border}` }
+        : { position: "fixed", top: 0, right: 0, height: "100vh", width: 500, maxWidth: "96vw", background: THEME.bg, zIndex: 50, overflowY: "auto", boxShadow: "-4px 0 40px rgba(0,0,0,0.5)", borderLeft: `1px solid ${THEME.border}` }
+      }>
+
+        {/* Drag handle — mobile only */}
+        {isMobile && (
+          <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px" }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: THEME.border }} />
+          </div>
+        )}
 
         {/* ── Sticky header ── */}
-        <div style={{ position: "sticky", top: 0, background: THEME.sidebar, borderBottom: `1px solid ${THEME.border}`, padding: "16px 24px", zIndex: 1 }}>
+        <div style={{ position: "sticky", top: 0, background: THEME.sidebar, borderBottom: `1px solid ${THEME.border}`, padding: isMobile ? "12px 16px" : "16px 24px", zIndex: 1 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               {/* Process number — large, monospace, prominent */}
@@ -308,7 +327,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
           </div>
         </div>
 
-        <div style={{ padding: "16px 24px", display: "flex", flexDirection: "column", gap: 18 }}>
+        <div style={{ padding: isMobile ? "12px 16px" : "16px 24px", display: "flex", flexDirection: "column", gap: 18 }}>
 
           {/* ── Overdue alert ── */}
           {d < 0 && (

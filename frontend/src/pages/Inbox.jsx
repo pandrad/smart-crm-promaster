@@ -1,24 +1,17 @@
 import { useState } from "react";
 import { THEME } from "../theme.js";
 import { store } from "../store.js";
+import { useWindowSize } from "../utils.js";
+import { getTypeColor } from "./Tarefas.jsx";
 import { Tag } from "../components/Primitives.jsx";
 import { Icon } from "../icons.jsx";
 
-// Task types available when confirming as tarefa from inbox
-const TASK_TYPES = [
-  "Pré-Entrada", "Desconto", "Status Encomenda",
-  "Contas Correntes", "Cliente Novo", "Diversos", "Follow-up", "Escalação",
-];
-
-const AI_TYPE_COLORS = {
-  "Pré-Entrada":     { bg: "#1e3a5f", color: "#60a5fa" },
-  "Status Encomenda":{ bg: THEME.successBg, color: THEME.success },
-  "Contas Correntes":{ bg: "#1c1005", color: "#fb923c" },
-  "Tarefa":          { bg: THEME.warningBg, color: THEME.warning },
-  "Diversos":        { bg: THEME.sidebar, color: THEME.textMuted },
-  "Spam":            { bg: THEME.dangerBg, color: THEME.danger },
-  "Seguimento":      { bg: "#0c2231", color: "#38bdf8" },
-};
+// System-only types not shown in the manual triage picker
+const SYSTEM_TYPES = new Set(["Validação de Processo", "Não Classificado", "Escalação", "Abertura de Processo"]);
+// Derived at call-time from store so admin additions are reflected immediately
+function getInboxTaskTypes() {
+  return store.getTaskTypes().map(t => t.label).filter(l => !SYSTEM_TYPES.has(l));
+}
 
 const LABEL = { fontSize: 10, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 };
 const INPUT = { width: "100%", padding: "7px 10px", fontSize: 13, border: `1px solid ${THEME.border}`, borderRadius: 7, outline: "none", boxSizing: "border-box", background: THEME.sidebar, color: THEME.text };
@@ -55,7 +48,8 @@ function NewClientModal({ senderName, senderEmail, onClose, onSave }) {
 
 // ── Task type selector modal ──────────────────────────────────────────────────
 function TaskTypeModal({ onClose, onSave }) {
-  const [type, setType] = useState(TASK_TYPES[0]);
+  const types = getInboxTaskTypes();
+  const [type, setType] = useState(types[0] ?? "Diversos");
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ background: THEME.card, borderRadius: 14, width: 340, maxWidth: "95vw", border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.6)", overflow: "hidden" }}>
@@ -64,7 +58,7 @@ function TaskTypeModal({ onClose, onSave }) {
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
         </div>
         <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 5 }}>
-          {TASK_TYPES.map(t => (
+          {types.map(t => (
             <label key={t} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, background: type === t ? `${THEME.accent}22` : "transparent", cursor: "pointer", border: type === t ? `1px solid ${THEME.accent}55` : "1px solid transparent" }}>
               <input type="radio" name="task-type" checked={type === t} onChange={() => setType(t)} style={{ accentColor: THEME.accent }} />
               <span style={{ fontSize: 13, color: type === t ? THEME.text : THEME.textMuted }}>{t}</span>
@@ -119,9 +113,10 @@ function AssociateModal({ processos, onClose, onSave }) {
 // Full right-side drawer showing the email body + all triage actions.
 // This is the primary interaction surface — action buttons only appear here.
 function EmailPreviewPanel({ email, processos, tarefas, currentUser, onClose, onAction, clientCreated, onCreateClient }) {
+  const { isMobile } = useWindowSize();
   const [modal, setModal] = useState(null); // "tarefa" | "associate" | "newClient"
 
-  const aiC = email.aiSuggestion ? (AI_TYPE_COLORS[email.aiSuggestion.type] || AI_TYPE_COLORS["Diversos"]) : null;
+  const aiC = email.aiSuggestion ? getTypeColor(email.aiSuggestion.type) : null;
   const showNewClientBanner = email.isNewClient && !clientCreated.has(email.id);
 
   // Format body text: replace \n with <br> equivalent by splitting
@@ -133,7 +128,10 @@ function EmailPreviewPanel({ email, processos, tarefas, currentUser, onClose, on
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 48 }} />
 
       {/* Panel */}
-      <div style={{ position: "fixed", top: 0, right: 0, height: "100vh", width: 540, maxWidth: "96vw", background: THEME.bg, zIndex: 49, display: "flex", flexDirection: "column", boxShadow: "-4px 0 40px rgba(0,0,0,0.5)", borderLeft: `1px solid ${THEME.border}` }}>
+      <div style={isMobile
+        ? { position: "fixed", bottom: 0, left: 0, right: 0, height: "92dvh", background: THEME.bg, zIndex: 49, display: "flex", flexDirection: "column", boxShadow: "0 -4px 40px rgba(0,0,0,0.5)", borderRadius: "16px 16px 0 0", borderTop: `1px solid ${THEME.border}` }
+        : { position: "fixed", top: 0, right: 0, height: "100vh", width: 540, maxWidth: "96vw", background: THEME.bg, zIndex: 49, display: "flex", flexDirection: "column", boxShadow: "-4px 0 40px rgba(0,0,0,0.5)", borderLeft: `1px solid ${THEME.border}` }
+      }>
 
         {/* Sticky header */}
         <div style={{ background: THEME.sidebar, borderBottom: `1px solid ${THEME.border}`, padding: "14px 20px", flexShrink: 0 }}>
@@ -475,7 +473,7 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
         )}
 
         {visible.map(email => {
-          const aiC = email.aiSuggestion ? (AI_TYPE_COLORS[email.aiSuggestion.type] || AI_TYPE_COLORS["Diversos"]) : null;
+          const aiC = email.aiSuggestion ? getTypeColor(email.aiSuggestion.type) : null;
           const isSelected = selectedEmail?.id === email.id;
 
           return (

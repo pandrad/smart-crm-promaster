@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { THEME } from "../theme.js";
 import { Avatar } from "./Primitives.jsx";
 import { Icon } from "../icons.jsx";
+import { useWindowSize } from "../utils.js";
 
 function NavSection({ label }) {
   return (
@@ -41,6 +42,7 @@ function NavItem({ icon, label, path, active, badge, disabled, onClick }) {
 }
 
 export function Sidebar({ currentUser, processosBadge, tarefasBadge, inboxBadge, onOpenProfile, onOpenAdmin, onLogout, accent }) {
+  const { isMobile } = useWindowSize();
   const navigate  = useNavigate();
   const location  = useLocation();
   const path      = location.pathname;
@@ -54,6 +56,8 @@ export function Sidebar({ currentUser, processosBadge, tarefasBadge, inboxBadge,
                   : "Utilizador";
 
   const activeAccent = accent || THEME.accent;
+
+  if (isMobile) return null;
 
   return (
     <div style={{

@@ -11,6 +11,30 @@ const DEFAULT_PRIORITIES = [
   { id: 2, label: "Alta",   color: "#f87171", bg: "#2d0a0a" },
 ];
 
+const DEFAULT_TASK_TYPES = [
+  { id: 1,  label: "Validação de Processo", color: "#93c5fd", bg: "#0c1a2e" },
+  { id: 2,  label: "Não Classificado",      color: "#f87171", bg: "#2d0a0a" },
+  { id: 3,  label: "Pré-Entrada",           color: "#60a5fa", bg: "#1e3a5f" },
+  { id: 4,  label: "Desconto",              color: "#fbbf24", bg: "#1c1005" },
+  { id: 5,  label: "Status Encomenda",      color: "#4ade80", bg: "#052e16" },
+  { id: 6,  label: "Contas Correntes",      color: "#fb923c", bg: "#1c1005" },
+  { id: 7,  label: "Cliente Novo",          color: "#c084fc", bg: "#2e1065" },
+  { id: 8,  label: "Diversos",              color: "#94a3b8", bg: "#1e293b" },
+  { id: 9,  label: "Follow-up",             color: "#38bdf8", bg: "#0c2231" },
+  { id: 10, label: "Escalação",             color: "#f87171", bg: "#2d0a0a" },
+  { id: 11, label: "Abertura de Processo",  color: "#4ade80", bg: "#0a2015" },
+];
+
+const DEFAULT_TASK_STATUSES = [
+  { id: 1, label: "Por Fazer",             color: "#94a3b8", bg: "#1e293b" },
+  { id: 2, label: "Em Curso",              color: "#60a5fa", bg: "#1e3a5f" },
+  { id: 3, label: "Devolvido",             color: "#fb923c", bg: "#1c1005" },
+  { id: 4, label: "Escalado",              color: "#e879f9", bg: "#2d0a2d" },
+  { id: 5, label: "Concluído",             color: "#4ade80", bg: "#052e16" },
+  { id: 6, label: "Cancelado",             color: "#64748b", bg: "#1e293b" },
+  { id: 7, label: "Cancelamento Pendente", color: "#fb923c", bg: "#2d1505" },
+];
+
 const DEFAULT_ROLES = [
   { id: "admin",      label: "Administrador"   },
   { id: "supervisor", label: "Supervisor"       },
@@ -90,6 +114,14 @@ export const store = {
   // ── Inbox emails ───────────────────────────────────────────────────────────
   getInboxEmails()       { return load("crm_inbox", INBOX_EMAILS); },
   saveInboxEmails(items) { save("crm_inbox", items); },
+
+  // ── Task types (admin-configurable, label + colour) ──────────────────────────
+  getTaskTypes()           { return load("crm_task_types",    DEFAULT_TASK_TYPES);    },
+  saveTaskTypes(list)      { save("crm_task_types",    list); },
+
+  // ── Task statuses (admin-configurable, label + colour) ───────────────────────
+  getTaskStatuses()        { return load("crm_task_statuses", DEFAULT_TASK_STATUSES); },
+  saveTaskStatuses(list)   { save("crm_task_statuses", list); },
 
   // ── SLA settings ─────────────────────────────────────────────────────────────
   getSLASettings() {

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Icon } from "../icons.jsx";
 import { THEME } from "../theme.js";
 import { MOCK_TOAST } from "../mock/data.js";
-import { TYPE_COLORS } from "../pages/Tarefas.jsx";
+import { getTypeColor } from "../pages/Tarefas.jsx";
 
 export function Toast({ currentUser }) {
   const [visible, setVisible] = useState(false);
@@ -14,7 +14,7 @@ export function Toast({ currentUser }) {
 
   if (!visible) return null;
 
-  const tc = TYPE_COLORS[MOCK_TOAST.type] || TYPE_COLORS["Diversos"];
+  const tc = getTypeColor(MOCK_TOAST.type);
 
   return (
     <div style={{

@@ -24,7 +24,7 @@ All screens fully interactive with mock data. Dev server: `cd frontend && npm ru
 | `src/components/TableView.jsx` | Sortable table, per-column filters, priority inline change, FU conditional |
 | `src/components/KanbanView.jsx` | Kanban with drag-and-drop; non-owner cards locked |
 | `src/components/DetailDrawer.jsx` | Right panel: process number, Comprador, Consulta checklist, Excel link, FU conditional, reassign for supervisor/owner |
-| `src/components/AdminPanel.jsx` | Slide-over: Users, Estados, Prioridades, Funções, Atribuição de Tarefas (process roles + task type assignment incl. Validação de Processo), Marca, Importar |
+| `src/components/AdminPanel.jsx` | Slide-over: Users, Estados, Tipos de Tarefa, Estados de Tarefa, Prioridades, Funções, Atribuição de Tarefas, SLA, Log Inbox, Marca, Importar |
 | `src/components/SupervisorWidget.jsx` | Summary widget: stat cards + escalated tasks section (clickable → TaskDrawer) |
 | `src/components/Toast.jsx` | "Nova tarefa atribuída" notification — shows task type, client, assigning user |
 | `src/components/Primitives.jsx` | Avatar (photo support), badges — all read from store |
@@ -48,21 +48,23 @@ frontend/src/
 ├── data.js             — seed arrays only (STAGES, FOLLOWUP_STATUSES, USERS)
 │                          imported by store.js alone — no components touch it
 ├── store.js            — localStorage runtime state; seeds from data.js;
-│                          also holds getTaskAssignment() per-type default owners
+│                          holds getTaskTypes(), getTaskStatuses(),
+│                          getTaskAssignment(), getSLASettings(), and all
+│                          other admin-configurable state
 ├── theme.js            — dark/light theme system; mutable THEME object,
 │                          applyTheme(), getStoredTheme(), saveTheme()
-├── utils.js            — pure utilities: daysLeft()
+├── utils.js            — pure utilities: daysLeft(), useWindowSize()
 └── icons.jsx           — inline SVG icons
 ```
 
 ### Separation of concerns — confirmed clean
 - `data.js` — seeds only, one consumer (`store.js`)
 - `mock/data.js` — all hardcoded demo content, no logic
-- `utils.js` — pure functions, no data
+- `utils.js` — pure functions + `useWindowSize()` hook, no data
 - `theme.js` — dark/light colour system, no application data
-- `store.js` — admin-editable runtime state, localStorage-backed
+- `store.js` — admin-editable runtime state, localStorage-backed; includes task types, task statuses, SLA settings
 - `api/client.js` — data-fetching layer; currently returns mock data, ready for real API
-- Components import `daysLeft` from `utils.js`, `PROCESSOS` from `mock/data.js`, everything else from `store`
+- Components import `daysLeft`/`useWindowSize` from `utils.js`, `PROCESSOS` from `mock/data.js`, everything else from `store`
 
 ### Deliverable folder
 `delivery/` — one subfolder per UI version. Never delete previous versions. Each subfolder contains: the HTML app, the Portuguese instructions as `.md`, and the same instructions as `.pdf`.
@@ -152,7 +154,7 @@ Fixes applied between static QA and manual browser review sign-off:
 | DEV Tool 3 added: Gerar processo aleatório | `DevTools.jsx` | 4864a32 |
 | DEV Tool 5 added: Limpar Processos | `DevTools.jsx` | 4864a32 |
 
-### Stage 1 status — complete, in human review
+### Stage 1 status — open, pending final sign-off
 
 | Item | Status |
 |------|--------|
@@ -162,12 +164,21 @@ Fixes applied between static QA and manual browser review sign-off:
 | Inbox validation workflow | ✅ Complete |
 | Clientes page | ✅ Complete |
 | No-deletion rule (architecture rule 6) | ✅ Enforced |
+| Responsive design (mobile — `useWindowSize` hook) | ✅ Complete |
+| Task types admin-configurable (store + AdminPanel tab) | ✅ Complete |
+| Task statuses admin-configurable (store + AdminPanel tab) | ✅ Complete |
+| SLA admin tab | ✅ Complete |
+| Log Inbox admin tab | ✅ Complete |
+| Cancellation approval workflow | ✅ Complete |
+| Enviar Email ao Cliente (validation task) | ✅ Complete |
 | `docs/build-brief.md` updated | ✅ Current |
-| DEV ONLY testing tools (7 tools) | ✅ Built, awaiting deletion pre-delivery |
-| Static QA (code analysis + build) | ✅ Complete — 1 bug found and fixed (see below) |
-| Pre-QA fixes from human review | ✅ Applied (see table above) |
-| Human browser review | 🔄 In progress — owner testing manually |
-| Stage 1 closed | ⏳ Pending human review sign-off |
+| DEV ONLY testing tools (7 tools) | ✅ Built, **must be deleted before final closure** |
+| Static QA (code analysis + build) | ✅ Complete |
+| Client document: task types, triggers, timings, roles | ⏳ Awaited |
+| Second client review session | ⏳ Pending |
+| Final human QA pass | ⏳ Pending |
+| Delete `DevTools.jsx`, remove import from `Main.jsx` | ⏳ Pending |
+| Stage 1 closed | ⏳ Pending all of the above |
 
 ### Static QA result (complete)
 
@@ -192,20 +203,57 @@ Full static analysis pass was run across all source files against the QA plan ch
 - Theme toggle — correct
 
 ### Next action
-**Human browser review in progress. Do not make code changes unless the manual review identifies a specific failure.**
+**Stage 1 remains open. Awaiting: client document on task types/triggers/timings/roles → second client review session → final human QA pass → delete DevTools.**
 
-When human review is complete and all issues resolved:
-1. Fix any remaining failures identified during browser review
-2. Delete `src/components/DevTools.jsx` and remove its import from `src/pages/Main.jsx`
-3. Final commit: `git commit -m "Stage 1 complete — frontend closed"`
-4. Push to GitHub
-5. Build v3 deliverable (vite-plugin-singlefile → patch → `delivery/v3/`)
-6. Write `delivery/v3/Instruções — Smart CRM Promaster v3.md`
-7. Proceed to Stage 2: schema finalisation (`database/schema.sql`)
+Steps to close Stage 1:
+1. Receive and apply client feedback from second review session
+2. Final human QA pass across all screens
+3. Delete `src/components/DevTools.jsx` and remove its import from `src/pages/Main.jsx`
+4. Final commit: `git commit -m "Stage 1 complete — frontend closed"`
+5. Push to GitHub
+6. Build v4 deliverable (vite-plugin-singlefile → patch → `delivery/v4/`)
+7. Write `delivery/v4/Instruções — Smart CRM Promaster v4.md`
+8. Proceed to Stage 2: schema finalisation (`database/schema.sql`)
 
 Dev server auto-starts on login via launch agent → http://localhost:5299
 
 See `docs/build-brief.md` § "Build Order" for full step list.
+
+### Responsive design — complete
+
+Mobile breakpoint: **768px and below**. Implementation: `useWindowSize()` hook in `src/utils.js` returns `{ width, isMobile }`. All responsive changes are conditional inline styles — no Tailwind, no CSS media queries, no new dependencies.
+
+| Component | Mobile behaviour |
+|-----------|-----------------|
+| `Sidebar.jsx` | Hidden (`return null`) — replaced by BottomNav |
+| `Main.jsx` | Root switches to `flexDirection: column`; BottomNav injected at bottom (56px, fixed); content area gets `paddingBottom: 56`; topbar shows app logo + user avatar |
+| `BottomNav` (in Main.jsx) | Processos, Tarefas, Inbox (admin/supervisor only), Clientes, Arquivo, Admin (admin/supervisor only) |
+| `StatsBar.jsx` | Horizontal scroll row (`overflow-x: auto`), cards `minWidth: 120` |
+| `Toolbar.jsx` | Filter selects collapse behind "Filtros" button → bottom sheet above nav bar; view toggle icon-only |
+| `TableView.jsx` | Table hidden; card list shown (process number, client, status badge, urgency, assignee) |
+| `DetailDrawer.jsx` | `92dvh` bottom sheet with drag handle; all modals anchor to bottom |
+| `Tarefas.jsx` | TaskDrawer as bottom sheet; task table → cards; all 9 modals anchor to bottom |
+| `AdminPanel.jsx` | Full-screen; tab bar icon-only (labels hidden, `title` for tooltip) |
+| `Inbox.jsx` | Preview panel as `92dvh` bottom sheet with drag handle |
+| `Clientes.jsx` | Table → cards; ClienteDrawer as bottom sheet |
+| `Arquivo.jsx` | Table → cards |
+| `SupervisorWidget.jsx` | 4-col grid → 2×2 |
+| `DevTools.jsx` | Repositioned to `top: 72, right: 8` (below topbar, clears bottom nav) |
+| `Login.jsx` | Already mobile-friendly, no change |
+
+Desktop layout is completely unchanged in all components.
+
+### Admin-configurable task types and statuses — complete
+
+Task types and task statuses are no longer hardcoded. They follow the same pattern as process statuses (Estados tab).
+
+| What changed | Detail |
+|---|---|
+| `store.js` | `DEFAULT_TASK_TYPES` (11 entries) and `DEFAULT_TASK_STATUSES` (7 entries) added as seed data with `id`, `label`, `color`, `bg`. New methods: `getTaskTypes()`, `saveTaskTypes()`, `getTaskStatuses()`, `saveTaskStatuses()`. localStorage keys: `crm_task_types`, `crm_task_statuses`. |
+| `AdminPanel.jsx` | Two new tabs: **Tipos de Tarefa** and **Estados de Tarefa** — both use the existing `StatusList` component (add, edit, drag-to-reorder, colour picker). `TASK_TYPE_LIST` in AssignmentTab now reads from `store.getTaskTypes()` dynamically. |
+| `Tarefas.jsx` | `TASK_TYPES` and `TASK_STATUSES` are now functions returning store labels. `TYPE_COLORS`/`STATUS_COLORS` hardcoded maps replaced by `getTypeColor(label)` and `getStatusColor(label)` helpers that look up `{ bg, color }` from live store data. |
+| `Toast.jsx`, `SupervisorWidget.jsx` | Import `getTypeColor` instead of `TYPE_COLORS`. |
+| `Inbox.jsx` | Local `TASK_TYPES` const replaced by `getInboxTaskTypes()` (reads store, filters system-only types). `AI_TYPE_COLORS` replaced by `getTypeColor`. |
 
 ## Stage 4 — Reviewer Agent Protocol
 
@@ -226,9 +274,23 @@ Reviewer prompt template: `docs/reviewer-prompt.md`
 | AI | Claude API — `claude-sonnet-4-20250514` |
 | Hosting | Single VPS (DigitalOcean or Hetzner) |
 
+## AI Classification Rule
+
+The Claude API classification prompt **must never hardcode task type labels or process status labels**. At classification time the backend must:
+
+1. Fetch the current admin-configured task types from the `task_types` database table.
+2. Fetch the current admin-configured process statuses from the `statuses` table.
+3. Inject both lists dynamically into the classification prompt at request time.
+
+This ensures AI classification always respects whatever types and statuses the admin has defined, even after the admin adds, renames, or removes entries.
+
+**Fallback rule:** If the model's classification does not match any configured task type label (case-insensitive), the task type defaults to `Não Classificado` and the task is assigned to the Supervisor for manual triage. The same fallback applies to process status classification — an unrecognised status label must never be written to the database.
+
+This rule applies to both the email-to-task classification path and any future process status suggestion path.
+
 ## Key Rules
 
-1. **Never hardcode statuses.** Labels, colors, IDs always come from the database.
+1. **Never hardcode statuses, task types, or task statuses.** Labels, colors, IDs always come from the database. This applies to the frontend (read from `store.js`) and the backend (fetch from DB before use — see AI Classification Rule above).
 2. **One process per email thread.** Match on Graph API `conversationId`.
 3. **Three roles per process.** Resp. Comercial, Resp. Cotação, Resp. Compra — always distinct people.
 4. **Files stay in Microsoft.** Store OneDrive/SharePoint URLs, never upload files to our server.
@@ -245,7 +307,7 @@ These apply to every change made in every session, no exceptions:
 2. **All data fetching goes through `src/api/client.js`.** Components never call `fetch()`, import from `data.js`, or read from `mock/data.js` directly. They call a function in `api/client.js`, which currently returns mock data and will later call the real API.
 3. **No component may import `data.js` directly.** That file is consumed only by `store.js`. Components read runtime state from `store.js` or fetch data via `api/client.js`.
 
-4. **All statuses, users, priorities, and follow-up statuses must be read from `store.js`.** Never hardcode these values inline in a component, even as a fallback or placeholder. Always call the appropriate `store.get*()` method.
+4. **All statuses, task types, task statuses, users, priorities, and follow-up statuses must be read from `store.js`.** Never hardcode these values inline in a component, even as a fallback or placeholder. Always call the appropriate `store.get*()` method.
 5. **`/frontend` and `/backend` are completely isolated.** Nothing in `/frontend` may import from or reference `/backend`. Nothing in `/backend` may import from or reference `/frontend`. They communicate only via the HTTP API.
 
 6. **No data is ever permanently deleted.** This is the most important business rule in the entire application. Processes, tasks, emails, notes, attachments, and activity log entries are never deleted from the system. Every action is permanently recorded.

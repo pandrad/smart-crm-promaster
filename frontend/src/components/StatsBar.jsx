@@ -1,6 +1,6 @@
 import { Icon } from "../icons.jsx";
 import { THEME } from "../theme.js";
-import { daysLeft } from "../utils.js";
+import { daysLeft, useWindowSize } from "../utils.js";
 
 // processos     — full visible (non-archived) list
 // myProcessos   — user-filtered list (when myTab is active)
@@ -9,6 +9,7 @@ import { daysLeft } from "../utils.js";
 // onStatClick   — callback(filterId | null)
 // accent        — branding accent override
 export function StatsBar({ processos, myProcessos, myTab, activeFilter, onStatClick, accent }) {
+  const { isMobile } = useWindowSize();
   const src = myTab ? myProcessos : processos;
   const accentColor = accent || THEME.accent;
 
@@ -31,7 +32,7 @@ export function StatsBar({ processos, myProcessos, myTab, activeFilter, onStatCl
   ];
 
   return (
-    <div style={{ padding: "16px 24px 0", display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 10 }}>
+    <div style={{ padding: isMobile ? "12px 14px 0" : "16px 24px 0", display: "flex", gap: 10, overflowX: isMobile ? "auto" : "visible", flexWrap: isMobile ? "nowrap" : "wrap", paddingBottom: isMobile ? 4 : 0 }}>
       {stats.map(s => {
         const isActive = activeFilter === s.id;
         return (
@@ -47,6 +48,8 @@ export function StatsBar({ processos, myProcessos, myTab, activeFilter, onStatCl
               cursor: "pointer", transition: "all 0.12s",
               boxShadow: isActive ? `0 0 0 3px ${s.color}20` : "none",
               opacity: s.muted ? 0.75 : 1,
+              flex: isMobile ? "0 0 auto" : 1,
+              minWidth: isMobile ? 120 : "auto",
             }}
             onMouseEnter={e => { if (!isActive) e.currentTarget.style.borderColor = `${s.color}66`; }}
             onMouseLeave={e => { if (!isActive) e.currentTarget.style.borderColor = THEME.border; }}

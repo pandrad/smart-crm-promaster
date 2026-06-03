@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
-import { useNavigate, Routes, Route, Navigate } from "react-router-dom";
+import { useNavigate, useLocation, Routes, Route, Navigate } from "react-router-dom";
+import { useWindowSize } from "../utils.js";
 import { PROCESSOS, TAREFAS, INBOX_EMAILS } from "../mock/data.js";
 import { store } from "../store.js";
 import { THEME, applyTheme, getStoredTheme, saveTheme } from "../theme.js";
@@ -18,6 +19,49 @@ import { Clientes } from "./Clientes.jsx";
 import { DevTools } from "../components/DevTools.jsx";
 
 const INPUT = () => ({ width: "100%", padding: "7px 10px", fontSize: 13, border: `1px solid ${THEME.border}`, borderRadius: 7, outline: "none", boxSizing: "border-box", background: THEME.card, color: THEME.text });
+
+// ── Bottom navigation bar (mobile only) ──────────────────────────────────────
+function BottomNav({ currentUser, processosBadge, tarefasBadge, inboxBadge, accent, onOpenAdmin }) {
+  const navigate  = useNavigate();
+  const location  = useLocation();
+  const path      = location.pathname;
+  const isAdmin   = currentUser?.role === "admin";
+  const isSupervisor = currentUser?.role === "supervisor";
+  const isPrivileged = isAdmin || isSupervisor;
+  const ac = accent || THEME.accent;
+
+  const items = [
+    { icon: "list",     label: "Processos",    route: "/processos", badge: processosBadge, show: true,          action: () => navigate("/processos") },
+    { icon: "tasks",    label: "Tarefas",      route: "/tarefas",   badge: tarefasBadge,   show: true,          action: () => navigate("/tarefas") },
+    { icon: "inbox",    label: "Inbox",        route: "/inbox",     badge: inboxBadge,     show: isPrivileged,  action: () => navigate("/inbox") },
+    { icon: "users",    label: "Clientes",     route: "/clientes",  badge: null,           show: true,          action: () => navigate("/clientes") },
+    { icon: "archive",  label: "Arquivo",      route: "/arquivo",   badge: null,           show: true,          action: () => navigate("/arquivo") },
+    { icon: "settings", label: "Admin",        route: null,         badge: null,           show: isPrivileged,  action: onOpenAdmin },
+  ].filter(i => i.show);
+
+  return (
+    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: 56, background: THEME.sidebar, borderTop: `1px solid ${THEME.border}`, display: "flex", zIndex: 200, flexShrink: 0 }}>
+      {items.map(item => {
+        const active = item.route && (path === item.route || (item.route === "/processos" && path === "/"));
+        return (
+          <button
+            key={item.label}
+            onClick={item.action}
+            style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, background: "none", border: "none", cursor: "pointer", color: active ? ac : THEME.textDim, position: "relative", minHeight: 56 }}
+          >
+            <Icon name={item.icon} size={20} color={active ? ac : THEME.textDim} />
+            <span style={{ fontSize: 9, fontWeight: active ? 700 : 400 }}>{item.label}</span>
+            {item.badge > 0 && (
+              <span style={{ position: "absolute", top: 6, right: "calc(50% - 14px)", background: ac, color: "white", fontSize: 9, fontWeight: 700, borderRadius: 9999, padding: "1px 5px", minWidth: 16, textAlign: "center" }}>
+                {item.badge > 99 ? "99+" : item.badge}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 // ── Profile modal ─────────────────────────────────────────────────────────────
 function ProfileModal({ currentUser, onClose, onSave }) {
@@ -80,6 +124,7 @@ function ProfileModal({ currentUser, onClose, onSave }) {
 
 // ── Shell ─────────────────────────────────────────────────────────────────────
 export function Main() {
+  const { isMobile } = useWindowSize();
   const [processos,    setProcessos]    = useState(PROCESSOS);
   const [tarefas,      setTarefas]      = useState(() => store.getTarefas());
   const [inboxEmails,  setInboxEmails]  = useState(() => store.getInboxEmails());
@@ -207,7 +252,7 @@ export function Main() {
   return (
     // key={themeVersion} forces a full subtree re-render when theme changes,
     // ensuring all components re-read the mutated THEME object
-    <div key={themeVersion} style={{ display: "flex", height: "100vh", background: THEME.bg, overflow: "hidden" }}>
+    <div key={themeVersion} style={{ display: "flex", height: isMobile ? "100dvh" : "100vh", flexDirection: isMobile ? "column" : "row", background: THEME.bg, overflow: "hidden" }}>
       <style>{`
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
         * { scrollbar-width: thin; scrollbar-color: ${THEME.border} ${THEME.sidebar}; }
@@ -230,21 +275,38 @@ export function Main() {
       />
 
       {/* ── Main content area ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto", minWidth: 0 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto", minWidth: 0, paddingBottom: isMobile ? 56 : 0 }}>
 
-        {/* ── Topbar strip: theme toggle ── */}
-        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, padding: "8px 20px", borderBottom: `1px solid ${THEME.border}`, background: THEME.sidebar, flexShrink: 0 }}>
-          {/* Dark / light mode toggle */}
-          <button
-            onClick={toggleTheme}
-            title={themeMode === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", fontSize: 12, fontWeight: 500, background: "none", border: `1px solid ${THEME.border}`, borderRadius: 7, cursor: "pointer", color: THEME.textMuted }}
-            onMouseEnter={e => { e.currentTarget.style.background = THEME.sidebarHover; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
-          >
-            <Icon name={themeMode === "dark" ? "sun" : "moon"} size={14} color={THEME.textMuted} />
-            {themeMode === "dark" ? "Claro" : "Escuro"}
-          </button>
+        {/* ── Topbar strip: theme toggle + mobile user avatar ── */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: isMobile ? "8px 14px" : "8px 20px", borderBottom: `1px solid ${THEME.border}`, background: THEME.sidebar, flexShrink: 0 }}>
+          {/* App name on mobile */}
+          {isMobile && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 26, height: 26, background: accent, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon name="bar" size={13} color="white" />
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 700, color: THEME.text }}>Smart CRM</span>
+            </div>
+          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: isMobile ? 0 : "auto" }}>
+            {/* Dark / light mode toggle */}
+            <button
+              onClick={toggleTheme}
+              title={themeMode === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: isMobile ? "6px 10px" : "5px 12px", fontSize: 12, fontWeight: 500, background: "none", border: `1px solid ${THEME.border}`, borderRadius: 7, cursor: "pointer", color: THEME.textMuted, minHeight: isMobile ? 38 : "auto" }}
+              onMouseEnter={e => { e.currentTarget.style.background = THEME.sidebarHover; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
+            >
+              <Icon name={themeMode === "dark" ? "sun" : "moon"} size={14} color={THEME.textMuted} />
+              {!isMobile && (themeMode === "dark" ? "Claro" : "Escuro")}
+            </button>
+            {/* User avatar — mobile only, taps to open profile */}
+            {isMobile && (
+              <button onClick={() => setProfileOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex", alignItems: "center" }}>
+                <Avatar name={currentUser?.name || "U"} size={30} photo={currentUser?.photo} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* ── Page routes ── */}
@@ -296,6 +358,18 @@ export function Main() {
         />
       )}
       <Toast currentUser={currentUser} />
+
+      {/* Mobile bottom navigation */}
+      {isMobile && (
+        <BottomNav
+          currentUser={currentUser}
+          processosBadge={processosBadge}
+          tarefasBadge={tarefasBadge}
+          inboxBadge={inboxBadge}
+          accent={accent}
+          onOpenAdmin={() => setAdminOpen(true)}
+        />
+      )}
 
       {/* DEV ONLY — remove DevTools import and this block before production */}
       {import.meta.env.DEV && (

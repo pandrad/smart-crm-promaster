@@ -1,10 +1,11 @@
 import { THEME } from "../theme.js";
-import { daysLeft } from "../utils.js";
+import { daysLeft, useWindowSize } from "../utils.js";
 import { Icon } from "../icons.jsx";
 import { Tag } from "./Primitives.jsx";
-import { TYPE_COLORS } from "../pages/Tarefas.jsx";
+import { getTypeColor } from "../pages/Tarefas.jsx";
 
 export function SupervisorWidget({ processos, tarefas, onOpenTask }) {
+  const { isMobile } = useWindowSize();
   const month = 5;
   const year  = 2026;
 
@@ -38,7 +39,7 @@ export function SupervisorWidget({ processos, tarefas, onOpenTask }) {
       </div>
 
       {/* Stat cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: 10 }}>
         {[
           { label: "Abertos mês",   value: openedThisMonth, color: THEME.info    },
           { label: "Fechados mês",  value: closedThisMonth, color: THEME.success },
@@ -61,7 +62,7 @@ export function SupervisorWidget({ processos, tarefas, onOpenTask }) {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {escalated.map(t => {
-              const tc = TYPE_COLORS[t.type] || TYPE_COLORS["Diversos"];
+              const tc = getTypeColor(t.type);
               // Find who escalated (last "Escalada" history entry actor)
               const escalatedBy = [...(t.history || [])].reverse().find(h => h.action === "Escalada")?.actor || "—";
               return (

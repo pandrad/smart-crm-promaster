@@ -4,6 +4,7 @@ import { MOCK_IMPORT_PREVIEW } from "../mock/data.js";
 import { Avatar, Tag } from "./Primitives.jsx";
 import { Icon } from "../icons.jsx";
 import { THEME } from "../theme.js";
+import { useWindowSize } from "../utils.js";
 
 // ── Shared UI helpers ─────────────────────────────────────────────────────────
 
@@ -421,11 +422,10 @@ function RolesTab() {
 
 // ── Task Assignment tab ───────────────────────────────────────────────────────
 
-const TASK_TYPE_LIST = [
-  "Validação de Processo",
-  "Pré-Entrada","Desconto","Status Encomenda",
-  "Contas Correntes","Cliente Novo","Diversos","Follow-up","Escalação",
-];
+// AssignmentTab reads task types from store so admin-added types appear here automatically
+function getTaskTypeList() {
+  return store.getTaskTypes().map(t => t.label);
+}
 
 function AssignmentTab() {
   const allUsers = store.getUsers().filter(u => u.active !== false);
@@ -516,7 +516,7 @@ function AssignmentTab() {
           Seleccionar "Sem responsável" envia a tarefa para a lista do Supervisor para atribuição manual.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {TASK_TYPE_LIST.map(type => {
+          {getTaskTypeList().map(type => {
             const currentOwner = taskRules[type] ?? "";
             return (
               <div key={type} style={{ background: THEME.sidebar, borderRadius: 9, border: `1px solid ${THEME.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
@@ -540,6 +540,36 @@ function AssignmentTab() {
           {savedTask && <span style={{ fontSize: 12, color: THEME.success, fontWeight: 500 }}>✓ Guardado</span>}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Task Types tab ────────────────────────────────────────────────────────────
+
+function TaskTypesTab() {
+  return (
+    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-start" }}>
+      <StatusList
+        title="Tipos de Tarefa"
+        getItems={store.getTaskTypes}
+        saveItems={store.saveTaskTypes}
+        dotShape="circle"
+      />
+    </div>
+  );
+}
+
+// ── Task Statuses tab ─────────────────────────────────────────────────────────
+
+function TaskStatusesTab() {
+  return (
+    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-start" }}>
+      <StatusList
+        title="Estados de Tarefa"
+        getItems={store.getTaskStatuses}
+        saveItems={store.saveTaskStatuses}
+        dotShape="circle"
+      />
     </div>
   );
 }
@@ -1005,34 +1035,40 @@ function ImportTab() {
 // ── Shell ─────────────────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: "users",      label: "Utilizadores", icon: "users"    },
-  { id: "statuses",   label: "Estados",      icon: "tag"      },
-  { id: "priorities", label: "Prioridades",  icon: "alert"    },
-  { id: "roles",      label: "Funções",      icon: "user"     },
-  { id: "assignment", label: "Atribuição de Tarefas", icon: "cpu" },
-  { id: "sla",        label: "SLA",          icon: "alert"    },
-  { id: "inbox",      label: "Log Inbox",    icon: "inbox"    },
-  { id: "branding",   label: "Marca",        icon: "settings" },
-  { id: "import",     label: "Importar",     icon: "upload"   },
+  { id: "users",        label: "Utilizadores",     icon: "users"    },
+  { id: "statuses",     label: "Estados",          icon: "tag"      },
+  { id: "task-types",   label: "Tipos de Tarefa",  icon: "tasks"    },
+  { id: "task-statuses",label: "Estados de Tarefa",icon: "tag"      },
+  { id: "priorities",   label: "Prioridades",      icon: "alert"    },
+  { id: "roles",        label: "Funções",           icon: "user"     },
+  { id: "assignment",   label: "Atribuição de Tarefas", icon: "cpu" },
+  { id: "sla",          label: "SLA",              icon: "alert"    },
+  { id: "inbox",        label: "Log Inbox",        icon: "inbox"    },
+  { id: "branding",     label: "Marca",            icon: "settings" },
+  { id: "import",       label: "Importar",         icon: "upload"   },
 ];
 
 export function AdminPanel({ onClose, onBrandingChange, onUsersChange }) {
+  const { isMobile } = useWindowSize();
   const [activeTab, setActiveTab] = useState("users");
 
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100 }} />
-      <div style={{ position: "fixed", top: 0, right: 0, height: "100vh", width: 800, maxWidth: "96vw", background: THEME.sidebar, zIndex: 101, display: "flex", flexDirection: "column", boxShadow: "-6px 0 40px rgba(0,0,0,0.14)" }}>
+      <div style={isMobile
+        ? { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: THEME.sidebar, zIndex: 101, display: "flex", flexDirection: "column" }
+        : { position: "fixed", top: 0, right: 0, height: "100vh", width: 800, maxWidth: "96vw", background: THEME.sidebar, zIndex: 101, display: "flex", flexDirection: "column", boxShadow: "-6px 0 40px rgba(0,0,0,0.14)" }
+      }>
 
         {/* header */}
-        <div style={{ background: THEME.card, borderBottom: `1px solid ${THEME.border}`, padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+        <div style={{ background: THEME.card, borderBottom: `1px solid ${THEME.border}`, padding: isMobile ? "12px 16px" : "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 30, height: 30, background: "#2563eb", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Icon name="settings" size={14} color="white" />
             </div>
             <div>
               <div style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Administração</div>
-              <div style={{ fontSize: 11, color: THEME.textMuted }}>Configurações do sistema</div>
+              {!isMobile && <div style={{ fontSize: 11, color: THEME.textMuted }}>Configurações do sistema</div>}
             </div>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}>
@@ -1040,28 +1076,31 @@ export function AdminPanel({ onClose, onBrandingChange, onUsersChange }) {
           </button>
         </div>
 
-        {/* tab bar — scrollable so all 7 tabs fit */}
+        {/* tab bar — icon-only on mobile */}
         <div style={{ background: THEME.card, borderBottom: `1px solid ${THEME.border}`, display: "flex", flexShrink: 0, overflowX: "auto" }}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 14px", fontSize: 13, fontWeight: 500, border: "none", borderBottom: activeTab === t.id ? `2px solid ${THEME.accent}` : "2px solid transparent", background: "none", color: activeTab === t.id ? THEME.accent : THEME.textDim, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
-              <Icon name={t.icon} size={13} color={activeTab === t.id ? THEME.accent : THEME.textDim} />
-              {t.label}
+              title={isMobile ? t.label : undefined}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: isMobile ? 0 : 6, padding: isMobile ? "10px 12px" : "10px 14px", fontSize: 13, fontWeight: 500, border: "none", borderBottom: activeTab === t.id ? `2px solid ${THEME.accent}` : "2px solid transparent", background: "none", color: activeTab === t.id ? THEME.accent : THEME.textDim, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, minWidth: isMobile ? 44 : "auto", minHeight: 44 }}>
+              <Icon name={t.icon} size={isMobile ? 18 : 13} color={activeTab === t.id ? THEME.accent : THEME.textDim} />
+              {!isMobile && t.label}
             </button>
           ))}
         </div>
 
         {/* content */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
-          {activeTab === "users"      && <UsersTab onUsersChange={onUsersChange} />}
-          {activeTab === "statuses"   && <StatusesTab />}
-          {activeTab === "priorities" && <PrioritiesTab />}
-          {activeTab === "roles"      && <RolesTab />}
-          {activeTab === "assignment" && <AssignmentTab />}
-          {activeTab === "sla"        && <SLATab />}
-          {activeTab === "inbox"      && <InboxLogTab />}
-          {activeTab === "branding"   && <BrandingTab onBrandingChange={onBrandingChange} />}
-          {activeTab === "import"     && <ImportTab />}
+        <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "16px" : "24px" }}>
+          {activeTab === "users"         && <UsersTab onUsersChange={onUsersChange} />}
+          {activeTab === "statuses"      && <StatusesTab />}
+          {activeTab === "task-types"    && <TaskTypesTab />}
+          {activeTab === "task-statuses" && <TaskStatusesTab />}
+          {activeTab === "priorities"    && <PrioritiesTab />}
+          {activeTab === "roles"         && <RolesTab />}
+          {activeTab === "assignment"    && <AssignmentTab />}
+          {activeTab === "sla"           && <SLATab />}
+          {activeTab === "inbox"         && <InboxLogTab />}
+          {activeTab === "branding"      && <BrandingTab onBrandingChange={onBrandingChange} />}
+          {activeTab === "import"        && <ImportTab />}
         </div>
       </div>
     </>
