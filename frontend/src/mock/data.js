@@ -598,6 +598,37 @@ export const TAREFAS = [
       },
     ],
   },
+
+  // T011 — Não Classificado: AI could not classify this email; assigned to Supervisor
+  {
+    id: "T011",
+    type: "Não Classificado",
+    status: "Por Fazer",
+    owner: "Supervisor",
+    client: "Remetente desconhecido",
+    originEmail: {
+      sender: "noreply@sistemas-internos.co.ao",
+      senderName: "Sistemas Internos",
+      subject: "REF: 4482-B / Actualização de cadastro",
+      preview: "Prezados, na sequência da circular 4482-B solicitamos actualização do vosso cadastro no portal de fornecedores…",
+      body: "Prezados,\n\nNa sequência da circular 4482-B emitida pelo Ministério do Comércio, solicitamos que procedam à actualização do vosso cadastro no portal de fornecedores até ao dia 30/05/2026.\n\nOs documentos necessários são:\n- Certidão comercial actualizada\n- NIF válido\n- Declaração de não dívida à Segurança Social\n\nPara mais informações consultar o portal: portal.minfin.gov.ao\n\nAtenciosamente,\nDepartamento de Cadastros",
+      attachments: [{ name: "Circular_4482-B.pdf" }],
+    },
+    originProcesso: null,
+    description: "Email não classificado pela IA — remetente e assunto não correspondem a nenhuma categoria conhecida. Atribuído ao Supervisor para triagem manual.",
+    escalationNote: null,
+    priority: "Normal",
+    created: "15/05/2026",
+    due: "17/05/2026",
+    history: [
+      {
+        actor: "Sistema",
+        action: "Não Classificado",
+        note: "IA não conseguiu classificar este email. Confiança abaixo do limiar mínimo. Atribuído ao Supervisor para triagem manual.",
+        ts: "15/05 16:02",
+      },
+    ],
+  },
 ];
 
 // ── Inbox emails ──────────────────────────────────────────────────────────────

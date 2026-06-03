@@ -7,13 +7,16 @@ import { Icon } from "../icons.jsx";
 
 export const TASK_TYPES = [
   "Validação de Processo",
+  "Não Classificado",
   "Pré-Entrada", "Desconto", "Status Encomenda",
   "Contas Correntes", "Cliente Novo", "Diversos", "Follow-up", "Escalação",
+  "Abertura de Processo",
 ];
-export const TASK_STATUSES = ["Por Fazer", "Em Curso", "Bloqueado", "Concluído", "Escalado", "Devolvido", "Cancelado"];
+export const TASK_STATUSES = ["Por Fazer", "Em Curso", "Devolvido", "Escalado", "Concluído", "Cancelado", "Cancelamento Pendente"];
 
 export const TYPE_COLORS = {
   "Validação de Processo": { bg: "#0c1a2e",        color: "#93c5fd"      },
+  "Não Classificado":      { bg: "#2d0a0a",        color: "#f87171"      },
   "Pré-Entrada":           { bg: "#1e3a5f",        color: "#60a5fa"      },
   "Status Encomenda":      { bg: THEME.successBg,  color: THEME.success  },
   "Desconto":              { bg: THEME.warningBg,  color: THEME.warning  },
@@ -22,6 +25,7 @@ export const TYPE_COLORS = {
   "Follow-up":             { bg: "#0c2231",        color: "#38bdf8"      },
   "Escalação":             { bg: THEME.dangerBg,   color: THEME.danger   },
   "Diversos":              { bg: THEME.sidebar,    color: THEME.textMuted},
+  "Abertura de Processo":  { bg: "#0a2015",        color: "#4ade80"      },
 };
 
 export const STATUS_COLORS = {
@@ -31,7 +35,8 @@ export const STATUS_COLORS = {
   "Concluído":  { bg: THEME.successBg, color: THEME.success   },
   "Escalado":   { bg: "#2d0a2d",       color: "#e879f9"       },
   "Devolvido":  { bg: "#1c1005",       color: "#fb923c"       },
-  "Cancelado":  { bg: THEME.sidebar,   color: THEME.textDim   },
+  "Cancelado":              { bg: THEME.sidebar,   color: THEME.textDim   },
+  "Cancelamento Pendente":  { bg: "#2d1505",       color: "#fb923c"       },
 };
 
 const LABEL = { fontSize: 10, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 };
@@ -147,6 +152,46 @@ function CancelarTarefaModal({ onClose, onSave }) {
               style={{ background: reason.trim() ? THEME.danger : THEME.border, color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: reason.trim() ? "pointer" : "default" }}
             >
               Confirmar cancelamento
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Rejeitar Cancelamento modal ───────────────────────────────────────────────
+function RejeitarCancelamentoModal({ onClose, onSave }) {
+  const [note, setNote] = useState("");
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, borderRadius: 14, width: 440, maxWidth: "95vw", border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Rejeitar Cancelamento</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
+        </div>
+        <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ background: THEME.warningBg, border: `1px solid ${THEME.warning}44`, borderRadius: 7, padding: "8px 12px", fontSize: 12, color: THEME.warning }}>
+            A tarefa voltará a <strong>Em Curso</strong>. Indique o motivo da rejeição ao responsável.
+          </div>
+          <div>
+            <label style={{ fontSize: 10, fontWeight: 600, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>
+              Motivo da rejeição <span style={{ color: THEME.danger }}>*</span>
+            </label>
+            <textarea
+              value={note} onChange={e => setNote(e.target.value)}
+              rows={3} placeholder="Indique por que o cancelamento não pode ser aprovado…"
+              style={{ ...INPUT_STYLE, resize: "vertical", fontFamily: "inherit", lineHeight: 1.5 }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
+            <button
+              onClick={() => { if (note.trim()) { onSave(note.trim()); onClose(); } }}
+              disabled={!note.trim()}
+              style={{ background: note.trim() ? THEME.warning : THEME.border, color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: note.trim() ? "pointer" : "default" }}
+            >
+              Rejeitar
             </button>
           </div>
         </div>
@@ -359,6 +404,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   const isOwner      = t.owner === currentUser?.name;
   const isDone       = t.status === "Concluído" || t.status === "Cancelado";
   const isEscalated  = t.status === "Escalado";
+  const isCancelPending = t.status === "Cancelamento Pendente";
   const isPre        = t.type   === "Pré-Entrada";
   const isValidation = t.type   === "Validação de Processo";
   const isDevolvido  = t.status === "Devolvido";
@@ -512,11 +558,27 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     );
   }
 
-  // Action: Cancelar Tarefa (assigned person only — never admin/supervisor on someone else's)
+  // Action: Cancelar Tarefa — puts task into Cancelamento Pendente for supervisor approval
   function handleCancelar(reason) {
     update(
+      { status: "Cancelamento Pendente", cancelReason: reason },
+      { actor: currentUser?.name, action: "Cancelamento Pedido", note: reason }
+    );
+  }
+
+  // Action: Aprovar Cancelamento (supervisor/admin only, when Cancelamento Pendente)
+  function handleAprovarCancelamento() {
+    update(
       { status: "Cancelado" },
-      { actor: currentUser?.name, action: "Cancelado", note: reason }
+      { actor: currentUser?.name, action: "Cancelamento Aprovado", note: t.cancelReason || "" }
+    );
+  }
+
+  // Action: Rejeitar Cancelamento (supervisor/admin only, when Cancelamento Pendente)
+  function handleRejeitarCancelamento(note) {
+    update(
+      { status: "Em Curso", cancelReason: null },
+      { actor: currentUser?.name, action: "Cancelamento Rejeitado", note }
     );
   }
 
@@ -538,7 +600,6 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 <Tag bg={tc.bg} color={tc.color}>{t.type}</Tag>
                 <Tag bg={sc.bg} color={sc.color}>{t.status}</Tag>
-                {t.priority === "Alta" && <Tag bg={THEME.dangerBg} color={THEME.danger}>🔴 Alta</Tag>}
                 {isEscalated && <Tag bg="#2d0a2d" color="#e879f9">⚠ Escalada</Tag>}
               </div>
             </div>
@@ -572,7 +633,6 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
               ["Estado",   t.status],
               ["Criado",   t.created],
               ["Prazo",    t.due],
-              ["Prioridade", t.priority],
               ["Processo", t.originProcesso || "—"],
             ].map(([lbl, val]) => (
               <div key={lbl}>
@@ -761,6 +821,34 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
               </>
             )}
 
+            {/* ── Cancelamento Pendente — supervisor approval/rejection ── */}
+            {isCancelPending && isPrivileged && (
+              <>
+                <div style={{ background: "#2d1505", border: "1px solid #fb923c44", borderRadius: 8, padding: "9px 13px", fontSize: 12, color: "#fb923c" }}>
+                  <strong>Pedido de cancelamento</strong> — {t.cancelReason || "Sem motivo indicado"}
+                </div>
+                <button
+                  onClick={handleAprovarCancelamento}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.successBg, color: THEME.success, border: `1px solid ${THEME.success}44`, borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                >
+                  <Icon name="check" size={14} color={THEME.success} /> Aprovar cancelamento
+                </button>
+                <button
+                  onClick={() => setModal("rejeitarCancelamento")}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.warningBg, color: THEME.warning, border: `1px solid ${THEME.warning}44`, borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                >
+                  <Icon name="x" size={14} color={THEME.warning} /> Rejeitar e devolver
+                </button>
+              </>
+            )}
+
+            {/* Cancelamento Pendente — waiting label for non-privileged */}
+            {isCancelPending && !isPrivileged && (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#2d1505", color: "#fb923c", border: "1px solid #fb923c44", borderRadius: 8, padding: 10, fontSize: 13 }}>
+                <Icon name="alert" size={14} color="#fb923c" /> A aguardar aprovação de cancelamento
+              </div>
+            )}
+
             {/* Completed / Cancelled state label */}
             {isDone && (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textDim, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 10, fontSize: 13 }}>
@@ -772,14 +860,15 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
         </div>
       </div>
 
-      {modal === "validar"       && <ValidarModal       task={t} onClose={() => setModal(null)} onSave={handleValidar} />}
-      {modal === "devolver"      && <DevolverModal      onClose={() => setModal(null)} onSave={handleDevolver} />}
-      {modal === "resubmeter"    && <ResubmeterModal    onClose={() => setModal(null)} onSave={handleResubmeter} />}
-      {modal === "cancelar"      && <CancelarTarefaModal onClose={() => setModal(null)} onSave={handleCancelar} />}
-      {modal === "concluir"      && <ConcluirModal      onClose={() => setModal(null)} onSave={handleConcluir} />}
-      {modal === "abrirProcesso" && <AbrirProcessoModal task={t} onClose={() => setModal(null)} onSave={handleAbrirProcesso} />}
-      {modal === "passar"        && <PassarModal        users={users} onClose={() => setModal(null)} onSave={handlePassar} />}
-      {modal === "escalar"       && <EscalarModal       users={users} onClose={() => setModal(null)} onSave={handleEscalar} />}
+      {modal === "validar"               && <ValidarModal              task={t} onClose={() => setModal(null)} onSave={handleValidar} />}
+      {modal === "devolver"              && <DevolverModal             onClose={() => setModal(null)} onSave={handleDevolver} />}
+      {modal === "resubmeter"            && <ResubmeterModal           onClose={() => setModal(null)} onSave={handleResubmeter} />}
+      {modal === "cancelar"              && <CancelarTarefaModal       onClose={() => setModal(null)} onSave={handleCancelar} />}
+      {modal === "rejeitarCancelamento"  && <RejeitarCancelamentoModal onClose={() => setModal(null)} onSave={handleRejeitarCancelamento} />}
+      {modal === "concluir"              && <ConcluirModal             onClose={() => setModal(null)} onSave={handleConcluir} />}
+      {modal === "abrirProcesso"         && <AbrirProcessoModal        task={t} onClose={() => setModal(null)} onSave={handleAbrirProcesso} />}
+      {modal === "passar"                && <PassarModal               users={users} onClose={() => setModal(null)} onSave={handlePassar} />}
+      {modal === "escalar"               && <EscalarModal              users={users} onClose={() => setModal(null)} onSave={handleEscalar} />}
     </>
   );
 }
@@ -874,7 +963,7 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
             <thead>
               <tr style={{ background: THEME.sidebar, borderBottom: `1px solid ${THEME.border}` }}>
-                {["Nº", "Tipo", "Cliente", "Processo", "Responsável", "Estado", "Prazo", "P"].map(h => (
+                {["Nº", "Tipo", "Cliente", "Processo", "Responsável", "Estado", "Prazo"].map(h => (
                   <th key={h} style={{ padding: "9px 12px", fontSize: 10, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "left", whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
@@ -915,9 +1004,6 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
                       </div>
                     </td>
                     <td style={{ padding: "9px 12px", fontSize: 11, color: THEME.textMuted }}>{t.due}</td>
-                    <td style={{ padding: "9px 12px" }}>
-                      <span style={{ width: 8, height: 8, borderRadius: "50%", display: "inline-block", background: t.priority === "Alta" ? THEME.danger : THEME.border }} />
-                    </td>
                   </tr>
                 );
               })}

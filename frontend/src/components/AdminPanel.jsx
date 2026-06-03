@@ -544,6 +544,186 @@ function AssignmentTab() {
   );
 }
 
+// ── SLA tab ───────────────────────────────────────────────────────────────────
+
+const TASK_SLA_LABELS = {
+  "Por Fazer": "Tarefa em espera sem início",
+  "Em Curso":  "Tarefa activa em progresso",
+  "Devolvido": "Tarefa devolvida aguarda resubmissão",
+  "Escalado":  "Tarefa escalada aguarda supervisão",
+};
+
+function SLATab() {
+  const stages = store.getStages();
+  const [settings, setSettings] = useState(() => store.getSLASettings());
+  const [saved, setSaved] = useState(false);
+
+  function setTaskSLA(status, hours) {
+    const val = parseInt(hours, 10);
+    if (isNaN(val) || val < 1) return;
+    setSettings(s => ({ ...s, tasks: { ...s.tasks, [status]: val } }));
+  }
+
+  function setStageSLA(id, days) {
+    const val = parseInt(days, 10);
+    if (isNaN(val) || val < 1) return;
+    setSettings(s => ({ ...s, stages: { ...s.stages, [id]: val } }));
+  }
+
+  function handleSave() {
+    store.saveSLASettings(settings);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  }
+
+  return (
+    <div style={{ maxWidth: 580 }}>
+      <SectionHeader title="SLA — Limites de Tempo" />
+      <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 24 }}>
+        Define os limites de tempo para cada estado. O sistema sinaliza automaticamente quando um registo excede o prazo configurado.
+      </p>
+
+      {/* ── Task state SLAs (hours) ── */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Estados de Tarefa — horas
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {Object.entries(TASK_SLA_LABELS).map(([status, hint]) => (
+            <div key={status} style={{ background: THEME.sidebar, borderRadius: 9, border: `1px solid ${THEME.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: THEME.text }}>{status}</div>
+                <div style={{ fontSize: 11, color: THEME.textDim, marginTop: 1 }}>{hint}</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="number" min="1" max="999"
+                  value={settings.tasks[status] ?? ""}
+                  onChange={e => setTaskSLA(status, e.target.value)}
+                  style={{ width: 64, padding: "5px 8px", fontSize: 13, border: `1px solid ${THEME.border}`, borderRadius: 7, background: THEME.bg, color: THEME.text, outline: "none", textAlign: "right" }}
+                />
+                <span style={{ fontSize: 12, color: THEME.textDim, minWidth: 28 }}>h</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Process stage SLAs (days) ── */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Estados do Processo — dias
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {stages.map(s => (
+            <div key={s.id} style={{ background: THEME.sidebar, borderRadius: 9, border: `1px solid ${THEME.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ width: 10, height: 10, borderRadius: 3, background: s.color, flexShrink: 0 }} />
+              <div style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{s.label}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="number" min="1" max="999"
+                  value={settings.stages[s.id] ?? ""}
+                  onChange={e => setStageSLA(s.id, e.target.value)}
+                  style={{ width: 64, padding: "5px 8px", fontSize: 13, border: `1px solid ${THEME.border}`, borderRadius: 7, background: THEME.bg, color: THEME.text, outline: "none", textAlign: "right" }}
+                />
+                <span style={{ fontSize: 12, color: THEME.textDim, minWidth: 42 }}>dias</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <button onClick={handleSave} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          Guardar SLA
+        </button>
+        {saved && <span style={{ fontSize: 12, color: THEME.success, fontWeight: 500 }}>✓ Guardado</span>}
+      </div>
+    </div>
+  );
+}
+
+// ── Inbox log tab ─────────────────────────────────────────────────────────────
+
+const INBOX_ACTION_LABELS = {
+  triaged:   { label: "Confirmado como Processo", color: "#60a5fa", bg: "#1e3a5f" },
+  processed: { label: "Confirmado como Tarefa",   color: "#4ade80", bg: "#052e16" },
+  diversos:  { label: "Diversos",                 color: "#94a3b8", bg: "#1e293b" },
+  pending:   { label: "Pendente",                 color: "#f59e0b", bg: "#1c1005" },
+};
+
+function InboxLogTab() {
+  const [search, setSearch] = useState("");
+  const emails = store.getInboxEmails();
+
+  const rows = emails.filter(e => {
+    if (e.isInternal) return false;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return [e.senderName, e.sender, e.subject, e.aiSuggestion?.type].some(v => v?.toLowerCase().includes(q));
+  });
+
+  return (
+    <div>
+      <SectionHeader title="Log de Inbox" />
+      <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 16 }}>
+        Todos os emails recebidos — classificação por IA e acção tomada. Só de leitura.
+      </p>
+      <div style={{ marginBottom: 14 }}>
+        <input
+          value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Pesquisar remetente, assunto ou tipo…"
+          style={{ width: "100%", padding: "7px 10px", fontSize: 13, border: `1px solid ${THEME.border}`, borderRadius: 7, outline: "none", background: THEME.sidebar, color: THEME.text, boxSizing: "border-box" }}
+        />
+      </div>
+      <div style={{ background: THEME.card, borderRadius: 10, border: `1px solid ${THEME.border}`, overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+          <thead>
+            <tr style={{ background: THEME.sidebar, borderBottom: `1px solid ${THEME.border}` }}>
+              {["Recebido", "Remetente", "Assunto", "Sugestão IA", "Confiança", "Acção"].map(h => (
+                <th key={h} style={{ padding: "8px 12px", fontSize: 10, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "left", whiteSpace: "nowrap" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(e => {
+              const action = INBOX_ACTION_LABELS[e.status] || INBOX_ACTION_LABELS["pending"];
+              const aiType = e.aiSuggestion?.type;
+              const conf   = e.aiSuggestion ? Math.round(e.aiSuggestion.confidence * 100) + "%" : "—";
+              const isUnclassified = !e.aiSuggestion || e.aiSuggestion.type === "Não Classificado";
+              return (
+                <tr key={e.id} style={{ borderBottom: `1px solid ${THEME.borderLight}`, background: THEME.bg }}>
+                  <td style={{ padding: "8px 12px", color: THEME.textDim, whiteSpace: "nowrap" }}>{e.received}</td>
+                  <td style={{ padding: "8px 12px" }}>
+                    <div style={{ fontWeight: 600, color: THEME.text }}>{e.senderName}</div>
+                    <div style={{ fontSize: 10, color: THEME.textDim }}>{e.sender}</div>
+                  </td>
+                  <td style={{ padding: "8px 12px", color: THEME.textMuted, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.subject}</td>
+                  <td style={{ padding: "8px 12px" }}>
+                    {isUnclassified
+                      ? <Tag bg="#2d0a0a" color="#f87171">Não Classificado</Tag>
+                      : <Tag bg="#1e293b" color="#94a3b8">{aiType}</Tag>
+                    }
+                  </td>
+                  <td style={{ padding: "8px 12px", color: isUnclassified ? THEME.danger : THEME.textMuted }}>{conf}</td>
+                  <td style={{ padding: "8px 12px" }}>
+                    <Tag bg={action.bg} color={action.color}>{action.label}</Tag>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {rows.length === 0 && (
+          <p style={{ textAlign: "center", color: THEME.textDim, padding: "32px 0", fontSize: 13 }}>
+            {search ? "Nenhum email encontrado" : "Sem emails no log"}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Branding tab ──────────────────────────────────────────────────────────────
 
 function LogoUploader({ logoUrl, accent, onLogoChange }) {
@@ -830,6 +1010,8 @@ const TABS = [
   { id: "priorities", label: "Prioridades",  icon: "alert"    },
   { id: "roles",      label: "Funções",      icon: "user"     },
   { id: "assignment", label: "Atribuição de Tarefas", icon: "cpu" },
+  { id: "sla",        label: "SLA",          icon: "alert"    },
+  { id: "inbox",      label: "Log Inbox",    icon: "inbox"    },
   { id: "branding",   label: "Marca",        icon: "settings" },
   { id: "import",     label: "Importar",     icon: "upload"   },
 ];
@@ -876,6 +1058,8 @@ export function AdminPanel({ onClose, onBrandingChange, onUsersChange }) {
           {activeTab === "priorities" && <PrioritiesTab />}
           {activeTab === "roles"      && <RolesTab />}
           {activeTab === "assignment" && <AssignmentTab />}
+          {activeTab === "sla"        && <SLATab />}
+          {activeTab === "inbox"      && <InboxLogTab />}
           {activeTab === "branding"   && <BrandingTab onBrandingChange={onBrandingChange} />}
           {activeTab === "import"     && <ImportTab />}
         </div>

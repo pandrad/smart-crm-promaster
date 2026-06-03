@@ -17,6 +17,7 @@ const DEFAULT_ROLES = [
   { id: "comercial",  label: "Resp. Comercial"  },
   { id: "cotacao",    label: "Resp. Cotação"    },
   { id: "compra",     label: "Resp. Compra"     },
+  { id: "abertura",   label: "Resp. Abertura"   },
   { id: "viewer",     label: "Visualizador"     },
 ];
 
@@ -67,7 +68,9 @@ export const store = {
   // Configured via the "Atribuição de Tarefas" admin tab (task section).
   getTaskAssignment() {
     return load("crm_task_assignment", {
-      "Validação de Processo": "Adelina Rodrigues", // Resp. Cotação validates before opening
+      "Validação de Processo": "Adelina Rodrigues",
+      "Não Classificado":      null,               // routes to Supervisor for manual triage
+      "Abertura de Processo":  null,               // assigned to Resp. Abertura when configured
       "Pré-Entrada":           "Adelina Rodrigues",
       "Desconto":              "Marta Costa",
       "Status Encomenda":      "Tiago Pinto",
@@ -87,6 +90,32 @@ export const store = {
   // ── Inbox emails ───────────────────────────────────────────────────────────
   getInboxEmails()       { return load("crm_inbox", INBOX_EMAILS); },
   saveInboxEmails(items) { save("crm_inbox", items); },
+
+  // ── SLA settings ─────────────────────────────────────────────────────────────
+  getSLASettings() {
+    return load("crm_sla", {
+      tasks: {
+        "Por Fazer":  48,
+        "Em Curso":   72,
+        "Devolvido":  24,
+        "Escalado":   4,
+      },
+      stages: {
+        1:  1,
+        2:  2,
+        3:  3,
+        4:  3,
+        5:  5,
+        6:  2,
+        7:  3,
+        8:  3,
+        9:  5,
+        10: 7,
+        11: 1,
+      },
+    });
+  },
+  saveSLASettings(settings) { save("crm_sla", settings); },
 
   // ── Column visibility preferences (keyed by user email) ───────────────────
   getColumnPrefs(email) {

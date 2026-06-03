@@ -38,4 +38,5 @@ export const USERS = [
   { id:  9, name: "Carlos Andrade",    email: "carlos@promaster.co",     role: "compra",     active: true },
   { id: 10, name: "Admin",             email: "admin@promaster.co",      role: "admin",      active: true },
   { id: 11, name: "Supervisor",        email: "supervisor@promaster.co", role: "supervisor", active: true },
+  { id: 12, name: "Luísa Baptista",    email: "luisa@promaster.co",      role: "abertura",   active: true },
 ];

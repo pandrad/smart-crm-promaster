@@ -94,12 +94,14 @@ export function Sidebar({ currentUser, processosBadge, tarefasBadge, inboxBadge,
           badge={tarefasBadge}
           onClick={() => navigate("/tarefas")}
         />
-        <NavItem
-          icon="inbox" label="Inbox"
-          path="/inbox" active={path === "/inbox"}
-          badge={inboxBadge}
-          onClick={() => navigate("/inbox")}
-        />
+        {(isAdmin || isSupervisor) && (
+          <NavItem
+            icon="inbox" label="Inbox"
+            path="/inbox" active={path === "/inbox"}
+            badge={inboxBadge}
+            onClick={() => navigate("/inbox")}
+          />
+        )}
 
         <NavSection label="Gestão" />
         <NavItem

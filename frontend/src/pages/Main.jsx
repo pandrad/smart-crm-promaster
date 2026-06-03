@@ -181,12 +181,16 @@ export function Main() {
   const processosBadge = processos.filter(p => !p.archived && p.status < 7).length;
   const tarefasBadge   = tarefas.filter(t => {
     const active = t.status === "Por Fazer" || t.status === "Em Curso" ||
-                   t.status === "Bloqueado" || t.status === "Escalado";
+                   t.status === "Escalado"  || t.status === "Devolvido" ||
+                   t.status === "Cancelamento Pendente";
     if (!active) return false;
-    if (isPrivileged) return true;   // admin/supervisor see all active tasks
+    if (isPrivileged) return true;
     return t.owner === currentUser?.name || t.owner === null;
   }).length;
-  const inboxBadge = inboxEmails.filter(e => !e.isInternal && e.status === "pending").length;
+  // Inbox badge only relevant for admin/supervisor (standard users don't see Inbox nav item)
+  const inboxBadge = isPrivileged
+    ? inboxEmails.filter(e => !e.isInternal && e.status === "pending").length
+    : 0;
 
   const sharedProps = {
     processos, setProcessos,

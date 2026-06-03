@@ -181,9 +181,9 @@ function ReassignModal({ p, users, onClose, onSave }) {
 
 // ── Consulta checklist — only when status === 5 ───────────────────────────────
 function ConsultaChecklist({ consulta, onChange }) {
-  // SLA: 48h for pedido, 72h for resposta (mock)
-  const SLA_PEDIDO   = 48;
-  const SLA_RESPOSTA = 72;
+  const sla = store.getSLASettings();
+  const SLA_PEDIDO   = sla.tasks["Em Curso"]  ?? 48;
+  const SLA_RESPOSTA = sla.tasks["Por Fazer"] ?? 72;
 
   function hoursAgo(ts) {
     if (!ts) return null;

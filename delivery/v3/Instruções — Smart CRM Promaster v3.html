@@ -280,6 +280,23 @@
 
 <hr/>
 
+<h3>Painel de ferramentas de teste <span class="badge badge-new">Apenas nesta versão de revisão</span></h3>
+<p>Esta versão inclui um painel de ferramentas de teste no <strong>canto inferior direito</strong> (etiqueta <strong>⚠ DEV ONLY</strong> a vermelho). Serve exclusivamente para facilitar a revisão — não estará presente na versão final para o cliente.</p>
+<p>Clique no cabeçalho para expandir/colapsar o painel. Ferramentas disponíveis:</p>
+<table>
+  <tr><th>#</th><th>Ferramenta</th><th>O que faz</th></tr>
+  <tr><td>1</td><td><strong>Trocar utilizador</strong></td><td>Muda instantaneamente o utilizador com sessão iniciada — permite testar os três perfis sem passar pelo login</td></tr>
+  <tr><td>2</td><td><strong>Gerar email aleatório</strong></td><td>Adiciona um email de entrada aleatório ao Inbox em tempo real, com sugestão de IA gerada automaticamente</td></tr>
+  <tr><td>3</td><td><strong>Gerar processo aleatório</strong></td><td>Cria um processo com número sequencial, cliente e equipamento aleatórios e equipa atribuída pelas regras configuradas</td></tr>
+  <tr><td>4</td><td><strong>Limpar Inbox e Tarefas</strong></td><td>Remove todos os emails e tarefas — ponto de partida limpo para testar o fluxo de triagem</td></tr>
+  <tr><td>5</td><td><strong>Limpar Processos</strong></td><td>Remove todos os processos da lista</td></tr>
+  <tr><td>6</td><td><strong>Limpar dados admin</strong></td><td>Repõe as configurações do painel de administração (mantém o utilizador actual)</td></tr>
+  <tr><td>7</td><td><strong>Repor todos os dados mock</strong></td><td>Repõe tudo ao estado original — processos, tarefas, inbox, e configurações. Usar quando quiser recomeçar do zero.</td></tr>
+</table>
+<div class="note">As ferramentas 4 a 7 pedem confirmação antes de executar. Nenhuma acção é irreversível — basta usar "Repor todos os dados mock" para voltar ao estado inicial.</div>
+
+<hr/>
+
 <h2>Perguntas em aberto (a confirmar antes da próxima fase)</h2>
 
 <table>
