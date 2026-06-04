@@ -2,6 +2,7 @@ import { useState } from "react";
 import { THEME } from "../theme.js";
 import { store } from "../store.js";
 import { useWindowSize } from "../utils.js";
+import { getAISuggestion } from "../api/client.js";
 import { getTypeColor } from "./Tarefas.jsx";
 import { Tag } from "../components/Primitives.jsx";
 import { Icon } from "../icons.jsx";
@@ -116,7 +117,8 @@ function EmailPreviewPanel({ email, processos, tarefas, currentUser, onClose, on
   const { isMobile } = useWindowSize();
   const [modal, setModal] = useState(null); // "tarefa" | "associate" | "newClient"
 
-  const aiC = email.aiSuggestion ? getTypeColor(email.aiSuggestion.type) : null;
+  const aiSuggestion = getAISuggestion(email);
+  const aiC = aiSuggestion ? getTypeColor(aiSuggestion.type) : null;
   const showNewClientBanner = email.isNewClient && !clientCreated.has(email.id);
 
   // Format body text: replace \n with <br> equivalent by splitting
@@ -173,15 +175,18 @@ function EmailPreviewPanel({ email, processos, tarefas, currentUser, onClose, on
           )}
 
           {/* AI suggestion */}
-          {email.aiSuggestion && aiC && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, padding: "8px 12px", background: THEME.sidebar, borderRadius: 8, border: `1px solid ${THEME.border}` }}>
-              <Icon name="cpu" size={13} color={THEME.textDim} />
+          {aiSuggestion && aiC && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, padding: "8px 12px", background: THEME.sidebar, borderRadius: 8, border: `1px solid ${aiSuggestion.simulated ? "#7c3aed44" : THEME.border}` }}>
+              <Icon name="cpu" size={13} color={aiSuggestion.simulated ? "#c084fc" : THEME.textDim} />
               <span style={{ fontSize: 12, color: THEME.textDim }}>IA sugere:</span>
-              <Tag bg={aiC.bg} color={aiC.color}>{email.aiSuggestion.type}</Tag>
-              {email.aiSuggestion.category && email.aiSuggestion.category !== email.aiSuggestion.type && (
-                <span style={{ fontSize: 12, color: THEME.textDim }}>— {email.aiSuggestion.category}</span>
+              <Tag bg={aiC.bg} color={aiC.color}>{aiSuggestion.type}</Tag>
+              {aiSuggestion.category && aiSuggestion.category !== aiSuggestion.type && (
+                <span style={{ fontSize: 12, color: THEME.textDim }}>— {aiSuggestion.category}</span>
               )}
-              <span style={{ fontSize: 11, color: THEME.textDim, marginLeft: "auto" }}>{Math.round(email.aiSuggestion.confidence * 100)}% confiança</span>
+              <span style={{ fontSize: 11, color: THEME.textDim, marginLeft: "auto" }}>{Math.round(aiSuggestion.confidence * 100)}% confiança</span>
+              {aiSuggestion.simulated && (
+                <span style={{ fontSize: 9, fontWeight: 700, color: "#c084fc", background: "#2e1065", borderRadius: 4, padding: "1px 5px", letterSpacing: "0.05em" }}>SIM</span>
+              )}
             </div>
           )}
 
@@ -326,9 +331,11 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
       .replace(",", "");
   }
 
-  // Resolve default owner for a task type from assignment rules
+  // Resolve default owner for a task type via mapeamento
   function ownerForType(type) {
-    return store.getTaskAssignment()[type] ?? null;
+    const tt = store.getTaskTypes().find(t => t.label === type);
+    if (!tt) return null;
+    return store.assignForTaskType(tt.id);
   }
 
   // ── Triage actions ────────────────────────────────────────────────────────
@@ -361,7 +368,7 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
         attachments:   email.attachments || [],
       },
       originProcesso:  null,
-      description:     `Este email aguarda validação para abertura de processo.\n\nCliente: ${email.senderName} · Remetente: ${email.sender}\nAssunto: ${email.subject}\nSugestão IA: ${email.aiSuggestion?.type || "Pré-Entrada"} · ${email.aiSuggestion?.category || "Pedido de Cotação"} (${Math.round((email.aiSuggestion?.confidence || 0) * 100)}%)`,
+      description: (() => { const ai = getAISuggestion(email); return `Este email aguarda validação para abertura de processo.\n\nCliente: ${email.senderName} · Remetente: ${email.sender}\nAssunto: ${email.subject}${ai ? `\nSugestão IA${ai.simulated ? " (SIM)" : ""}: ${ai.type} · ${ai.category} (${Math.round(ai.confidence * 100)}%)` : ""}`; })(),
       escalationNote:  null,
       priority:        "Normal",
       created:         "15/05/2026",
@@ -473,7 +480,8 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
         )}
 
         {visible.map(email => {
-          const aiC = email.aiSuggestion ? getTypeColor(email.aiSuggestion.type) : null;
+          const aiSug  = getAISuggestion(email);
+          const aiC    = aiSug ? getTypeColor(aiSug.type) : null;
           const isSelected = selectedEmail?.id === email.id;
 
           return (
@@ -524,8 +532,13 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
 
                 {/* Right: AI suggestion badge + chevron */}
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  {aiC && email.aiSuggestion && (
-                    <Tag bg={aiC.bg} color={aiC.color}>{email.aiSuggestion.type}</Tag>
+                  {aiC && aiSug && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <Tag bg={aiC.bg} color={aiC.color}>{aiSug.type}</Tag>
+                      {aiSug.simulated && (
+                        <span style={{ fontSize: 8, fontWeight: 700, color: "#c084fc", background: "#2e1065", borderRadius: 3, padding: "1px 4px", letterSpacing: "0.05em" }}>SIM</span>
+                      )}
+                    </div>
                   )}
                   <Icon name="chevron" size={14} color={THEME.textDim} />
                 </div>

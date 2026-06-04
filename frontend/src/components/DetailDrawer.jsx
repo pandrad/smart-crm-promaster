@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { daysLeft, useWindowSize } from "../utils.js";
 import { store } from "../store.js";
 import { THEME } from "../theme.js";
@@ -40,19 +40,30 @@ function mobileModal(isMobile, desktopWidth = 500) {
   return { width: "100%", maxWidth: "100%", borderRadius: "16px 16px 0 0", position: "fixed", bottom: 0, left: 0, right: 0, maxHeight: "92dvh", overflowY: "auto" };
 }
 
-// ── Email modal (all logic preserved, dark theme) ─────────────────────────────
-function EmailModal({ p, onClose }) {
+// ── Email modal (with attachment support) ─────────────────────────────────────
+function EmailModal({ p, onClose, onSent }) {
   const { isMobile } = useWindowSize();
-  const [to,      setTo]      = useState(p.comprador || p.req || "");
-  const [subject, setSubject] = useState(`Re: Cotação ${p.brand}${p.model ? " " + p.model : ""} — Proc. ${p.id}`);
-  const [body,    setBody]    = useState(`Exmo(a) Sr(a) ${p.comprador || p.req || ""},\n\nEm resposta ao seu pedido de cotação, ...\n\nCom os melhores cumprimentos,`);
-  const [sent,    setSent]    = useState(false);
+  const fileRef = useRef(null);
+  const [to,          setTo]          = useState(p.comprador || p.req || "");
+  const [subject,     setSubject]     = useState(`Re: Cotação ${p.brand}${p.model ? " " + p.model : ""} — Proc. ${p.id}`);
+  const [body,        setBody]        = useState(`Exmo(a) Sr(a) ${p.comprador || p.req || ""},\n\nEm resposta ao seu pedido de cotação, ...\n\nCom os melhores cumprimentos,`);
+  const [attachments, setAttachments] = useState([]);
+  const [sent,        setSent]        = useState(false);
+
+  function addFiles(files) { setAttachments(prev => [...prev, ...Array.from(files).map(f => f.name)]); }
+  function removeAttachment(name) { setAttachments(prev => prev.filter(n => n !== name)); }
+
+  function handleSend() {
+    onSent?.({ to, subject, body, attachments });
+    setSent(true);
+    setTimeout(onClose, 1400);
+  }
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}>
       <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden", ...mobileModal(isMobile, 500) }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
-          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Enviar Email</span>
+          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Enviar Email ao Cliente</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
         </div>
         {sent ? (
@@ -72,9 +83,26 @@ function EmailModal({ p, onClose }) {
               <label style={{ ...LABEL, display: "block", marginBottom: 4 }}>Mensagem</label>
               <textarea value={body} onChange={e => setBody(e.target.value)} rows={6} style={{ ...INPUT, resize: "vertical", fontFamily: "inherit", lineHeight: 1.5 }} />
             </div>
+            <div>
+              <label style={{ ...LABEL, display: "block", marginBottom: 6 }}>Anexos</label>
+              {attachments.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                  {attachments.map(name => (
+                    <span key={name} style={{ display: "inline-flex", alignItems: "center", gap: 5, background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 9999, padding: "2px 8px", fontSize: 11, color: THEME.textMuted }}>
+                      <Icon name="paperclip" size={10} color={THEME.textDim} />{name}
+                      <button onClick={() => removeAttachment(name)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.danger, padding: 0, lineHeight: 1 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <button onClick={() => fileRef.current?.click()} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "5px 12px", fontSize: 12, color: THEME.textMuted, cursor: "pointer" }}>
+                <Icon name="paperclip" size={12} color={THEME.textDim} /> Adicionar anexo
+              </button>
+              <input ref={fileRef} type="file" multiple style={{ display: "none" }} onChange={e => addFiles(e.target.files)} />
+            </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
-              <button onClick={() => { setSent(true); setTimeout(onClose, 1400); }} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+              <button onClick={handleSend} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 <Icon name="mail" size={13} color="white" /> Enviar
               </button>
             </div>
@@ -263,6 +291,17 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
   const [statusOpen,   setStatusOpen]   = useState(false);
   const [reassignOpen, setReassignOpen] = useState(false);
 
+  function handleEmailSent({ to, subject, body, attachments }) {
+    const entry = {
+      icon: "mail", color: "#60a5fa",
+      time: new Date().toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", ""),
+      text: `Email enviado por ${currentUser.name || "—"} para ${to} — ${subject}${attachments?.length ? ` (${attachments.join(", ")})` : ""}`,
+    };
+    const updated = { ...p, timeline: [...(p.timeline || []), entry] };
+    setP(updated);
+    onUpdate?.(updated);
+  }
+
   const stages = store.getStages();
   const d      = daysLeft(p.deadline);
   const stage  = stages.find(s => s.id === p.status);
@@ -353,8 +392,13 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
             <InfoCell label="Data Limite"    value={p.deadline} />
             <InfoCell label="Prioridade"     value={p.priority} />
             <InfoCell label="Sell Price"     value={p.price ? "€" + p.price.toLocaleString("pt-PT") : null} />
-            {/* FU field only when status >= 9 */}
-            {p.status >= 9 && p.fu && <InfoCell label="Follow-up" value={p.fu} />}
+            {/* FU field only when status >= 9 — badge reads colour from store */}
+            {p.status >= 9 && p.fu && (
+              <div>
+                <div style={{ fontSize: 10, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>Follow-up</div>
+                <div style={{ marginTop: 4 }}><FUBadge label={p.fu} /></div>
+              </div>
+            )}
           </div>
 
           {/* ── Consulta checklist — only when status === 5 ── */}
@@ -390,23 +434,45 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
             <div style={{ fontSize: 11, color: THEME.textMuted, marginTop: 5 }}>{stage?.label}</div>
           </div>
 
-          {/* ── Attachments — Excel link always present first ── */}
+          {/* ── Attachments — always two pinned items first ── */}
           <div>
             <SectionLabel>Anexos</SectionLabel>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {/* Excel template link — always present */}
+              {/* Pinned 1 — Email de Origem */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 8 }}>
+                <Icon name="mail" size={13} color={THEME.textDim} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: THEME.text }}>Email de Origem</div>
+                  {p.originEmail && (
+                    <div style={{ fontSize: 10, color: THEME.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {p.originEmail.senderName ?? p.originEmail.sender} — {p.originEmail.subject}
+                    </div>
+                  )}
+                </div>
+                <span style={{ fontSize: 10, color: THEME.textDim, background: THEME.card, borderRadius: 9999, padding: "2px 6px" }}>fixo</span>
+              </div>
+              {/* Pinned 2 — Modelo de Proposta */}
               <a
-                href="#"
+                href="https://promasterlda.sharepoint.com/:x:/r/sites/Intranet/_layouts/15/guestaccess.aspx?e=DLVapo&share=IQCrlmqVEA1tQ5fRdQpoTnz1ATDQ8uLZXGdhQHDKqkEKpDE"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={e => e.stopPropagation()}
                 style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 8, textDecoration: "none", color: THEME.accent, fontSize: 12, fontWeight: 500 }}
               >
                 <Icon name="paperclip" size={13} color={THEME.accent} />
-                {p.client.replace(/[^a-zA-Z0-9]/g, "_")}_{p.id}.xlsx
+                <span style={{ flex: 1 }}>Modelo de Proposta.xlsx</span>
+                <span style={{ fontSize: 10, color: THEME.textDim, background: THEME.card, borderRadius: 9999, padding: "2px 6px" }}>fixo</span>
               </a>
-              {/* Placeholder when no other attachments */}
-              <div style={{ fontSize: 11, color: THEME.textDim, paddingLeft: 2 }}>Sem outros anexos</div>
+              {/* Other attachments */}
+              {(!p.attachments || p.attachments.length === 0) && (
+                <div style={{ fontSize: 11, color: THEME.textDim, paddingLeft: 2 }}>Sem outros anexos</div>
+              )}
+              {p.attachments?.map((att, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 8, fontSize: 12, color: THEME.textMuted }}>
+                  <Icon name="paperclip" size={13} color={THEME.textDim} />
+                  {typeof att === "string" ? att : att.name}
+                </div>
+              ))}
             </div>
           </div>
 
@@ -437,7 +503,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
           {/* ── Actions ── */}
           <div style={{ display: "flex", gap: 8, paddingTop: 4, paddingBottom: 12 }}>
             <button onClick={() => setEmailOpen(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              <Icon name="mail" size={14} color="white" /> Enviar Email
+              <Icon name="mail" size={14} color="white" /> Enviar Email ao Cliente
             </button>
             <button onClick={() => setStatusOpen(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               <Icon name="tag" size={14} color={THEME.textMuted} /> Alterar Estado
@@ -447,7 +513,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
         </div>
       </div>
 
-      {emailOpen    && <EmailModal        p={p} onClose={() => setEmailOpen(false)} />}
+      {emailOpen    && <EmailModal        p={p} onClose={() => setEmailOpen(false)} onSent={handleEmailSent} />}
       {statusOpen   && <ChangeStatusModal p={p} onClose={() => setStatusOpen(false)} onSave={handleStatusSave} />}
       {reassignOpen && <ReassignModal     p={p} users={users} onClose={() => setReassignOpen(false)} onSave={handleReassignSave} />}
     </>

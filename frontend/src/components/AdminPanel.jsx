@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from "react";
-import { store } from "../store.js";
+import { useState, useRef } from "react";
+import { store, SYSTEM_ROLES } from "../store.js";
 import { MOCK_IMPORT_PREVIEW } from "../mock/data.js";
 import { Avatar, Tag } from "./Primitives.jsx";
 import { Icon } from "../icons.jsx";
@@ -93,21 +93,19 @@ function ColorSwatch({ label, value, onChange }) {
   );
 }
 
-// ── Users tab ─────────────────────────────────────────────────────────────────
+// ── Tab 1: Utilizadores ───────────────────────────────────────────────────────
 
-function UserModal({ user, roles, onClose, onSave }) {
+function UserModal({ user, onClose, onSave }) {
   const fileRef = useRef(null);
   const [form, setForm] = useState(user
-    ? { name: user.name, email: user.email, role: user.role, active: user.active, photo: user.photo ?? "", password: "" }
-    : { name: "", email: "", role: roles[0]?.id ?? "cotacao", active: true, photo: "", password: "" }
+    ? { name: user.name, email: user.email, active: user.active, photo: user.photo ?? "", password: "" }
+    : { name: "", email: "", active: true, photo: "", password: "" }
   );
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   return (
     <Modal title={user ? "Editar utilizador" : "Novo utilizador"} onClose={onClose}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-
-        {/* photo */}
         <FieldRow label="Foto">
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div onClick={() => fileRef.current?.click()} style={{ width: 60, height: 60, borderRadius: "50%", background: THEME.bg, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", flexShrink: 0, border: "2px dashed #cbd5e1" }}>
@@ -117,25 +115,17 @@ function UserModal({ user, roles, onClose, onSave }) {
               <button onClick={() => fileRef.current?.click()} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "5px 12px", fontSize: 12, color: THEME.textMuted, cursor: "pointer", marginBottom: 4 }}>
                 <Icon name="upload" size={12} /> {form.photo ? "Alterar foto" : "Carregar foto"}
               </button>
-              {form.photo && (
-                <button onClick={() => set("photo", "")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#dc2626", padding: 0 }}>Remover</button>
-              )}
+              {form.photo && <button onClick={() => set("photo", "")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#dc2626", padding: 0 }}>Remover</button>}
             </div>
             <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }}
-              onChange={e => { const f = e.target.files[0]; if (f) { const url = URL.createObjectURL(f); set("photo", url); }}} />
+              onChange={e => { const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onload = ev => set("photo", ev.target.result); r.readAsDataURL(f); }}} />
           </div>
         </FieldRow>
-
         <FieldRow label="Nome completo">
           <input style={INPUT} value={form.name} onChange={e => set("name", e.target.value)} placeholder="Nome Apelido" />
         </FieldRow>
         <FieldRow label="Email">
           <input style={INPUT} type="email" value={form.email} onChange={e => set("email", e.target.value)} placeholder="utilizador@promaster.co" />
-        </FieldRow>
-        <FieldRow label="Função">
-          <select style={SELECT} value={form.role} onChange={e => set("role", e.target.value)}>
-            {roles.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
-          </select>
         </FieldRow>
         <FieldRow label="Estado">
           <select style={SELECT} value={form.active ? "1" : "0"} onChange={e => set("active", e.target.value === "1")}>
@@ -154,15 +144,11 @@ function UserModal({ user, roles, onClose, onSave }) {
 }
 
 function UsersTab({ onUsersChange }) {
-  const roles = store.getRoles();
-  const roleLabel = id => roles.find(r => r.id === id)?.label ?? id;
-
   const [users,   setUsers]   = useState(() => store.getUsers());
   const [editing, setEditing] = useState(null);
+  const [deleting, setDeleting] = useState(null);
 
   function commit(next) { setUsers(next); store.saveUsers(next); onUsersChange?.(next); }
-
-  function toggleActive(id) { commit(users.map(u => u.id === id ? { ...u, active: !u.active } : u)); }
 
   function saveUser(form) {
     const next = editing === "new"
@@ -171,14 +157,26 @@ function UsersTab({ onUsersChange }) {
     commit(next);
   }
 
+  function confirmDelete(u) {
+    commit(users.filter(x => x.id !== u.id));
+    // Also clean up user-role assignments
+    const mapping = store.getUserRoles();
+    delete mapping[u.id];
+    store.saveUserRoles(mapping);
+    setDeleting(null);
+  }
+
   return (
     <div>
       <SectionHeader title="Utilizadores" action="Novo utilizador" onAction={() => setEditing("new")} />
+      <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 16 }}>
+        Gerir utilizadores. Atribuição de funções na tab <strong style={{ color: THEME.text }}>Atribuição</strong>.
+      </p>
       <div style={{ background: THEME.card, borderRadius: 12, border: `1px solid ${THEME.border}`, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: THEME.sidebar, borderBottom: `1px solid ${THEME.border}` }}>
-              {["Utilizador","Email","Função","Estado",""].map((h, i) => (
+              {["Utilizador","Email","Estado",""].map((h, i) => (
                 <th key={i} style={{ padding: "9px 14px", fontSize: 11, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "left" }}>{h}</th>
               ))}
             </tr>
@@ -193,7 +191,6 @@ function UsersTab({ onUsersChange }) {
                   </div>
                 </td>
                 <td style={{ padding: "11px 14px", fontSize: 12, color: THEME.textDim }}>{u.email}</td>
-                <td style={{ padding: "11px 14px" }}><Tag bg={THEME.sidebar} color={THEME.textMuted}>{roleLabel(u.role)}</Tag></td>
                 <td style={{ padding: "11px 14px" }}>
                   <Tag bg={u.active ? THEME.successBg : THEME.sidebar} color={u.active ? THEME.success : THEME.textDim}>
                     {u.active ? "Ativo" : "Inativo"}
@@ -204,8 +201,8 @@ function UsersTab({ onUsersChange }) {
                     <button onClick={() => setEditing(u)} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: `1px solid ${THEME.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 12, color: THEME.textMuted, cursor: "pointer" }}>
                       <Icon name="edit" size={12} /> Editar
                     </button>
-                    <button onClick={() => toggleActive(u.id)} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: `1px solid ${THEME.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 12, color: u.active ? "#dc2626" : "#15803d", cursor: "pointer" }}>
-                      {u.active ? "Desativar" : "Ativar"}
+                    <button onClick={() => setDeleting(u)} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: `1px solid ${THEME.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 12, color: THEME.danger, cursor: "pointer" }}>
+                      <Icon name="x" size={12} /> Eliminar
                     </button>
                   </div>
                 </td>
@@ -214,28 +211,191 @@ function UsersTab({ onUsersChange }) {
           </tbody>
         </table>
       </div>
-      {editing !== null && <UserModal user={editing === "new" ? null : editing} roles={roles} onClose={() => setEditing(null)} onSave={saveUser} />}
+      {editing !== null && <UserModal user={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSave={saveUser} />}
+      {deleting && (
+        <Modal title="Eliminar utilizador" onClose={() => setDeleting(null)} width={380}>
+          <p style={{ color: THEME.textMuted, fontSize: 13 }}>Tem a certeza que pretende eliminar <strong style={{ color: THEME.text }}>{deleting.name}</strong>? A atribuição de funções deste utilizador também será removida.</p>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
+            <button onClick={() => setDeleting(null)} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
+            <button onClick={() => confirmDelete(deleting)} style={{ background: THEME.danger, color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Eliminar</button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
 
-// ── Status list ───────────────────────────────────────────────────────────────
+// ── Tab 2: Funções ────────────────────────────────────────────────────────────
 
-function StatusModal({ item, onClose, onSave }) {
+function RoleModal({ role, onClose, onSave }) {
+  const [label, setLabel] = useState(role?.label ?? "");
+  return (
+    <Modal title={role ? "Editar função" : "Nova função"} onClose={onClose} width={360}>
+      <FieldRow label="Nome da função">
+        <input style={INPUT} value={label} onChange={e => setLabel(e.target.value)} placeholder="Ex: Resp. Cotação" />
+      </FieldRow>
+      <SaveRow onCancel={onClose} onSave={() => { if (label.trim()) { onSave(label.trim()); onClose(); } }} />
+    </Modal>
+  );
+}
+
+function RolesTab() {
+  const [roles,   setRoles]   = useState(() => store.getRoles());
+  const [editing, setEditing] = useState(null);
+  const [error,   setError]   = useState(null);
+
+  function commit(next) { setRoles(next); store.saveRoles(next); }
+
+  function saveRole(label) {
+    if (editing === "new") {
+      commit([...roles, { id: String(Date.now()), label }]);
+    } else {
+      commit(roles.map(r => r.id === editing.id ? { ...r, label } : r));
+    }
+  }
+
+  function tryDelete(role) {
+    // Check if used in user assignments
+    const userRoles = store.getUserRoles();
+    const usedByUser = Object.values(userRoles).some(ids => ids.includes(role.id));
+    if (usedByUser) { setError(`A função "${role.label}" está atribuída a utilizadores. Remova a atribuição primeiro na tab Atribuição.`); return; }
+    // Check if used in mapeamento
+    const m = store.getMapeamento();
+    const usedInMap = [...Object.values(m.processoStatus ?? {}), ...Object.values(m.taskType ?? {}), ...Object.values(m.taskStatus ?? {})].includes(role.id);
+    if (usedInMap) { setError(`A função "${role.label}" está mapeada em Mapeamento de Responsabilidades. Remova o mapeamento primeiro.`); return; }
+    commit(roles.filter(r => r.id !== role.id));
+  }
+
+  return (
+    <div style={{ maxWidth: 500 }}>
+      <SectionHeader title="Funções" action="Nova função" onAction={() => setEditing("new")} />
+      <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 16 }}>
+        Define as funções disponíveis. As funções são atribuídas a utilizadores na tab <strong style={{ color: THEME.text }}>Atribuição</strong> e mapeadas a estados e tipos na tab <strong style={{ color: THEME.text }}>Mapeamento</strong>.
+      </p>
+      {error && (
+        <div style={{ background: THEME.dangerBg, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: "9px 14px", fontSize: 12, color: THEME.danger, marginBottom: 14, display: "flex", gap: 8, alignItems: "flex-start" }}>
+          <Icon name="alert" size={14} color={THEME.danger} />
+          <span style={{ flex: 1 }}>{error}</span>
+          <button onClick={() => setError(null)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.danger, padding: 0 }}><Icon name="x" size={13} /></button>
+        </div>
+      )}
+      <div style={{ background: THEME.card, borderRadius: 12, border: `1px solid ${THEME.border}`, overflow: "hidden" }}>
+        {roles.map((r, i) => (
+          <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderBottom: i < roles.length - 1 ? `1px solid ${THEME.borderLight}` : "none" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{r.label}</span>
+            <button onClick={() => setEditing(r)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="edit" size={13} /></button>
+            <button onClick={() => tryDelete(r)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.danger, padding: 4 }}><Icon name="x" size={13} /></button>
+          </div>
+        ))}
+        {roles.length === 0 && <p style={{ textAlign: "center", color: THEME.textDim, padding: "24px 0", fontSize: 13 }}>Nenhuma função definida</p>}
+      </div>
+      {editing !== null && <RoleModal role={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSave={saveRole} />}
+    </div>
+  );
+}
+
+// ── Tab 3: Atribuição de Utilizadores ─────────────────────────────────────────
+
+function AtribuicaoTab({ onSwitchTab }) {
+  const roles = store.getRoles();
+  const users = store.getUsers().filter(u => u.active !== false);
+  const [mapping, setMapping] = useState(() => store.getUserRoles());
+  const [saved, setSaved] = useState(false);
+
+  if (roles.length === 0) {
+    return (
+      <div>
+        <SectionHeader title="Atribuição de Utilizadores" />
+        <div style={{ background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 10, padding: "20px 24px", textAlign: "center" }}>
+          <p style={{ color: THEME.textMuted, fontSize: 13, marginBottom: 12 }}>Ainda não definiu nenhuma função. Crie funções primeiro na tab Funções.</p>
+          <button onClick={() => onSwitchTab("roles")} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            Ir para Funções
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function toggleRole(userId, roleId) {
+    setMapping(prev => {
+      const current = prev[userId] ?? [];
+      const next    = current.includes(roleId) ? current.filter(id => id !== roleId) : [...current, roleId];
+      return { ...prev, [userId]: next };
+    });
+  }
+
+  function handleSave() {
+    store.saveUserRoles(mapping);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  }
+
+  return (
+    <div>
+      <SectionHeader title="Atribuição de Utilizadores" />
+      <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 16 }}>
+        Atribua uma ou mais funções a cada utilizador. Quando vários utilizadores partilham a mesma função, a atribuição é feita em rotação (round-robin).
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+        {users.map(u => {
+          const assigned = mapping[u.id] ?? [];
+          return (
+            <div key={u.id} style={{ background: THEME.sidebar, borderRadius: 10, border: `1px solid ${THEME.border}`, padding: "12px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                <Avatar name={u.name} photo={u.photo} size={28} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: THEME.text }}>{u.name}</span>
+                {assigned.length === 0 && <span style={{ fontSize: 11, color: THEME.textDim, marginLeft: "auto" }}>Sem função</span>}
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {roles.map(r => {
+                  const on = assigned.includes(r.id);
+                  return (
+                    <button key={r.id} onClick={() => toggleRole(u.id, r.id)}
+                      style={{ padding: "3px 10px", borderRadius: 9999, fontSize: 11, fontWeight: on ? 700 : 400, cursor: "pointer", border: `1px solid ${on ? THEME.accent : THEME.border}`, background: on ? `${THEME.accent}22` : "transparent", color: on ? THEME.accent : THEME.textMuted, transition: "all 0.1s" }}>
+                      {r.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <button onClick={handleSave} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          Guardar atribuições
+        </button>
+        {saved && <span style={{ fontSize: 12, color: THEME.success, fontWeight: 500 }}>✓ Guardado</span>}
+      </div>
+    </div>
+  );
+}
+
+// ── Shared: Status/Type list with drag-to-reorder ─────────────────────────────
+
+function StatusModal({ item, extraFields, onClose, onSave }) {
   const [form, setForm] = useState(
-    item ? { label: item.label, color: item.color, bg: item.bg ?? "#f1f5f9" }
-         : { label: "", color: "#2563eb", bg: "#dbeafe" }
+    item
+      ? { label: item.label, color: item.color, bg: item.bg ?? "#f1f5f9", ...extraFields?.reduce((acc, f) => ({ ...acc, [f.key]: item[f.key] ?? f.default }), {}) }
+      : { label: "", color: "#2563eb", bg: "#dbeafe", ...extraFields?.reduce((acc, f) => ({ ...acc, [f.key]: f.default }), {}) }
   );
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   function pickColor(c) { set("color", c); if (BG_PRESETS[c]) set("bg", BG_PRESETS[c]); }
 
   return (
-    <Modal title={item ? "Editar estado" : "Novo estado"} onClose={onClose} width={400}>
+    <Modal title={item ? "Editar" : "Novo"} onClose={onClose} width={400}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <FieldRow label="Etiqueta">
-          <input style={INPUT} value={form.label} onChange={e => set("label", e.target.value)} placeholder="Nome do estado" />
+          <input style={INPUT} value={form.label} onChange={e => set("label", e.target.value)} placeholder="Nome" />
         </FieldRow>
         <ColorSwatch label="Cor" value={form.color} onChange={pickColor} />
+        {extraFields?.map(f => (
+          <FieldRow key={f.key} label={f.label} hint={f.hint}>
+            <select style={SELECT} value={form[f.key]} onChange={e => set(f.key, e.target.value)}>
+              {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </FieldRow>
+        ))}
         <div>
           <div style={{ fontSize: 11, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Pré-visualização</div>
           <span style={{ display: "inline-flex", padding: "3px 10px", borderRadius: 9999, fontSize: 12, fontWeight: 600, background: form.bg, color: form.color }}>
@@ -248,9 +408,10 @@ function StatusModal({ item, onClose, onSave }) {
   );
 }
 
-function StatusList({ title, items, getItems, saveItems, dotShape }) {
+function StatusList({ title, getItems, saveItems, dotShape, extraFields, canDelete }) {
   const [list,    setList]    = useState(() => getItems());
   const [editing, setEditing] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
   const dragIdx = useRef(null);
 
   function commit(next) { setList(next); saveItems(next); }
@@ -273,9 +434,24 @@ function StatusList({ title, items, getItems, saveItems, dotShape }) {
     commit(next);
   }
 
+  function tryDelete(item) {
+    if (canDelete) {
+      const err = canDelete(item);
+      if (err) { setDeleteError(err); return; }
+    }
+    commit(list.filter(s => s.id !== item.id));
+  }
+
   return (
     <div style={{ flex: 1, minWidth: 280 }}>
-      <SectionHeader title={title} action="Novo estado" onAction={() => setEditing("new")} />
+      <SectionHeader title={title} action="Novo" onAction={() => setEditing("new")} />
+      {deleteError && (
+        <div style={{ background: THEME.dangerBg, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: "9px 14px", fontSize: 12, color: THEME.danger, marginBottom: 12, display: "flex", gap: 8, alignItems: "flex-start" }}>
+          <Icon name="alert" size={14} color={THEME.danger} />
+          <span style={{ flex: 1 }}>{deleteError}</span>
+          <button onClick={() => setDeleteError(null)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.danger, padding: 0 }}><Icon name="x" size={13} /></button>
+        </div>
+      )}
       <div style={{ background: THEME.card, borderRadius: 12, border: `1px solid ${THEME.border}`, overflow: "hidden" }}>
         {list.map((s, i) => (
           <div key={s.id} draggable onDragStart={() => onDragStart(i)} onDragOver={e => onDragOver(e, i)}
@@ -283,389 +459,162 @@ function StatusList({ title, items, getItems, saveItems, dotShape }) {
             <Icon name="chevron" size={12} color="#cbd5e1" style={{ transform: "rotate(90deg)", flexShrink: 0 }} />
             <div style={{ width: 11, height: 11, borderRadius: dotShape === "circle" ? "50%" : 3, background: s.color, flexShrink: 0 }} />
             <span style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{s.label}</span>
+            {s.systemRole && s.systemRole !== "Nenhum" && (
+              <span style={{ fontSize: 10, color: THEME.textDim, background: THEME.sidebar, borderRadius: 9999, padding: "2px 8px", flexShrink: 0 }}>{s.systemRole}</span>
+            )}
             <span style={{ display: "inline-flex", padding: "2px 8px", borderRadius: 9999, fontSize: 11, fontWeight: 600, background: s.bg, color: s.color }}>Amostra</span>
             <button onClick={() => setEditing(s)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}>
               <Icon name="edit" size={13} />
             </button>
-          </div>
-        ))}
-      </div>
-      <p style={{ fontSize: 11, color: THEME.textMuted, marginTop: 6, marginBottom: 0 }}>Arraste para reordenar</p>
-      {editing !== null && <StatusModal item={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSave={save} />}
-    </div>
-  );
-}
-
-function StatusesTab() {
-  return (
-    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-start" }}>
-      <StatusList title="Estados do Processo"  getItems={store.getStages}      saveItems={store.saveStages}      dotShape="square" />
-      <StatusList title="Estados de Follow-Up" getItems={store.getFUStatuses}   saveItems={store.saveFUStatuses}  dotShape="circle" />
-    </div>
-  );
-}
-
-// ── Priorities tab ────────────────────────────────────────────────────────────
-
-function PriorityModal({ item, onClose, onSave }) {
-  const [form, setForm] = useState(
-    item ? { label: item.label, color: item.color, bg: item.bg } : { label: "", color: "#dc2626", bg: "#fee2e2" }
-  );
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  function pickColor(c) { set("color", c); if (BG_PRESETS[c]) set("bg", BG_PRESETS[c]); }
-
-  return (
-    <Modal title={item ? "Editar prioridade" : "Nova prioridade"} onClose={onClose} width={380}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <FieldRow label="Etiqueta">
-          <input style={INPUT} value={form.label} onChange={e => set("label", e.target.value)} placeholder="Ex: Urgente" />
-        </FieldRow>
-        <ColorSwatch label="Cor" value={form.color} onChange={pickColor} />
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Pré-visualização</div>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 9999, fontSize: 12, fontWeight: 600, background: form.bg, color: form.color }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: form.color, display: "inline-block" }} />
-            {form.label || "Amostra"}
-          </span>
-        </div>
-      </div>
-      <SaveRow onCancel={onClose} onSave={() => { onSave(form); onClose(); }} />
-    </Modal>
-  );
-}
-
-function PrioritiesTab() {
-  const [list,    setList]    = useState(() => store.getPriorities());
-  const [editing, setEditing] = useState(null);
-
-  function commit(next) { setList(next); store.savePriorities(next); }
-  function save(form) {
-    commit(editing === "new"
-      ? [...list, { ...form, id: Date.now() }]
-      : list.map(p => p.id === editing.id ? { ...p, ...form } : p)
-    );
-  }
-
-  return (
-    <div style={{ maxWidth: 480 }}>
-      <SectionHeader title="Prioridades" action="Nova prioridade" onAction={() => setEditing("new")} />
-      <div style={{ background: THEME.card, borderRadius: 12, border: `1px solid ${THEME.border}`, overflow: "hidden" }}>
-        {list.map((p, i) => (
-          <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: i < list.length - 1 ? `1px solid ${THEME.borderLight}` : "none" }}>
-            <span style={{ width: 10, height: 10, borderRadius: "50%", background: p.color, flexShrink: 0 }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{p.label}</span>
-            <span style={{ display: "inline-flex", padding: "2px 8px", borderRadius: 9999, fontSize: 11, fontWeight: 600, background: p.bg, color: p.color }}>Amostra</span>
-            <button onClick={() => setEditing(p)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}>
-              <Icon name="edit" size={13} />
+            <button onClick={() => tryDelete(s)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.danger, padding: 4 }}>
+              <Icon name="x" size={13} />
             </button>
           </div>
         ))}
+        {list.length === 0 && <p style={{ textAlign: "center", color: THEME.textDim, padding: "24px 0", fontSize: 13 }}>Nenhum item</p>}
       </div>
-      {editing !== null && <PriorityModal item={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSave={save} />}
+      <p style={{ fontSize: 11, color: THEME.textMuted, marginTop: 6, marginBottom: 0 }}>Arraste para reordenar</p>
+      {editing !== null && <StatusModal item={editing === "new" ? null : editing} extraFields={extraFields} onClose={() => setEditing(null)} onSave={save} />}
     </div>
   );
 }
 
-// ── Roles tab ─────────────────────────────────────────────────────────────────
+// ── Tab 4: Estados de Processo ────────────────────────────────────────────────
 
-function RoleModal({ role, onClose, onSave }) {
-  const [form, setForm] = useState(role ? { id: role.id, label: role.label } : { id: "", label: "" });
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+// ── Tab: Processos (Estados de Processo + Estados de Follow-Up) ───────────────
+
+function ProcessosTab() {
   return (
-    <Modal title={role ? "Editar função" : "Nova função"} onClose={onClose} width={360}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <FieldRow label="Identificador (interno)" hint="Letras minúsculas sem espaços. Ex: supervisor">
-          <input style={INPUT} value={form.id} onChange={e => set("id", e.target.value.toLowerCase().replace(/\s+/g,""))} placeholder="cotacao" disabled={!!role} />
-        </FieldRow>
-        <FieldRow label="Etiqueta visível">
-          <input style={INPUT} value={form.label} onChange={e => set("label", e.target.value)} placeholder="Resp. Cotação" />
-        </FieldRow>
+    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Estados de Processo</div>
+        <StatusList title="" getItems={store.getStages} saveItems={store.saveStages} dotShape="square" />
       </div>
-      <SaveRow onCancel={onClose} onSave={() => { if (form.id && form.label) { onSave(form); onClose(); } }} />
-    </Modal>
-  );
-}
-
-function RolesTab() {
-  const [roles,   setRoles]   = useState(() => store.getRoles());
-  const [editing, setEditing] = useState(null);
-
-  function commit(next) { setRoles(next); store.saveRoles(next); }
-  function save(form) {
-    commit(editing === "new"
-      ? [...roles, form]
-      : roles.map(r => r.id === editing.id ? { ...r, ...form } : r)
-    );
-  }
-  function remove(id) { commit(roles.filter(r => r.id !== id)); }
-
-  return (
-    <div style={{ maxWidth: 480 }}>
-      <SectionHeader title="Funções" action="Nova função" onAction={() => setEditing("new")} />
-      <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 16 }}>
-        As funções definidas aqui ficam disponíveis para atribuição aos utilizadores.
-      </p>
-      <div style={{ background: THEME.card, borderRadius: 12, border: `1px solid ${THEME.border}`, overflow: "hidden" }}>
-        {roles.map((r, i) => (
-          <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderBottom: i < roles.length - 1 ? `1px solid ${THEME.borderLight}` : "none" }}>
-            <Tag bg={THEME.sidebar} color={THEME.textMuted} style={{ fontFamily: "monospace", fontSize: 11 }}>{r.id}</Tag>
-            <span style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{r.label}</span>
-            <button onClick={() => setEditing(r)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="edit" size={13} /></button>
-            <button onClick={() => remove(r.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 4 }}><Icon name="x" size={13} /></button>
-          </div>
-        ))}
+      <div style={{ borderTop: `1px solid ${THEME.border}`, paddingTop: 28 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Estados de Follow-Up</div>
+        <StatusList title="" getItems={store.getFUStatuses} saveItems={store.saveFUStatuses} dotShape="circle" />
       </div>
-      {editing !== null && <RoleModal role={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSave={save} />}
     </div>
   );
 }
 
-// ── Task Assignment tab ───────────────────────────────────────────────────────
+// ── Tab: Tarefas (Tipos de Tarefa + Estados de Tarefa) ────────────────────────
 
-// AssignmentTab reads task types from store so admin-added types appear here automatically
-function getTaskTypeList() {
-  return store.getTaskTypes().map(t => t.label);
-}
-
-function AssignmentTab() {
-  const allUsers = store.getUsers().filter(u => u.active !== false);
-
-  // ── Section 1: Process role assignment (cotacao / comercial / compra) ──────
-  const [rules, setRules] = useState(() => store.getAssignment());
-  const [savedRoles, setSavedRoles] = useState(false);
-
-  function setRule(k, v) { setRules(r => ({ ...r, [k]: v })); }
-
-  function handleSaveRoles() {
-    store.saveAssignment(rules);
-    setSavedRoles(true);
-    setTimeout(() => setSavedRoles(false), 2500);
-  }
-
-  const ROLE_SLOTS = [
-    { key: "cotacao",   label: "Resp. Cotação",   roleFilter: "cotacao",   hint: "Responsável pela cotação dos processos recebidos" },
-    { key: "comercial", label: "Resp. Comercial",  roleFilter: "comercial", hint: "Responsável comercial dos processos recebidos"    },
-    { key: "compra",    label: "Resp. Compra",     roleFilter: "compra",    hint: "Responsável de compras dos processos recebidos"   },
-  ];
-
-  // ── Section 2: Task type assignment ──────────────────────────────────────
-  const [taskRules, setTaskRules] = useState(() => store.getTaskAssignment());
-  const [savedTask, setSavedTask] = useState(false);
-
-  function setTaskRule(type, ownerName) {
-    setTaskRules(r => ({ ...r, [type]: ownerName || null }));
-  }
-
-  function handleSaveTask() {
-    store.saveTaskAssignment(taskRules);
-    setSavedTask(true);
-    setTimeout(() => setSavedTask(false), 2500);
+function TarefasTab() {
+  function canDeleteTaskStatus(item) {
+    if (item.systemRole && item.systemRole !== "Nenhum") {
+      return `O estado "${item.label}" tem a função de sistema "${item.systemRole}" e não pode ser eliminado. Pode alterar o nome e a cor mas não a função de sistema.`;
+    }
+    return null;
   }
 
   return (
-    <div style={{ maxWidth: 600 }}>
-
-      {/* ── Process role assignment ── */}
-      <SectionHeader title="Atribuição por Função (Processos)" />
-      <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 16 }}>
-        Define quem a IA atribui por defeito para cada função quando chega um novo processo.
-        Seleccionar múltiplos activa rotação (round-robin).
-      </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {ROLE_SLOTS.map(slot => {
-          const eligible = allUsers.filter(u => u.role === slot.roleFilter || u.role === "admin");
-          const assigned = Array.isArray(rules[slot.key]) ? rules[slot.key] : (rules[slot.key] ? [rules[slot.key]] : []);
-          function toggleUser(uid) {
-            const next = assigned.includes(uid) ? assigned.filter(x => x !== uid) : [...assigned, uid];
-            setRule(slot.key, next);
-          }
-          return (
-            <div key={slot.key} style={{ background: THEME.sidebar, borderRadius: 10, border: `1px solid ${THEME.border}`, padding: "12px 14px" }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: THEME.text, marginBottom: 2 }}>{slot.label}</div>
-              <div style={{ fontSize: 11, color: THEME.textDim, marginBottom: 8 }}>{slot.hint}</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                {eligible.length === 0 && <span style={{ fontSize: 12, color: THEME.textMuted }}>Nenhum utilizador com esta função.</span>}
-                {eligible.map(u => {
-                  const checked = assigned.includes(String(u.id)) || assigned.includes(u.id);
-                  return (
-                    <label key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 8px", borderRadius: 7, background: checked ? `${THEME.accent}22` : THEME.bg, cursor: "pointer", border: checked ? `1px solid ${THEME.accent}55` : "1px solid transparent" }}>
-                      <input type="checkbox" checked={checked} onChange={() => toggleUser(u.id)} style={{ accentColor: THEME.accent }} />
-                      <Avatar name={u.name} size={22} photo={u.photo} />
-                      <span style={{ fontSize: 12, fontWeight: checked ? 600 : 400, color: checked ? THEME.accent : THEME.textMuted }}>{u.name}</span>
-                      {assigned.length > 1 && checked && <span style={{ marginLeft: "auto", fontSize: 10, color: THEME.textDim, background: THEME.infoBg, borderRadius: 9999, padding: "1px 7px" }}>round-robin</span>}
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Tipos de Tarefa</div>
+        <StatusList title="" getItems={store.getTaskTypes} saveItems={store.saveTaskTypes} dotShape="circle" />
       </div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 14, marginBottom: 28 }}>
-        <button onClick={handleSaveRoles} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-          Guardar atribuição de processos
-        </button>
-        {savedRoles && <span style={{ fontSize: 12, color: THEME.success, fontWeight: 500 }}>✓ Guardado</span>}
-      </div>
-
-      {/* ── Task type assignment ── */}
-      <div style={{ borderTop: `1px solid ${THEME.border}`, paddingTop: 24 }}>
-        <SectionHeader title="Atribuição por Tipo de Tarefa" />
+      <div style={{ borderTop: `1px solid ${THEME.border}`, paddingTop: 28 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Estados de Tarefa</div>
         <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 16 }}>
-          Define o responsável por defeito para cada tipo de tarefa criada via Inbox ou manualmente.
-          Seleccionar "Sem responsável" envia a tarefa para a lista do Supervisor para atribuição manual.
+          Estados com uma <strong style={{ color: THEME.text }}>Função de Sistema</strong> diferente de "Nenhum" são definidos automaticamente pelas acções do sistema e não aparecem no selector manual de estado. O nome e cor podem ser alterados livremente.
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {getTaskTypeList().map(type => {
-            const currentOwner = taskRules[type] ?? "";
-            return (
-              <div key={type} style={{ background: THEME.sidebar, borderRadius: 9, border: `1px solid ${THEME.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: THEME.text, minWidth: 140 }}>{type}</div>
-                <select
-                  value={currentOwner}
-                  onChange={e => setTaskRule(type, e.target.value)}
-                  style={{ flex: 1, fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "6px 10px", background: THEME.bg, color: currentOwner ? THEME.text : THEME.textDim, outline: "none" }}
-                >
-                  <option value="">Sem responsável (→ Supervisor)</option>
-                  {allUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                </select>
-              </div>
-            );
-          })}
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 14 }}>
-          <button onClick={handleSaveTask} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-            Guardar atribuição de tarefas
-          </button>
-          {savedTask && <span style={{ fontSize: 12, color: THEME.success, fontWeight: 500 }}>✓ Guardado</span>}
-        </div>
+        <StatusList title="" getItems={store.getTaskStatuses} saveItems={store.saveTaskStatuses} dotShape="circle"
+          canDelete={canDeleteTaskStatus}
+        extraFields={[{
+          key: "systemRole",
+          label: "Função de sistema",
+          hint: "Nenhum = aparece no selector manual. Qualquer outra = definido automaticamente pelo sistema.",
+          default: "Nenhum",
+          options: SYSTEM_ROLES,
+        }]}
+      />
       </div>
     </div>
   );
 }
 
-// ── Task Types tab ────────────────────────────────────────────────────────────
+// ── Tab 8: Mapeamento de Responsabilidades ────────────────────────────────────
 
-function TaskTypesTab() {
-  return (
-    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-start" }}>
-      <StatusList
-        title="Tipos de Tarefa"
-        getItems={store.getTaskTypes}
-        saveItems={store.saveTaskTypes}
-        dotShape="circle"
-      />
-    </div>
-  );
-}
-
-// ── Task Statuses tab ─────────────────────────────────────────────────────────
-
-function TaskStatusesTab() {
-  return (
-    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-start" }}>
-      <StatusList
-        title="Estados de Tarefa"
-        getItems={store.getTaskStatuses}
-        saveItems={store.saveTaskStatuses}
-        dotShape="circle"
-      />
-    </div>
-  );
-}
-
-// ── SLA tab ───────────────────────────────────────────────────────────────────
-
-const TASK_SLA_LABELS = {
-  "Por Fazer": "Tarefa em espera sem início",
-  "Em Curso":  "Tarefa activa em progresso",
-  "Devolvido": "Tarefa devolvida aguarda resubmissão",
-  "Escalado":  "Tarefa escalada aguarda supervisão",
-};
-
-function SLATab() {
-  const stages = store.getStages();
-  const [settings, setSettings] = useState(() => store.getSLASettings());
+function MapeamentoTab({ onSwitchTab }) {
+  const roles   = store.getRoles();
+  const stages  = store.getStages();
+  const types   = store.getTaskTypes();
+  const statuses = store.getTaskStatuses();
+  const [mapping, setMapping] = useState(() => store.getMapeamento());
   const [saved, setSaved] = useState(false);
 
-  function setTaskSLA(status, hours) {
-    const val = parseInt(hours, 10);
-    if (isNaN(val) || val < 1) return;
-    setSettings(s => ({ ...s, tasks: { ...s.tasks, [status]: val } }));
+  const missing = [];
+  if (roles.length === 0)   missing.push({ label: "Funções",            tab: "roles"         });
+  if (stages.length === 0)  missing.push({ label: "Estados de Processo", tab: "processos" });
+  if (types.length === 0)   missing.push({ label: "Tipos de Tarefa",    tab: "tarefas"   });
+  if (statuses.length === 0) missing.push({ label: "Estados de Tarefa", tab: "tarefas"   });
+
+  if (missing.length > 0) {
+    return (
+      <div>
+        <SectionHeader title="Mapeamento de Responsabilidades" />
+        <div style={{ background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 10, padding: "20px 24px" }}>
+          <p style={{ color: THEME.textMuted, fontSize: 13, marginBottom: 12 }}>Defina as funções, estados e tipos primeiro antes de fazer o mapeamento.</p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {missing.map(m => (
+              <button key={m.tab} onClick={() => onSwitchTab(m.tab)}
+                style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                Ir para {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  function setStageSLA(id, days) {
-    const val = parseInt(days, 10);
-    if (isNaN(val) || val < 1) return;
-    setSettings(s => ({ ...s, stages: { ...s.stages, [id]: val } }));
+  function setMap(section, key, roleId) {
+    setMapping(prev => ({ ...prev, [section]: { ...(prev[section] ?? {}), [key]: roleId || null } }));
   }
 
   function handleSave() {
-    store.saveSLASettings(settings);
+    store.saveMapeamento(mapping);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
 
+  const roleOptions = [{ id: "", label: "— Sem responsável —" }, ...roles];
+
+  const Section = ({ title, hint, items, section, keyField }) => (
+    <div style={{ marginBottom: 28 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{title}</div>
+      {hint && <p style={{ fontSize: 12, color: THEME.textDim, marginTop: 0, marginBottom: 12 }}>{hint}</p>}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {items.map(item => (
+          <div key={item.id} style={{ background: THEME.sidebar, borderRadius: 9, border: `1px solid ${THEME.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ width: 10, height: 10, borderRadius: 3, background: item.color, flexShrink: 0 }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{item.label}</span>
+            <select
+              value={mapping[section]?.[item[keyField]] ?? ""}
+              onChange={e => setMap(section, item[keyField], e.target.value)}
+              style={{ fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "6px 10px", background: THEME.bg, color: THEME.text, outline: "none", minWidth: 180 }}
+            >
+              {roleOptions.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+            </select>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
-    <div style={{ maxWidth: 580 }}>
-      <SectionHeader title="SLA — Limites de Tempo" />
-      <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 24 }}>
-        Define os limites de tempo para cada estado. O sistema sinaliza automaticamente quando um registo excede o prazo configurado.
+    <div>
+      <SectionHeader title="Mapeamento de Responsabilidades" />
+      <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 20 }}>
+        Define qual função é responsável por cada estado de processo, tipo de tarefa, e estado de tarefa. Quando vários utilizadores têm a mesma função, a atribuição roda (round-robin).
       </p>
-
-      {/* ── Task state SLAs (hours) ── */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
-          Estados de Tarefa — horas
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {Object.entries(TASK_SLA_LABELS).map(([status, hint]) => (
-            <div key={status} style={{ background: THEME.sidebar, borderRadius: 9, border: `1px solid ${THEME.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: THEME.text }}>{status}</div>
-                <div style={{ fontSize: 11, color: THEME.textDim, marginTop: 1 }}>{hint}</div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <input
-                  type="number" min="1" max="999"
-                  value={settings.tasks[status] ?? ""}
-                  onChange={e => setTaskSLA(status, e.target.value)}
-                  style={{ width: 64, padding: "5px 8px", fontSize: 13, border: `1px solid ${THEME.border}`, borderRadius: 7, background: THEME.bg, color: THEME.text, outline: "none", textAlign: "right" }}
-                />
-                <span style={{ fontSize: 12, color: THEME.textDim, minWidth: 28 }}>h</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Process stage SLAs (days) ── */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
-          Estados do Processo — dias
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {stages.map(s => (
-            <div key={s.id} style={{ background: THEME.sidebar, borderRadius: 9, border: `1px solid ${THEME.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
-              <div style={{ width: 10, height: 10, borderRadius: 3, background: s.color, flexShrink: 0 }} />
-              <div style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{s.label}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <input
-                  type="number" min="1" max="999"
-                  value={settings.stages[s.id] ?? ""}
-                  onChange={e => setStageSLA(s.id, e.target.value)}
-                  style={{ width: 64, padding: "5px 8px", fontSize: 13, border: `1px solid ${THEME.border}`, borderRadius: 7, background: THEME.bg, color: THEME.text, outline: "none", textAlign: "right" }}
-                />
-                <span style={{ fontSize: 12, color: THEME.textDim, minWidth: 42 }}>dias</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
+      <Section title="Por Estado de Processo" hint="Quem recebe o processo quando atinge este estado" items={stages}   section="processoStatus" keyField="id" />
+      <Section title="Por Tipo de Tarefa"      hint="Quem recebe a tarefa quando este tipo é criado"  items={types}    section="taskType"       keyField="id" />
+      <Section title="Por Estado de Tarefa"    hint="Quem recebe a tarefa quando atinge este estado"  items={statuses} section="taskStatus"     keyField="id" />
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <button onClick={handleSave} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-          Guardar SLA
+          Guardar mapeamento
         </button>
         {saved && <span style={{ fontSize: 12, color: THEME.success, fontWeight: 500 }}>✓ Guardado</span>}
       </div>
@@ -673,187 +622,129 @@ function SLATab() {
   );
 }
 
-// ── Inbox log tab ─────────────────────────────────────────────────────────────
+// ── Tab 9: SLA ────────────────────────────────────────────────────────────────
 
-const INBOX_ACTION_LABELS = {
-  triaged:   { label: "Confirmado como Processo", color: "#60a5fa", bg: "#1e3a5f" },
-  processed: { label: "Confirmado como Tarefa",   color: "#4ade80", bg: "#052e16" },
-  diversos:  { label: "Diversos",                 color: "#94a3b8", bg: "#1e293b" },
-  pending:   { label: "Pendente",                 color: "#f59e0b", bg: "#1c1005" },
-};
+function SLATab() {
+  const stages   = store.getStages();
+  const types    = store.getTaskTypes();
+  const statuses = store.getTaskStatuses();
+  const [settings, setSettings] = useState(() => store.getSLASettings());
+  const [saved, setSaved] = useState(false);
 
-function InboxLogTab() {
-  const [search, setSearch] = useState("");
-  const emails = store.getInboxEmails();
+  function set(section, key, value, unit) {
+    setSettings(prev => ({
+      ...prev,
+      [section]: {
+        ...(prev[section] ?? {}),
+        [key]: { value: parseInt(value, 10) || 0, unit: unit ?? prev[section]?.[key]?.unit ?? "horas" },
+      },
+    }));
+  }
 
-  const rows = emails.filter(e => {
-    if (e.isInternal) return false;
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return [e.senderName, e.sender, e.subject, e.aiSuggestion?.type].some(v => v?.toLowerCase().includes(q));
-  });
+  function handleSave() { store.saveSLASettings(settings); setSaved(true); setTimeout(() => setSaved(false), 2500); }
+
+  const Row = ({ item, section }) => {
+    const entry = settings[section]?.[item.id] ?? { value: "", unit: "horas" };
+    return (
+      <div style={{ background: THEME.sidebar, borderRadius: 9, border: `1px solid ${THEME.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ width: 10, height: 10, borderRadius: 3, background: item.color, flexShrink: 0 }} />
+        <span style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{item.label}</span>
+        <input type="number" min="0" max="9999" value={entry.value}
+          onChange={e => set(section, item.id, e.target.value, entry.unit)}
+          style={{ width: 64, padding: "5px 8px", fontSize: 13, border: `1px solid ${THEME.border}`, borderRadius: 7, background: THEME.bg, color: THEME.text, outline: "none", textAlign: "right" }}
+        />
+        <select value={entry.unit} onChange={e => set(section, item.id, entry.value, e.target.value)}
+          style={{ fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "5px 8px", background: THEME.bg, color: THEME.text, outline: "none" }}>
+          <option value="horas">horas</option>
+          <option value="dias">dias</option>
+        </select>
+      </div>
+    );
+  };
+
+  const Group = ({ title, items, section }) => (
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>{title}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {items.map(item => <Row key={item.id} item={item} section={section} />)}
+      </div>
+    </div>
+  );
 
   return (
-    <div>
-      <SectionHeader title="Log de Inbox" />
-      <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 16 }}>
-        Todos os emails recebidos — classificação por IA e acção tomada. Só de leitura.
+    <div style={{ maxWidth: 580 }}>
+      <SectionHeader title="SLA — Limites de Tempo" />
+      <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 24 }}>
+        Quando um novo estado ou tipo é adicionado nas tabs correspondentes, uma linha SLA aparece aqui automaticamente.
       </p>
-      <div style={{ marginBottom: 14 }}>
-        <input
-          value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Pesquisar remetente, assunto ou tipo…"
-          style={{ width: "100%", padding: "7px 10px", fontSize: 13, border: `1px solid ${THEME.border}`, borderRadius: 7, outline: "none", background: THEME.sidebar, color: THEME.text, boxSizing: "border-box" }}
-        />
-      </div>
-      <div style={{ background: THEME.card, borderRadius: 10, border: `1px solid ${THEME.border}`, overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-          <thead>
-            <tr style={{ background: THEME.sidebar, borderBottom: `1px solid ${THEME.border}` }}>
-              {["Recebido", "Remetente", "Assunto", "Sugestão IA", "Confiança", "Acção"].map(h => (
-                <th key={h} style={{ padding: "8px 12px", fontSize: 10, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "left", whiteSpace: "nowrap" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(e => {
-              const action = INBOX_ACTION_LABELS[e.status] || INBOX_ACTION_LABELS["pending"];
-              const aiType = e.aiSuggestion?.type;
-              const conf   = e.aiSuggestion ? Math.round(e.aiSuggestion.confidence * 100) + "%" : "—";
-              const isUnclassified = !e.aiSuggestion || e.aiSuggestion.type === "Não Classificado";
-              return (
-                <tr key={e.id} style={{ borderBottom: `1px solid ${THEME.borderLight}`, background: THEME.bg }}>
-                  <td style={{ padding: "8px 12px", color: THEME.textDim, whiteSpace: "nowrap" }}>{e.received}</td>
-                  <td style={{ padding: "8px 12px" }}>
-                    <div style={{ fontWeight: 600, color: THEME.text }}>{e.senderName}</div>
-                    <div style={{ fontSize: 10, color: THEME.textDim }}>{e.sender}</div>
-                  </td>
-                  <td style={{ padding: "8px 12px", color: THEME.textMuted, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.subject}</td>
-                  <td style={{ padding: "8px 12px" }}>
-                    {isUnclassified
-                      ? <Tag bg="#2d0a0a" color="#f87171">Não Classificado</Tag>
-                      : <Tag bg="#1e293b" color="#94a3b8">{aiType}</Tag>
-                    }
-                  </td>
-                  <td style={{ padding: "8px 12px", color: isUnclassified ? THEME.danger : THEME.textMuted }}>{conf}</td>
-                  <td style={{ padding: "8px 12px" }}>
-                    <Tag bg={action.bg} color={action.color}>{action.label}</Tag>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {rows.length === 0 && (
-          <p style={{ textAlign: "center", color: THEME.textDim, padding: "32px 0", fontSize: 13 }}>
-            {search ? "Nenhum email encontrado" : "Sem emails no log"}
-          </p>
-        )}
+      <Group title="Estados do Processo"  items={stages}   section="processoStatus" />
+      <Group title="Tipos de Tarefa"       items={types}    section="taskType"       />
+      <Group title="Estados de Tarefa"     items={statuses} section="taskStatus"     />
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <button onClick={handleSave} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Guardar SLA</button>
+        {saved && <span style={{ fontSize: 12, color: THEME.success, fontWeight: 500 }}>✓ Guardado</span>}
       </div>
     </div>
   );
 }
 
-// ── Branding tab ──────────────────────────────────────────────────────────────
+// ── Branding tab (unchanged) ──────────────────────────────────────────────────
 
 function LogoUploader({ logoUrl, accent, onLogoChange }) {
   const fileRef   = useRef(null);
   const canvasRef = useRef(null);
-  // imgSrc is the raw base64 loaded via FileReader — always base64, never a blob URL
   const [imgSrc,    setImgSrc]    = useState(null);
   const [zoom,      setZoom]      = useState(1);
   const [offsetX,   setOffsetX]   = useState(0);
   const [offsetY,   setOffsetY]   = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const lastPos     = useRef(null);
-  const [prevSize,  setPrevSize]  = useState(64);
-  // natural image dimensions, needed for correct canvas rendering
-  const imgNatural  = useRef({ w: 1, h: 1 });
+  const lastPos    = useRef(null);
+  const [prevSize, setPrevSize]   = useState(64);
 
   function loadFile(f) {
     if (!f || !f.type.startsWith("image/")) return;
     const reader = new FileReader();
     reader.onload = ev => {
-      const src = ev.target.result;
-      // Read natural dimensions before showing editor
       const tmp = new Image();
-      tmp.onload = () => {
-        imgNatural.current = { w: tmp.naturalWidth, h: tmp.naturalHeight };
-        setImgSrc(src);
-        setZoom(1);
-        setOffsetX(0);
-        setOffsetY(0);
-      };
-      tmp.src = src;
+      tmp.onload = () => { setImgSrc(ev.target.result); setZoom(1); setOffsetX(0); setOffsetY(0); };
+      tmp.src = ev.target.result;
     };
     reader.readAsDataURL(f);
   }
 
-  const CROP = 160; // px of the visible crop window
+  const CROP = 160;
 
   function handleConfirm() {
     const canvas = canvasRef.current;
     if (!canvas || !imgSrc) return;
     const ctx = canvas.getContext("2d");
     const size = 256;
-    canvas.width  = size;
-    canvas.height = size;
+    canvas.width = size; canvas.height = size;
     ctx.clearRect(0, 0, size, size);
     const img = new Image();
     img.onload = () => {
-      // Scale from the 160px crop window to the 256px output canvas
       const ratio = size / CROP;
-      const renderedW = img.naturalWidth  * zoom * ratio;
-      const renderedH = img.naturalHeight * zoom * ratio;
-      const cx = (size - renderedW) / 2 + offsetX * zoom * ratio;
-      const cy = (size - renderedH) / 2 + offsetY * zoom * ratio;
-      ctx.drawImage(img, cx, cy, renderedW, renderedH);
+      ctx.drawImage(img, (size - img.naturalWidth * zoom * ratio) / 2 + offsetX * zoom * ratio, (size - img.naturalHeight * zoom * ratio) / 2 + offsetY * zoom * ratio, img.naturalWidth * zoom * ratio, img.naturalHeight * zoom * ratio);
       onLogoChange(canvas.toDataURL("image/png"));
       setImgSrc(null);
     };
     img.src = imgSrc;
   }
 
-  function onMD(e) { setIsDragging(true); lastPos.current = { x: e.clientX, y: e.clientY }; }
-  function onMM(e) {
-    if (!isDragging || !lastPos.current) return;
-    setOffsetX(ox => ox + (e.clientX - lastPos.current.x));
-    setOffsetY(oy => oy + (e.clientY - lastPos.current.y));
-    lastPos.current = { x: e.clientX, y: e.clientY };
-  }
-  function onMU() { setIsDragging(false); lastPos.current = null; }
-
-  // CSS-driven preview: image centred, scaled by zoom, panned by offset
-  const imgStyle = {
-    position: "absolute",
-    left: "50%", top: "50%",
-    transform: `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${zoom})`,
-    transformOrigin: "center center",
-    maxWidth: "none",
-    userSelect: "none",
-    pointerEvents: "none",
-  };
+  const imgStyle = { position: "absolute", left: "50%", top: "50%", transform: `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${zoom})`, transformOrigin: "center center", maxWidth: "none", userSelect: "none", pointerEvents: "none" };
 
   return (
     <div>
       {!imgSrc ? (
         <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-          {/* current logo preview at adjustable size */}
           <div onClick={() => fileRef.current?.click()} style={{ width: prevSize, height: prevSize, background: accent, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", flexShrink: 0, border: "2px dashed #cbd5e1" }}>
-            {logoUrl
-              ? <img src={logoUrl} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-              : <Icon name="bar" size={Math.round(prevSize * 0.38)} color="white" />
-            }
+            {logoUrl ? <img src={logoUrl} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : <Icon name="bar" size={Math.round(prevSize * 0.38)} color="white" />}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <button onClick={() => fileRef.current?.click()} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 14px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>
               <Icon name="upload" size={13} /> {logoUrl ? "Alterar imagem" : "Carregar imagem"}
             </button>
-            {logoUrl && (
-              <button onClick={() => onLogoChange("")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#dc2626", padding: 0, textAlign: "left" }}>
-                Remover logótipo
-              </button>
-            )}
+            {logoUrl && <button onClick={() => onLogoChange("")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#dc2626", padding: 0, textAlign: "left" }}>Remover logótipo</button>}
             <p style={{ margin: 0, fontSize: 11, color: THEME.textMuted }}>PNG, SVG ou JPG</p>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
               <span style={{ fontSize: 11, color: THEME.textDim }}>Pré-vis:</span>
@@ -864,13 +755,12 @@ function LogoUploader({ logoUrl, accent, onLogoChange }) {
         </div>
       ) : (
         <div>
-          <p style={{ fontSize: 12, color: THEME.textDim, marginTop: 0, marginBottom: 10 }}>
-            Arraste para reposicionar · Deslize o zoom para ajustar o tamanho
-          </p>
-          {/* crop window */}
-          <div
-            style={{ width: CROP, height: CROP, overflow: "hidden", borderRadius: 12, border: "2px solid #e2e8f0", cursor: isDragging ? "grabbing" : "grab", position: "relative", background: THEME.bg, flexShrink: 0 }}
-            onMouseDown={onMD} onMouseMove={onMM} onMouseUp={onMU} onMouseLeave={onMU}
+          <p style={{ fontSize: 12, color: THEME.textDim, marginTop: 0, marginBottom: 10 }}>Arraste para reposicionar · Deslize o zoom para ajustar o tamanho</p>
+          <div style={{ width: CROP, height: CROP, overflow: "hidden", borderRadius: 12, border: "2px solid #e2e8f0", cursor: isDragging ? "grabbing" : "grab", position: "relative", background: THEME.bg, flexShrink: 0 }}
+            onMouseDown={e => { setIsDragging(true); lastPos.current = { x: e.clientX, y: e.clientY }; }}
+            onMouseMove={e => { if (!isDragging || !lastPos.current) return; setOffsetX(ox => ox + e.clientX - lastPos.current.x); setOffsetY(oy => oy + e.clientY - lastPos.current.y); lastPos.current = { x: e.clientX, y: e.clientY }; }}
+            onMouseUp={() => { setIsDragging(false); lastPos.current = null; }}
+            onMouseLeave={() => { setIsDragging(false); lastPos.current = null; }}
           >
             <img src={imgSrc} alt="preview" draggable={false} style={imgStyle} />
           </div>
@@ -916,17 +806,10 @@ function BrandingTab({ onBrandingChange }) {
     <div style={{ maxWidth: 540 }}>
       <SectionHeader title="Marca / Logótipo" />
       <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-        <FieldRow label="Logótipo">
-          <LogoUploader logoUrl={logoUrl} accent={accent} onLogoChange={setLogoUrl} />
-        </FieldRow>
-        <FieldRow label="Nome da aplicação">
-          <input style={INPUT} value={appName} onChange={e => setAppName(e.target.value)} />
-        </FieldRow>
-        <FieldRow label="Subtítulo">
-          <input style={INPUT} value={subtitle} onChange={e => setSubtitle(e.target.value)} />
-        </FieldRow>
+        <FieldRow label="Logótipo"><LogoUploader logoUrl={logoUrl} accent={accent} onLogoChange={setLogoUrl} /></FieldRow>
+        <FieldRow label="Nome da aplicação"><input style={INPUT} value={appName} onChange={e => setAppName(e.target.value)} /></FieldRow>
+        <FieldRow label="Subtítulo"><input style={INPUT} value={subtitle} onChange={e => setSubtitle(e.target.value)} /></FieldRow>
         <ColorSwatch label="Cor de destaque" value={accent} onChange={setAccent} />
-
         <div>
           <div style={{ fontSize: 11, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Pré-visualização</div>
           <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 10, padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
@@ -939,11 +822,8 @@ function BrandingTab({ onBrandingChange }) {
             </div>
           </div>
         </div>
-
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button onClick={handleSave} style={{ background: "#2563eb", color: "white", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-            Guardar alterações
-          </button>
+          <button onClick={handleSave} style={{ background: "#2563eb", color: "white", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Guardar alterações</button>
           {saved && <span style={{ fontSize: 12, color: "#15803d", fontWeight: 500 }}>✓ Guardado — reflectido na barra de navegação</span>}
         </div>
       </div>
@@ -951,7 +831,7 @@ function BrandingTab({ onBrandingChange }) {
   );
 }
 
-// ── Import tab ────────────────────────────────────────────────────────────────
+// ── Import tab (unchanged) ────────────────────────────────────────────────────
 
 function ImportTab() {
   const [dragging,  setDragging]  = useState(false);
@@ -960,11 +840,9 @@ function ImportTab() {
   const [done,      setDone]      = useState(false);
 
   function handleFile(f) {
-    if (f && (f.name.endsWith(".csv") || f.name.endsWith(".xlsx") || f.name.endsWith(".xls"))) {
-      setFile(f); setDone(false);
-    } else alert("Por favor selecione um ficheiro CSV ou Excel.");
+    if (f && (f.name.endsWith(".csv") || f.name.endsWith(".xlsx") || f.name.endsWith(".xls"))) { setFile(f); setDone(false); }
+    else alert("Por favor selecione um ficheiro CSV ou Excel.");
   }
-  function handleReset() { setFile(null); setDone(false); }
 
   return (
     <div style={{ maxWidth: 600 }}>
@@ -974,13 +852,10 @@ function ImportTab() {
       </p>
       {!done ? (
         <>
-          <div
-            onDragOver={e => { e.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
+          <div onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)}
             onDrop={e => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]); }}
             onClick={() => document.getElementById("admin-file-input").click()}
-            style={{ border: `2px dashed ${dragging ? "#2563eb" : "#e2e8f0"}`, borderRadius: 12, padding: "36px 24px", textAlign: "center", cursor: "pointer", background: dragging ? "#eff6ff" : "#f8fafc", transition: "all 0.15s" }}
-          >
+            style={{ border: `2px dashed ${dragging ? "#2563eb" : "#e2e8f0"}`, borderRadius: 12, padding: "36px 24px", textAlign: "center", cursor: "pointer", background: dragging ? "#eff6ff" : "#f8fafc", transition: "all 0.15s" }}>
             <Icon name="upload" size={30} color={dragging ? "#2563eb" : "#94a3b8"} style={{ display: "block", margin: "0 auto 10px" }} />
             <div style={{ fontSize: 14, fontWeight: 600, color: THEME.textMuted, marginBottom: 4 }}>{file ? file.name : "Arraste o ficheiro aqui ou clique para selecionar"}</div>
             <div style={{ fontSize: 12, color: THEME.textMuted }}>CSV, XLS ou XLSX · até 10 MB</div>
@@ -1011,7 +886,7 @@ function ImportTab() {
                 <strong>Atenção:</strong> Verifique o mapeamento de colunas antes de confirmar.
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={handleReset} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "8px 16px", fontSize: 13, color: THEME.textDim, cursor: "pointer" }}>Remover ficheiro</button>
+                <button onClick={() => { setFile(null); setDone(false); }} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "8px 16px", fontSize: 13, color: THEME.textDim, cursor: "pointer" }}>Remover ficheiro</button>
                 <button onClick={() => { setImporting(true); setTimeout(() => { setImporting(false); setDone(true); }, 1800); }} disabled={importing}
                   style={{ background: importing ? "#93c5fd" : "#2563eb", color: "white", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 13, fontWeight: 600, cursor: importing ? "default" : "pointer" }}>
                   {importing ? "A importar…" : "Confirmar importação"}
@@ -1025,7 +900,7 @@ function ImportTab() {
           <div style={{ fontSize: 32, marginBottom: 8 }}>✓</div>
           <div style={{ fontSize: 15, fontWeight: 700, color: "#15803d", marginBottom: 4 }}>Importação concluída</div>
           <div style={{ fontSize: 13, color: "#166534", marginBottom: 16 }}>{file?.name} · 3 registos importados (simulado)</div>
-          <button onClick={handleReset} style={{ background: THEME.card, border: "1px solid #bbf7d0", borderRadius: 8, padding: "7px 18px", fontSize: 13, color: "#15803d", fontWeight: 600, cursor: "pointer" }}>Importar outro ficheiro</button>
+          <button onClick={() => { setFile(null); setDone(false); }} style={{ background: THEME.card, border: "1px solid #bbf7d0", borderRadius: 8, padding: "7px 18px", fontSize: 13, color: "#15803d", fontWeight: 600, cursor: "pointer" }}>Importar outro ficheiro</button>
         </div>
       )}
     </div>
@@ -1035,17 +910,15 @@ function ImportTab() {
 // ── Shell ─────────────────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: "users",        label: "Utilizadores",     icon: "users"    },
-  { id: "statuses",     label: "Estados",          icon: "tag"      },
-  { id: "task-types",   label: "Tipos de Tarefa",  icon: "tasks"    },
-  { id: "task-statuses",label: "Estados de Tarefa",icon: "tag"      },
-  { id: "priorities",   label: "Prioridades",      icon: "alert"    },
-  { id: "roles",        label: "Funções",           icon: "user"     },
-  { id: "assignment",   label: "Atribuição de Tarefas", icon: "cpu" },
-  { id: "sla",          label: "SLA",              icon: "alert"    },
-  { id: "inbox",        label: "Log Inbox",        icon: "inbox"    },
-  { id: "branding",     label: "Marca",            icon: "settings" },
-  { id: "import",       label: "Importar",         icon: "upload"   },
+  { id: "users",         label: "Utilizadores",              icon: "users"    },
+  { id: "roles",         label: "Funções",                   icon: "user"     },
+  { id: "assignment",    label: "Atribuição",                icon: "cpu"      },
+  { id: "processos",     label: "Processos",                 icon: "tag"      },
+  { id: "tarefas",       label: "Tarefas",                   icon: "tasks"    },
+  { id: "mapeamento",    label: "Mapeamento",                icon: "list"     },
+  { id: "sla",           label: "SLA",                       icon: "clock"    },
+  { id: "branding",      label: "Marca",                     icon: "settings" },
+  { id: "import",        label: "Importar",                  icon: "upload"   },
 ];
 
 export function AdminPanel({ onClose, onBrandingChange, onUsersChange }) {
@@ -1057,9 +930,8 @@ export function AdminPanel({ onClose, onBrandingChange, onUsersChange }) {
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100 }} />
       <div style={isMobile
         ? { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: THEME.sidebar, zIndex: 101, display: "flex", flexDirection: "column" }
-        : { position: "fixed", top: 0, right: 0, height: "100vh", width: 800, maxWidth: "96vw", background: THEME.sidebar, zIndex: 101, display: "flex", flexDirection: "column", boxShadow: "-6px 0 40px rgba(0,0,0,0.14)" }
+        : { position: "fixed", top: 0, right: 0, height: "100vh", width: 820, maxWidth: "96vw", background: THEME.sidebar, zIndex: 101, display: "flex", flexDirection: "column", boxShadow: "-6px 0 40px rgba(0,0,0,0.14)" }
       }>
-
         {/* header */}
         <div style={{ background: THEME.card, borderBottom: `1px solid ${THEME.border}`, padding: isMobile ? "12px 16px" : "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -1076,7 +948,7 @@ export function AdminPanel({ onClose, onBrandingChange, onUsersChange }) {
           </button>
         </div>
 
-        {/* tab bar — icon-only on mobile */}
+        {/* tab bar */}
         <div style={{ background: THEME.card, borderBottom: `1px solid ${THEME.border}`, display: "flex", flexShrink: 0, overflowX: "auto" }}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)}
@@ -1090,17 +962,15 @@ export function AdminPanel({ onClose, onBrandingChange, onUsersChange }) {
 
         {/* content */}
         <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "16px" : "24px" }}>
-          {activeTab === "users"         && <UsersTab onUsersChange={onUsersChange} />}
-          {activeTab === "statuses"      && <StatusesTab />}
-          {activeTab === "task-types"    && <TaskTypesTab />}
-          {activeTab === "task-statuses" && <TaskStatusesTab />}
-          {activeTab === "priorities"    && <PrioritiesTab />}
-          {activeTab === "roles"         && <RolesTab />}
-          {activeTab === "assignment"    && <AssignmentTab />}
-          {activeTab === "sla"           && <SLATab />}
-          {activeTab === "inbox"         && <InboxLogTab />}
-          {activeTab === "branding"      && <BrandingTab onBrandingChange={onBrandingChange} />}
-          {activeTab === "import"        && <ImportTab />}
+          {activeTab === "users"      && <UsersTab onUsersChange={onUsersChange} />}
+          {activeTab === "roles"      && <RolesTab />}
+          {activeTab === "assignment" && <AtribuicaoTab onSwitchTab={setActiveTab} />}
+          {activeTab === "processos"  && <ProcessosTab />}
+          {activeTab === "tarefas"    && <TarefasTab />}
+          {activeTab === "mapeamento" && <MapeamentoTab onSwitchTab={setActiveTab} />}
+          {activeTab === "sla"        && <SLATab />}
+          {activeTab === "branding"   && <BrandingTab onBrandingChange={onBrandingChange} />}
+          {activeTab === "import"     && <ImportTab />}
         </div>
       </div>
     </>

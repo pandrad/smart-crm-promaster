@@ -9,6 +9,7 @@
 import { useState } from "react";
 import { store } from "../store.js";
 import { useWindowSize } from "../utils.js";
+import { getAISimulationEnabled, setAISimulationEnabled } from "../api/client.js";
 import { PROCESSOS, TAREFAS, INBOX_EMAILS } from "../mock/data.js";
 import { THEME } from "../theme.js";
 import { Avatar } from "./Primitives.jsx";
@@ -182,6 +183,15 @@ export function DevTools({
 }) {
   const { isMobile } = useWindowSize();
   const [collapsed, setCollapsed] = useState(false);
+  const [aiSimOn, setAiSimOn] = useState(() => getAISimulationEnabled());
+
+  function toggleAISim() {
+    const next = !aiSimOn;
+    setAISimulationEnabled(next);
+    setAiSimOn(next);
+    // Force inbox to re-read AI suggestions on next render
+    setThemeVersion(v => v + 1);
+  }
 
   // ── Tool 2: Generate random inbox email ──────────────────────────────────
   function handleGenerateEmail() {
@@ -270,24 +280,37 @@ export function DevTools({
   }
 
   // ── Tool 6: Clear admin data ──────────────────────────────────────────────
+  // Clears all admin-configured data structures, keeping only the current user.
   function handleClearAdminData() {
     const me = store.getUsers().find(u => u.email === currentUser?.email);
     store.saveUsers(me ? [me] : []);
+    store.saveRoles([]);
+    store.saveUserRoles({});
     store.saveStages([]);
     store.saveFUStatuses([]);
+    store.saveTaskTypes([]);
+    store.saveTaskStatuses([]);
+    store.saveMapeamento({ processoStatus: {}, taskType: {}, taskStatus: {} });
+    store.saveSLASettings({});
     store.savePriorities([]);
-    store.saveRoles([]);
-    store.saveAssignment({ cotacao: null, comercial: null, compra: null });
-    store.saveTaskAssignment({});
+    localStorage.removeItem("crm_rr_counters");
     setThemeVersion(v => v + 1);
   }
 
   // ── Tool 7: Restore all mock data ────────────────────────────────────────
+  // Clears all runtime keys so store.get*() returns default seed values,
+  // then resets React state to mock data baseline.
   function handleRestoreMockData() {
     const keys = [
-      "crm_users", "crm_stages", "crm_fu", "crm_priorities", "crm_roles",
-      "crm_assignment", "crm_task_assignment", "crm_tarefas", "crm_inbox",
-      "crm_col_prefs", "crm_sort_prefs", "crm_branding", "crm_theme",
+      "crm_users", "crm_roles", "crm_user_roles",
+      "crm_stages", "crm_fu",
+      "crm_task_types", "crm_task_statuses",
+      "crm_mapeamento", "crm_sla",
+      "crm_priorities",
+      "crm_tarefas", "crm_inbox",
+      "crm_col_prefs", "crm_sort_prefs",
+      "crm_branding", "crm_theme",
+      "crm_rr_counters",
     ];
     keys.forEach(k => localStorage.removeItem(k));
     setProcessos([...PROCESSOS]);
@@ -339,6 +362,31 @@ export function DevTools({
 
           {/* Tool 3 — Generate random processo */}
           <ToolButton label="Gerar processo aleatório" icon="plus" color="#38bdf8" bg="#0c2231" onClick={handleGenerateProcesso} />
+
+          <div style={{ borderTop: "1px solid #1e293b", margin: "2px 0" }} />
+
+          {/* AI Classification toggle */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 2px" }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#c084fc" }}>Simulação IA</div>
+              <div style={{ fontSize: 9, color: "#64748b", marginTop: 1 }}>Badges marcados "SIM"</div>
+            </div>
+            <button
+              onClick={toggleAISim}
+              style={{
+                width: 36, height: 20, borderRadius: 10, border: "none", cursor: "pointer",
+                background: aiSimOn ? "#7c3aed" : "#1e293b",
+                position: "relative", transition: "background 0.2s", flexShrink: 0,
+              }}
+            >
+              <div style={{
+                position: "absolute", top: 2, left: aiSimOn ? 18 : 2,
+                width: 16, height: 16, borderRadius: "50%",
+                background: aiSimOn ? "#c084fc" : "#475569",
+                transition: "left 0.2s",
+              }} />
+            </button>
+          </div>
 
           <div style={{ borderTop: "1px solid #1e293b", margin: "2px 0" }} />
 

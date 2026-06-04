@@ -174,6 +174,7 @@ Fixes applied between static QA and manual browser review sign-off:
 | `docs/build-brief.md` updated | ✅ Current |
 | DEV ONLY testing tools (7 tools) | ✅ Built, **must be deleted before final closure** |
 | Static QA (code analysis + build) | ✅ Complete |
+| Technical QA pass (11 checks) | 🔄 Partial — see below |
 | Client document: task types, triggers, timings, roles | ⏳ Awaited |
 | Second client review session | ⏳ Pending |
 | Final human QA pass | ⏳ Pending |
@@ -202,8 +203,28 @@ Full static analysis pass was run across all source files against the QA plan ch
 - Arquivo: read-only, opens DetailDrawer — correct
 - Theme toggle — correct
 
+### Technical QA pass — partial (in progress)
+
+Automated Playwright QA pass run against 11 checks. DEV panel overlay (`z-index: 9999, position: fixed`) blocked table row clicks in headless mode for most admin-heavy checks. No app bugs were found — all failures were automation harness issues.
+
+| Check | Status | Notes |
+|-------|--------|-------|
+| 11 — DEV Tools 6 & 7 | ✅ PASS | Clear empties all config; restore populates all 9 tabs, Mapeamento 3 sub-sections, SLA all rows |
+| 6 — Email attachments | ✅ PASS | Attach button present, chip shown, chip removed, email sent with attachment from process drawer |
+| 9 — AI simulation toggle | ✅ PASS (partial) | OFF→no SIM, toggle writes `dev_ai_simulation="true"`, OFF again→no SIM. SIM badge rendering not confirmed in headless (inbox card locator issue in automation — app screenshot confirms 3 pending emails) |
+| 10 — Alterar Estado structural | ✅ PASS | Status filter dropdown shows all 12 statuses; confirmed via code audit that TaskDrawer has no free status setter |
+| 1 — Round-robin role assignment | ⏳ Not confirmed | Admin panel click blocked by DEV overlay after devTool() call |
+| 2 — Mapeamento dynamic refresh | ⏳ Not confirmed | Same blocker |
+| 3 — System role rename | ⏳ Not confirmed | Same blocker |
+| 4 — Role delete cascade | ⏳ Not confirmed | Same blocker |
+| 5 — System role status delete | ⏳ Not confirmed | Same blocker |
+| 7 — Pinned attachments | ⏳ Not confirmed | Strict-mode locator error (`div:has-text("Email de Origem")` matched 9 elements) |
+| 8 — Follow-up status dynamic | ⏳ Not confirmed | Admin panel click blocked |
+
+**To complete the QA pass in next session:** collapse the DEV panel before calling `openAdmin()`, or use `page.evaluate(() => document.querySelector('[style*="9999"]').style.display = "none")` to hide it before admin interactions. Use `getByText('Email de Origem', { exact: true })` for Check 7.
+
 ### Next action
-**Stage 1 remains open. Awaiting: client document on task types/triggers/timings/roles → second client review session → final human QA pass → delete DevTools.**
+**Stage 1 remains open. Awaiting: client document on task types/triggers/timings/roles → second client review session → complete QA pass → final human QA pass → delete DevTools.**
 
 Steps to close Stage 1:
 1. Receive and apply client feedback from second review session

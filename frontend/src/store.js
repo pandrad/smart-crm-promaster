@@ -6,44 +6,74 @@
 import { USERS, STAGES, FOLLOWUP_STATUSES } from "./data.js";
 import { TAREFAS, INBOX_EMAILS } from "./mock/data.js";
 
+// ── Default seed data ─────────────────────────────────────────────────────────
+
 const DEFAULT_PRIORITIES = [
   { id: 1, label: "Normal", color: "#94a3b8", bg: "#1e293b" },
   { id: 2, label: "Alta",   color: "#f87171", bg: "#2d0a0a" },
 ];
 
-const DEFAULT_TASK_TYPES = [
-  { id: 1,  label: "Validação de Processo", color: "#93c5fd", bg: "#0c1a2e" },
-  { id: 2,  label: "Não Classificado",      color: "#f87171", bg: "#2d0a0a" },
-  { id: 3,  label: "Pré-Entrada",           color: "#60a5fa", bg: "#1e3a5f" },
-  { id: 4,  label: "Desconto",              color: "#fbbf24", bg: "#1c1005" },
-  { id: 5,  label: "Status Encomenda",      color: "#4ade80", bg: "#052e16" },
-  { id: 6,  label: "Contas Correntes",      color: "#fb923c", bg: "#1c1005" },
-  { id: 7,  label: "Cliente Novo",          color: "#c084fc", bg: "#2e1065" },
-  { id: 8,  label: "Diversos",              color: "#94a3b8", bg: "#1e293b" },
-  { id: 9,  label: "Follow-up",             color: "#38bdf8", bg: "#0c2231" },
-  { id: 10, label: "Escalação",             color: "#f87171", bg: "#2d0a0a" },
-  { id: 11, label: "Abertura de Processo",  color: "#4ade80", bg: "#0a2015" },
-];
-
-const DEFAULT_TASK_STATUSES = [
-  { id: 1, label: "Por Fazer",             color: "#94a3b8", bg: "#1e293b" },
-  { id: 2, label: "Em Curso",              color: "#60a5fa", bg: "#1e3a5f" },
-  { id: 3, label: "Devolvido",             color: "#fb923c", bg: "#1c1005" },
-  { id: 4, label: "Escalado",              color: "#e879f9", bg: "#2d0a2d" },
-  { id: 5, label: "Concluído",             color: "#4ade80", bg: "#052e16" },
-  { id: 6, label: "Cancelado",             color: "#64748b", bg: "#1e293b" },
-  { id: 7, label: "Cancelamento Pendente", color: "#fb923c", bg: "#2d1505" },
-];
-
+// Roles — label only; id is a string slug
 const DEFAULT_ROLES = [
-  { id: "admin",      label: "Administrador"   },
-  { id: "supervisor", label: "Supervisor"       },
-  { id: "comercial",  label: "Resp. Comercial"  },
-  { id: "cotacao",    label: "Resp. Cotação"    },
-  { id: "compra",     label: "Resp. Compra"     },
-  { id: "abertura",   label: "Resp. Abertura"   },
-  { id: "viewer",     label: "Visualizador"     },
+  { id: "pre-entrada",  label: "Resp. Pré-Entrada" },
+  { id: "cotacao",      label: "Resp. Cotação"      },
+  { id: "abertura",     label: "Resp. Abertura"     },
+  { id: "fecho",        label: "Resp. Fecho"        },
+  { id: "supervisor",   label: "Supervisor"         },
+  { id: "admin",        label: "Admin"              },
 ];
+
+// Task types — label + colour; no system behaviour
+const DEFAULT_TASK_TYPES = [
+  { id: 1,  label: "Pré-Entrada",           color: "#60a5fa", bg: "#1e3a5f" },
+  { id: 2,  label: "Abertura de Processo",  color: "#4ade80", bg: "#0a2015" },
+  { id: 3,  label: "Contas Correntes",      color: "#fb923c", bg: "#1c1005" },
+  { id: 4,  label: "Status de Encomenda",   color: "#4ade80", bg: "#052e16" },
+  { id: 5,  label: "Desconto",              color: "#fbbf24", bg: "#1c1005" },
+  { id: 6,  label: "Cliente Novo",          color: "#c084fc", bg: "#2e1065" },
+  { id: 7,  label: "Não Classificado",      color: "#f87171", bg: "#2d0a0a" },
+  { id: 8,  label: "Diversos",              color: "#94a3b8", bg: "#1e293b" },
+  { id: 9,  label: "Validação de Processo", color: "#93c5fd", bg: "#0c1a2e" },
+  { id: 10, label: "Follow-up",             color: "#38bdf8", bg: "#0c2231" },
+  { id: 11, label: "Escalação",             color: "#f87171", bg: "#2d0a0a" },
+];
+
+// SYSTEM_ROLES — fixed list of system behaviours a task status can carry.
+// The admin can rename the label but the systemRole value never changes.
+export const SYSTEM_ROLES = [
+  "Por Fazer",
+  "Em Curso",
+  "Devolvido",
+  "Escalado",
+  "Cancelamento Pendente",
+  "Cancelado",
+  "Concluído",
+  "Nenhum",
+];
+
+// Task statuses — label + colour + systemRole
+const DEFAULT_TASK_STATUSES = [
+  { id: 1, label: "Por Fazer",             color: "#94a3b8", bg: "#1e293b", systemRole: "Por Fazer"             },
+  { id: 2, label: "Em Curso",              color: "#60a5fa", bg: "#1e3a5f", systemRole: "Em Curso"              },
+  { id: 3, label: "Devolvido",             color: "#fb923c", bg: "#1c1005", systemRole: "Devolvido"             },
+  { id: 4, label: "Escalado",              color: "#e879f9", bg: "#2d0a2d", systemRole: "Escalado"              },
+  { id: 5, label: "Concluído",             color: "#4ade80", bg: "#052e16", systemRole: "Concluído"             },
+  { id: 6, label: "Cancelado",             color: "#64748b", bg: "#1e293b", systemRole: "Cancelado"             },
+  { id: 7, label: "Cancelamento Pendente", color: "#fb923c", bg: "#2d1505", systemRole: "Cancelamento Pendente" },
+];
+
+// Mapeamento — maps role IDs to process status IDs, task type IDs, task status IDs
+// { processoStatus: { [statusId]: roleId }, taskType: { [typeId]: roleId }, taskStatus: { [statusId]: roleId } }
+const DEFAULT_MAPEAMENTO = {
+  processoStatus: {},
+  taskType:       {},
+  taskStatus:     {},
+};
+
+// User-role assignments — maps userId → array of roleIds
+const DEFAULT_USER_ROLES = {};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function load(key, fallback) {
   try {
@@ -56,12 +86,14 @@ function save(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+// ── Store ─────────────────────────────────────────────────────────────────────
+
 export const store = {
   // ── Users ──────────────────────────────────────────────────────────────────
   getUsers()       { return load("crm_users", USERS); },
   saveUsers(users) { save("crm_users", users); },
 
-  // ── Stages ─────────────────────────────────────────────────────────────────
+  // ── Stages (process statuses) ──────────────────────────────────────────────
   getStages()        { return load("crm_stages", STAGES); },
   saveStages(stages) { save("crm_stages", stages); },
 
@@ -69,43 +101,87 @@ export const store = {
   getFUStatuses()    { return load("crm_fu", FOLLOWUP_STATUSES); },
   saveFUStatuses(fu) { save("crm_fu", fu); },
 
-  // ── Priorities ─────────────────────────────────────────────────────────────
+  // ── Priorities (used for process Alta/Normal toggle) ──────────────────────
   getPriorities()      { return load("crm_priorities", DEFAULT_PRIORITIES); },
   savePriorities(list) { save("crm_priorities", list); },
 
   // ── Roles ──────────────────────────────────────────────────────────────────
-  getRoles()       { return load("crm_roles", DEFAULT_ROLES); },
-  saveRoles(roles) { save("crm_roles", roles); },
-
+  getRoles()        { return load("crm_roles",      DEFAULT_ROLES);      },
+  saveRoles(roles)  { save("crm_roles", roles); },
   getRoleLabel(id) {
-    const roles = load("crm_roles", DEFAULT_ROLES);
-    return roles.find(r => r.id === id)?.label ?? id;
+    return load("crm_roles", DEFAULT_ROLES).find(r => r.id === id)?.label ?? id;
   },
 
-  // ── Process role assignment (cotacao / comercial / compra) ────────────────
-  getAssignment()       { return load("crm_assignment", { cotacao: null, comercial: null, compra: null }); },
-  saveAssignment(rules) { save("crm_assignment", rules); },
+  // ── User-role assignments (Tab 3) ─────────────────────────────────────────
+  // Maps userId (number) → array of roleId (string)
+  getUserRoles()         { return load("crm_user_roles", DEFAULT_USER_ROLES); },
+  saveUserRoles(mapping) { save("crm_user_roles", mapping); },
 
-  // ── Task type assignment ───────────────────────────────────────────────────
-  // Maps each task type to a default owner name (string) or null.
-  // null → task appears in Supervisor/Admin list for manual assignment.
-  // Configured via the "Atribuição de Tarefas" admin tab (task section).
-  getTaskAssignment() {
-    return load("crm_task_assignment", {
-      "Validação de Processo": "Adelina Rodrigues",
-      "Não Classificado":      null,               // routes to Supervisor for manual triage
-      "Abertura de Processo":  null,               // assigned to Resp. Abertura when configured
-      "Pré-Entrada":           "Adelina Rodrigues",
-      "Desconto":              "Marta Costa",
-      "Status Encomenda":      "Tiago Pinto",
-      "Contas Correntes":      "Adelina Rodrigues",
-      "Cliente Novo":          "Vasco Lourenço",
-      "Diversos":              null,
-      "Follow-up":             "João Silva",
-      "Escalação":             null,
-    });
+  // Returns array of role labels for a given userId
+  getUserRoleLabels(userId) {
+    const mapping = load("crm_user_roles", DEFAULT_USER_ROLES);
+    const roles   = load("crm_roles", DEFAULT_ROLES);
+    const ids     = mapping[userId] ?? [];
+    return ids.map(id => roles.find(r => r.id === id)?.label ?? id);
   },
-  saveTaskAssignment(rules) { save("crm_task_assignment", rules); },
+
+  // ── Task types ─────────────────────────────────────────────────────────────
+  getTaskTypes()      { return load("crm_task_types",    DEFAULT_TASK_TYPES);    },
+  saveTaskTypes(list) { save("crm_task_types",    list); },
+
+  // ── Task statuses (with systemRole) ───────────────────────────────────────
+  getTaskStatuses()      { return load("crm_task_statuses", DEFAULT_TASK_STATUSES); },
+  saveTaskStatuses(list) { save("crm_task_statuses", list); },
+
+  // Returns the label of the task status whose systemRole === role, or null
+  getLabelForSystemRole(role) {
+    const statuses = load("crm_task_statuses", DEFAULT_TASK_STATUSES);
+    return statuses.find(s => s.systemRole === role)?.label ?? null;
+  },
+
+  // Returns the full status object whose systemRole === role, or null
+  getStatusForSystemRole(role) {
+    const statuses = load("crm_task_statuses", DEFAULT_TASK_STATUSES);
+    return statuses.find(s => s.systemRole === role) ?? null;
+  },
+
+  // ── Mapeamento de Responsabilidades (Tab 8) ────────────────────────────────
+  getMapeamento()          { return load("crm_mapeamento", DEFAULT_MAPEAMENTO); },
+  saveMapeamento(mapping)  { save("crm_mapeamento", mapping); },
+
+  // Resolve which users hold a given roleId; returns array of user objects
+  resolveRoleUsers(roleId) {
+    if (!roleId) return [];
+    const userRoles = load("crm_user_roles", DEFAULT_USER_ROLES);
+    const users     = load("crm_users", USERS);
+    return users.filter(u => u.active !== false && (userRoles[u.id] ?? []).includes(roleId));
+  },
+
+  // Pick next user for a roleId using round-robin; returns user name or null
+  assignRoundRobin(roleId) {
+    const users = store.resolveRoleUsers(roleId);
+    if (users.length === 0) return null;
+    if (users.length === 1) return users[0].name;
+    const counters = load("crm_rr_counters", {});
+    const idx = (counters[roleId] ?? 0) % users.length;
+    counters[roleId] = idx + 1;
+    save("crm_rr_counters", counters);
+    return users[idx].name;
+  },
+
+  // Resolve the responsible user for a given task type id
+  assignForTaskType(typeId) {
+    const mapeamento = load("crm_mapeamento", DEFAULT_MAPEAMENTO);
+    const roleId = mapeamento.taskType?.[typeId] ?? null;
+    return store.assignRoundRobin(roleId);
+  },
+
+  // Resolve the responsible user for a given process status id
+  assignForProcessStatus(statusId) {
+    const mapeamento = load("crm_mapeamento", DEFAULT_MAPEAMENTO);
+    const roleId = mapeamento.processoStatus?.[statusId] ?? null;
+    return store.assignRoundRobin(roleId);
+  },
 
   // ── Tarefas (tasks) ────────────────────────────────────────────────────────
   getTarefas()         { return load("crm_tarefas", TAREFAS); },
@@ -115,38 +191,8 @@ export const store = {
   getInboxEmails()       { return load("crm_inbox", INBOX_EMAILS); },
   saveInboxEmails(items) { save("crm_inbox", items); },
 
-  // ── Task types (admin-configurable, label + colour) ──────────────────────────
-  getTaskTypes()           { return load("crm_task_types",    DEFAULT_TASK_TYPES);    },
-  saveTaskTypes(list)      { save("crm_task_types",    list); },
-
-  // ── Task statuses (admin-configurable, label + colour) ───────────────────────
-  getTaskStatuses()        { return load("crm_task_statuses", DEFAULT_TASK_STATUSES); },
-  saveTaskStatuses(list)   { save("crm_task_statuses", list); },
-
   // ── SLA settings ─────────────────────────────────────────────────────────────
-  getSLASettings() {
-    return load("crm_sla", {
-      tasks: {
-        "Por Fazer":  48,
-        "Em Curso":   72,
-        "Devolvido":  24,
-        "Escalado":   4,
-      },
-      stages: {
-        1:  1,
-        2:  2,
-        3:  3,
-        4:  3,
-        5:  5,
-        6:  2,
-        7:  3,
-        8:  3,
-        9:  5,
-        10: 7,
-        11: 1,
-      },
-    });
-  },
+  getSLASettings() { return load("crm_sla", {}); },
   saveSLASettings(settings) { save("crm_sla", settings); },
 
   // ── Column visibility preferences (keyed by user email) ───────────────────

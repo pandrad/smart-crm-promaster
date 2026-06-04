@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { THEME } from "../theme.js";
 import { store } from "../store.js";
 import { useWindowSize } from "../utils.js";
@@ -157,21 +157,30 @@ function CancelarTarefaModal({ onClose, onSave }) {
   );
 }
 
-// ── Enviar Email ao Cliente modal (Validação de Processo only) ───────────────
+// ── Enviar Email ao Cliente modal ─────────────────────────────────────────────
 function EnviarEmailClienteModal({ task, currentUser, onClose, onSave }) {
   const { isMobile } = useWindowSize();
+  const fileRef = useRef(null);
   const email = task.originEmail;
-  const [to,      setTo]      = useState(email?.sender || "");
-  const [subject, setSubject] = useState(`Re: ${email?.subject || "Consulta de processo"}`);
-  const [body,    setBody]    = useState(
+  const [to,          setTo]          = useState(email?.sender || "");
+  const [subject,     setSubject]     = useState(`Re: ${email?.subject || "Consulta de processo"}`);
+  const [body,        setBody]        = useState(
     `Exmo(a) Sr(a) ${email?.senderName || task.client || ""},\n\nEm resposta ao seu pedido, ` +
     `informamos que a sua solicitação está a ser analisada pela nossa equipa.\n\n` +
     `Em caso de dúvidas, não hesite em contactar-nos.\n\nCom os melhores cumprimentos,\n${currentUser?.name || ""}`
   );
-  const [sent, setSent] = useState(false);
+  const [attachments, setAttachments] = useState([]);
+  const [sent,        setSent]        = useState(false);
+
+  function addFiles(files) {
+    setAttachments(prev => [...prev, ...Array.from(files).map(f => f.name)]);
+  }
+  function removeAttachment(name) {
+    setAttachments(prev => prev.filter(n => n !== name));
+  }
 
   function handleSend() {
-    onSave({ to, subject, body });
+    onSave({ to, subject, body, attachments });
     setSent(true);
     setTimeout(onClose, 1400);
   }
@@ -203,19 +212,30 @@ function EnviarEmailClienteModal({ task, currentUser, onClose, onSave }) {
             </div>
             <div>
               <label style={{ ...LABEL, display: "block", marginBottom: 4 }}>Mensagem</label>
-              <textarea
-                value={body} onChange={e => setBody(e.target.value)}
-                rows={7}
-                style={{ ...INPUT_STYLE, resize: "vertical", fontFamily: "inherit", lineHeight: 1.6 }}
-              />
+              <textarea value={body} onChange={e => setBody(e.target.value)} rows={7}
+                style={{ ...INPUT_STYLE, resize: "vertical", fontFamily: "inherit", lineHeight: 1.6 }} />
+            </div>
+            <div>
+              <label style={{ ...LABEL, display: "block", marginBottom: 6 }}>Anexos</label>
+              {attachments.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                  {attachments.map(name => (
+                    <span key={name} style={{ display: "inline-flex", alignItems: "center", gap: 5, background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 9999, padding: "2px 8px", fontSize: 11, color: THEME.textMuted }}>
+                      <Icon name="paperclip" size={10} color={THEME.textDim} />{name}
+                      <button onClick={() => removeAttachment(name)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.danger, padding: 0, lineHeight: 1 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <button onClick={() => fileRef.current?.click()} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "5px 12px", fontSize: 12, color: THEME.textMuted, cursor: "pointer" }}>
+                <Icon name="paperclip" size={12} color={THEME.textDim} /> Adicionar anexo
+              </button>
+              <input ref={fileRef} type="file" multiple style={{ display: "none" }} onChange={e => addFiles(e.target.files)} />
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
-              <button
-                onClick={handleSend}
-                disabled={!to.trim() || !subject.trim()}
-                style={{ background: to.trim() && subject.trim() ? THEME.accent : THEME.border, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: to.trim() && subject.trim() ? "pointer" : "default", display: "flex", alignItems: "center", gap: 6 }}
-              >
+              <button onClick={handleSend} disabled={!to.trim() || !subject.trim()}
+                style={{ background: to.trim() && subject.trim() ? THEME.accent : THEME.border, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: to.trim() && subject.trim() ? "pointer" : "default", display: "flex", alignItems: "center", gap: 6 }}>
                 <Icon name="mail" size={13} color="white" /> Enviar
               </button>
             </div>
@@ -471,16 +491,19 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   const [emailExpanded,  setEmailExpanded]  = useState(false);
   const [modal,          setModal]          = useState(null);
 
+  // Resolve status label from systemRole dynamically — never hardcode status strings
+  const sysStatus = role => store.getLabelForSystemRole(role) ?? role;
+
   const isAdmin      = currentUser?.role === "admin";
   const isSupervisor = currentUser?.role === "supervisor";
   const isPrivileged = isAdmin || isSupervisor;
   const isOwner      = t.owner === currentUser?.name;
-  const isDone       = t.status === "Concluído" || t.status === "Cancelado";
-  const isEscalated  = t.status === "Escalado";
-  const isCancelPending = t.status === "Cancelamento Pendente";
+  const isDone       = t.status === sysStatus("Concluído") || t.status === sysStatus("Cancelado");
+  const isEscalated  = t.status === sysStatus("Escalado");
+  const isCancelPending = t.status === sysStatus("Cancelamento Pendente");
   const isPre        = t.type   === "Pré-Entrada";
   const isValidation = t.type   === "Validação de Processo";
-  const isDevolvido  = t.status === "Devolvido";
+  const isDevolvido  = t.status === sysStatus("Devolvido");
   // For validation tasks: the validator is the one who can approve/return
   const isValidator  = isValidation && (t.validatorOwner === currentUser?.name || isPrivileged);
   // The triage author can resubmit after Devolvido
@@ -502,7 +525,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   // Action: Marcar como Concluído
   function handleConcluir(note) {
     update(
-      { status: "Concluído" },
+      { status: sysStatus("Concluído") },
       { actor: currentUser?.name, action: "Concluído", note: note || "Tarefa concluída." }
     );
   }
@@ -515,9 +538,8 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     const newId = `2605${String(max + 1).padStart(3, "0")}`;
 
     const email = t.originEmail;
-    const assignment = store.getAssignment();
     const storeUsers = store.getUsers();
-    const ownerUser  = storeUsers.find(u => u.role === "cotacao" && u.active !== false);
+    const ownerUser  = storeUsers.find(u => u.active !== false);
 
     const newProcesso = {
       id:        newId,
@@ -530,9 +552,9 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
       brand:     "",
       model:     "",
       vin:       "",
-      owner:     ownerUser?.name || "Adelina Rodrigues",
-      comm:      storeUsers.find(u => u.role === "comercial" && u.active !== false)?.name || "João Morais",
-      compra:    storeUsers.find(u => u.role === "compra"    && u.active !== false)?.name || "Carlos Andrade",
+      owner:     ownerUser?.name || storeUsers[0]?.name || "",
+      comm:      storeUsers.find(u => u.active !== false)?.name || "",
+      compra:    storeUsers.find(u => u.active !== false)?.name || "",
       comprador: email?.senderName || t.client || "",
       price:     null,
       emails:    1,
@@ -549,7 +571,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     if (setProcessos) setProcessos(prev => [...prev, newProcesso]);
 
     update(
-      { status: "Concluído", originProcesso: newId },
+      { status: sysStatus("Concluído"), originProcesso: newId },
       { actor: currentUser?.name, action: "Processo aberto", note: `Processo ${newId} criado com estado Entrada` }
     );
   }
@@ -565,7 +587,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   // Action: Escalar
   function handleEscalar(targetName, note) {
     update(
-      { owner: targetName, status: "Escalado", escalationNote: note },
+      { owner: targetName, status: sysStatus("Escalado"), escalationNote: note },
       { actor: currentUser?.name, action: "Escalada", note: `→ ${targetName}: ${note}` }
     );
   }
@@ -573,7 +595,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   // Action: Retomar (supervisor/admin on escalated task)
   function handleRetomar() {
     update(
-      { owner: currentUser?.name, status: "Em Curso", escalationNote: null },
+      { owner: currentUser?.name, status: sysStatus("Em Curso"), escalationNote: null },
       { actor: currentUser?.name, action: "Retomada", note: "Supervisor assumiu a tarefa." }
     );
   }
@@ -586,8 +608,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     const max = existing.reduce((m, id) => Math.max(m, parseInt(id.slice(4)) || 0), 10);
     const newId = `2605${String(max + 1).padStart(3, "0")}`;
     const email = t.originEmail;
-    const storeUsers = store.getUsers();
-    const ownerUser = storeUsers.find(u => u.role === "cotacao" && u.active !== false);
+    const storeUsers = store.getUsers().filter(u => u.active !== false);
 
     const newProcesso = {
       id: newId,
@@ -595,9 +616,9 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
       status: 1,
       client: t.client || email?.senderName || "",
       ref: "", brand: "", model: "", vin: "",
-      owner: ownerUser?.name || "Adelina Rodrigues",
-      comm: storeUsers.find(u => u.role === "comercial" && u.active !== false)?.name || "João Morais",
-      compra: storeUsers.find(u => u.role === "compra"   && u.active !== false)?.name || "Carlos Andrade",
+      owner: store.assignForProcessStatus(1) || storeUsers[0]?.name || "",
+      comm:  storeUsers[0]?.name || "",
+      compra: storeUsers[0]?.name || "",
       comprador: t.client || email?.senderName || "",
       price: null, emails: 1,
       note: `Aberto após validação da tarefa ${t.id}`,
@@ -610,7 +631,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
 
     if (setProcessos) setProcessos(prev => [...prev, newProcesso]);
     update(
-      { status: "Concluído", originProcesso: newId },
+      { status: sysStatus("Concluído"), originProcesso: newId },
       { actor: currentUser?.name, action: "Validado", note: `Processo ${newId} criado com estado Entrada.` }
     );
   }
@@ -618,7 +639,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   // Action: Devolver com Notas (validator only)
   function handleDevolver(note) {
     update(
-      { status: "Devolvido", owner: t.triagedBy || t.owner },
+      { status: sysStatus("Devolvido"), owner: t.triagedBy || t.owner },
       { actor: currentUser?.name, action: "Devolvido", note }
     );
   }
@@ -626,7 +647,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   // Action: Resubmeter (triaged-by person after Devolvido)
   function handleResubmeter(note) {
     update(
-      { status: "Por Fazer", owner: t.validatorOwner || t.owner },
+      { status: sysStatus("Por Fazer"), owner: t.validatorOwner || t.owner },
       { actor: currentUser?.name, action: "Resubmetido", note }
     );
   }
@@ -634,7 +655,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   // Action: Cancelar Tarefa — puts task into Cancelamento Pendente for supervisor approval
   function handleCancelar(reason) {
     update(
-      { status: "Cancelamento Pendente", cancelReason: reason },
+      { status: sysStatus("Cancelamento Pendente"), cancelReason: reason },
       { actor: currentUser?.name, action: "Cancelamento Pedido", note: reason }
     );
   }
@@ -642,19 +663,20 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   // Action: Aprovar Cancelamento (supervisor/admin only, when Cancelamento Pendente)
   function handleAprovarCancelamento() {
     update(
-      { status: "Cancelado" },
+      { status: sysStatus("Cancelado") },
       { actor: currentUser?.name, action: "Cancelamento Aprovado", note: t.cancelReason || "" }
     );
   }
 
   // Action: Enviar Email ao Cliente (validator only on Validação de Processo)
-  function handleEnviarEmailCliente({ to, subject, body }) {
+  function handleEnviarEmailCliente({ to, subject, body, attachments }) {
+    const statusPorFazer = sysStatus("Por Fazer");
     update(
-      { status: t.status === "Por Fazer" ? "Em Curso" : t.status },
+      { status: t.status === statusPorFazer ? sysStatus("Em Curso") : t.status },
       {
         actor:  currentUser?.name,
         action: "Email enviado ao cliente",
-        note:   `Para: ${to}\nAssunto: ${subject}\n\n${body}`,
+        note:   `Para: ${to}\nAssunto: ${subject}\n\n${body}${attachments?.length ? `\n\nAnexos: ${attachments.join(", ")}` : ""}`,
       }
     );
   }
@@ -662,7 +684,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   // Action: Rejeitar Cancelamento (supervisor/admin only, when Cancelamento Pendente)
   function handleRejeitarCancelamento(note) {
     update(
-      { status: "Em Curso", cancelReason: null },
+      { status: sysStatus("Em Curso"), cancelReason: null },
       { actor: currentUser?.name, action: "Cancelamento Rejeitado", note }
     );
   }
@@ -1009,11 +1031,10 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
     return true;
   });
 
-  // Active count for subtitle — includes Devolvido (needs attention from triage author)
-  const activeCount = scope.filter(t =>
-    t.status === "Por Fazer" || t.status === "Em Curso" ||
-    t.status === "Bloqueado" || t.status === "Escalado" || t.status === "Devolvido"
-  ).length;
+  // Active count for subtitle — statuses with systemRole that indicate pending work
+  const activeSystemRoles = new Set(["Por Fazer","Em Curso","Escalado","Devolvido","Cancelamento Pendente"]
+    .map(r => store.getLabelForSystemRole(r)).filter(Boolean));
+  const activeCount = scope.filter(t => activeSystemRoles.has(t.status)).length;
 
   function handleUpdate(updated) {
     const next = tarefas.map(t => t.id === updated.id ? updated : t);

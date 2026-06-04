@@ -11,6 +11,16 @@
 
 import { MOCK_CREDENTIALS, PROCESSOS } from "../mock/data.js";
 import { store } from "../store.js";
+import { simulateAIClassification } from "../utils.js";
+
+// ── DEV toggle helpers ────────────────────────────────────────────────────────
+const DEV_AI_KEY = "dev_ai_simulation";
+export function getAISimulationEnabled() {
+  return localStorage.getItem(DEV_AI_KEY) === "true";
+}
+export function setAISimulationEnabled(on) {
+  localStorage.setItem(DEV_AI_KEY, String(on));
+}
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
@@ -75,4 +85,22 @@ export async function getFUStatuses() {
  */
 export async function getPriorities() {
   return Promise.resolve(store.getPriorities());
+}
+
+// ── AI Classification ─────────────────────────────────────────────────────────
+
+/**
+ * getAISuggestion(email)
+ *
+ * Single interface for AI classification used by Inbox.jsx.
+ * Stage 1 (mock): reads the DEV toggle; returns simulated result if ON, null if OFF.
+ * STAGE 5 — replace this function body with a real POST to /api/classify-email.
+ *
+ * Shape of returned object:
+ *   { type: string, category: string, confidence: number, simulated: boolean }
+ *   or null if classification is disabled / unavailable.
+ */
+export function getAISuggestion(email) {
+  if (!getAISimulationEnabled()) return null;
+  return simulateAIClassification(email);
 }
