@@ -522,10 +522,26 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     onUpdate(updated);
   }
 
+  // If the mapeamento has reatribuiResponsavel ON for the target status and
+  // the patch doesn't already set an explicit owner, run the mapeamento lookup.
+  function applyReatribui(newStatus, patch) {
+    if ("owner" in patch) return patch; // explicit owner wins
+    const statusObj = store.getTaskStatuses().find(s => s.label === newStatus);
+    if (!statusObj) return patch;
+    const reatribui = store.getMapeamento().taskStatusReatribui ?? {};
+    if (!reatribui[statusObj.id]) return patch;
+    const typeObj = store.getTaskTypes().find(x => x.label === t.type);
+    if (!typeObj) return patch;
+    const newOwner = store.assignForTaskType(typeObj.id, t.client || null);
+    if (!newOwner) return patch;
+    return { ...patch, owner: newOwner };
+  }
+
   // Action: Marcar como Concluído
   function handleConcluir(note) {
+    const newStatus = sysStatus("Concluído");
     update(
-      { status: sysStatus("Concluído") },
+      applyReatribui(newStatus, { status: newStatus }),
       { actor: currentUser?.name, action: "Concluído", note: note || "Tarefa concluída." }
     );
   }
@@ -570,8 +586,9 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
 
     if (setProcessos) setProcessos(prev => [...prev, newProcesso]);
 
+    const concluido = sysStatus("Concluído");
     update(
-      { status: sysStatus("Concluído"), originProcesso: newId },
+      applyReatribui(concluido, { status: concluido, originProcesso: newId }),
       { actor: currentUser?.name, action: "Processo aberto", note: `Processo ${newId} criado com estado Entrada` }
     );
   }
@@ -630,8 +647,9 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     };
 
     if (setProcessos) setProcessos(prev => [...prev, newProcesso]);
+    const concluido = sysStatus("Concluído");
     update(
-      { status: sysStatus("Concluído"), originProcesso: newId },
+      applyReatribui(concluido, { status: concluido, originProcesso: newId }),
       { actor: currentUser?.name, action: "Validado", note: `Processo ${newId} criado com estado Entrada.` }
     );
   }
@@ -654,25 +672,28 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
 
   // Action: Cancelar Tarefa — puts task into Cancelamento Pendente for supervisor approval
   function handleCancelar(reason) {
+    const newStatus = sysStatus("Cancelamento Pendente");
     update(
-      { status: sysStatus("Cancelamento Pendente"), cancelReason: reason },
+      applyReatribui(newStatus, { status: newStatus, cancelReason: reason }),
       { actor: currentUser?.name, action: "Cancelamento Pedido", note: reason }
     );
   }
 
   // Action: Aprovar Cancelamento (supervisor/admin only, when Cancelamento Pendente)
   function handleAprovarCancelamento() {
+    const newStatus = sysStatus("Cancelado");
     update(
-      { status: sysStatus("Cancelado") },
+      applyReatribui(newStatus, { status: newStatus }),
       { actor: currentUser?.name, action: "Cancelamento Aprovado", note: t.cancelReason || "" }
     );
   }
 
-  // Action: Enviar Email ao Cliente (validator only on Validação de Processo)
+  // Action: Enviar Email ao Cliente — all task types
   function handleEnviarEmailCliente({ to, subject, body, attachments }) {
     const statusPorFazer = sysStatus("Por Fazer");
+    const newStatus = t.status === statusPorFazer ? sysStatus("Em Curso") : t.status;
     update(
-      { status: t.status === statusPorFazer ? sysStatus("Em Curso") : t.status },
+      applyReatribui(newStatus, { status: newStatus }),
       {
         actor:  currentUser?.name,
         action: "Email enviado ao cliente",
@@ -683,8 +704,9 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
 
   // Action: Rejeitar Cancelamento (supervisor/admin only, when Cancelamento Pendente)
   function handleRejeitarCancelamento(note) {
+    const newStatus = sysStatus("Em Curso");
     update(
-      { status: sysStatus("Em Curso"), cancelReason: null },
+      applyReatribui(newStatus, { status: newStatus, cancelReason: null }),
       { actor: currentUser?.name, action: "Cancelamento Rejeitado", note }
     );
   }
@@ -862,16 +884,6 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
                   </button>
                 )}
 
-                {/* Enviar Email ao Cliente — validator only, any non-done state */}
-                {isValidator && (
-                  <button
-                    onClick={() => setModal("enviarEmailCliente")}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#0c1a2e", color: "#93c5fd", border: "1px solid #1e3a5f", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-                  >
-                    <Icon name="mail" size={14} color="#93c5fd" /> Enviar Email ao Cliente
-                  </button>
-                )}
-
                 {/* Resubmeter — triage author only, when Devolvido */}
                 {isDevolvido && isTriagedBy && (
                   <button
@@ -946,6 +958,16 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
                   </div>
                 )}
               </>
+            )}
+
+            {/* ── Enviar Email ao Cliente — all task types, when not done ── */}
+            {!isDone && (
+              <button
+                onClick={() => setModal("enviarEmailCliente")}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#0c1a2e", color: "#93c5fd", border: "1px solid #1e3a5f", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+              >
+                <Icon name="mail" size={14} color="#93c5fd" /> Enviar Email ao Cliente
+              </button>
             )}
 
             {/* ── Cancelamento Pendente — supervisor approval/rejection ── */}

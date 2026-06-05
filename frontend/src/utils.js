@@ -29,7 +29,7 @@ export function simulateAIClassification(email) {
   let confidence = 0.55;
 
   if (/cotação|pedido de cot|quot|proposal|proposta/.test(text)) {
-    type = "Pré-Entrada";        confidence = 0.91;
+    type = "Pré-Entrada";         confidence = 0.91;
   } else if (/encomenda|order|prazo de entrega|status da encomenda/.test(text)) {
     type = "Status de Encomenda"; confidence = 0.87;
   } else if (/desconto|discount|renegoc|preço/.test(text)) {
@@ -50,7 +50,14 @@ export function simulateAIClassification(email) {
     confidence = 0.50;
   }
 
-  return { type, category: type, confidence, simulated: true };
+  // Check if this sender has a direct client responsibility assignment.
+  // If so, include the suggested responsável in the classification result so
+  // the triage flow can pre-fill the owner without round-robin.
+  const clientAssignments = store.getClientAssignments();
+  const senderName = email.senderName || "";
+  const suggestedResponsavel = clientAssignments[senderName] ?? null;
+
+  return { type, category: type, confidence, simulated: true, suggestedResponsavel };
 }
 
 export function useWindowSize() {

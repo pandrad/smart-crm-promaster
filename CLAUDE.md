@@ -154,6 +154,20 @@ Fixes applied between static QA and manual browser review sign-off:
 | DEV Tool 3 added: Gerar processo aleatório | `DevTools.jsx` | 4864a32 |
 | DEV Tool 5 added: Limpar Processos | `DevTools.jsx` | 4864a32 |
 
+### Post-QA additions and fixes
+
+Changes applied after the technical QA pass:
+
+| Change | Detail | Files |
+|--------|--------|-------|
+| Clientes — Responsável column | Dropdown (admin/supervisor) or read-only (others) per client; eligible users filtered by client-facing role labels; auto-saves to `crm_client_assignments`; mobile card section included | `Clientes.jsx`, `store.js`, `Main.jsx` |
+| Client-first routing | `assignForTaskType` and `assignForProcessStatus` accept optional `clientName`; checks `crm_client_assignments` before round-robin | `store.js` |
+| Inbox triage passes client name | Both `ownerForType` call sites pass `email.senderName` so client assignment is checked on every triage action | `Inbox.jsx` |
+| AI simulation returns `suggestedResponsavel` | `simulateAIClassification` reads `getClientAssignments()` and includes the assigned user in its result | `utils.js` |
+| Enviar Email ao Cliente — all task types | Button moved out of validation-only block; appears for any non-done task; `handleEnviarEmailCliente` and `applyReatribui` applied uniformly | `Tarefas.jsx` |
+| Mapeamento label fix | "Sem responsável" → "Sem função atribuída" in all three mapping dropdowns | `AdminPanel.jsx` |
+| Mapeamento — Reatribui toggle | "Por Estado de Tarefa" subsection gains a toggle per status row; when ON the role dropdown appears and the mapeamento lookup runs on status change; stored in `crm_mapeamento.taskStatusReatribui`; system-role statuses default ON | `AdminPanel.jsx`, `store.js`, `Tarefas.jsx` |
+
 ### Stage 1 status — open, pending final sign-off
 
 | Item | Status |
@@ -170,7 +184,7 @@ Fixes applied between static QA and manual browser review sign-off:
 | SLA admin tab | ✅ Complete |
 | Log Inbox admin tab | ✅ Complete |
 | Cancellation approval workflow | ✅ Complete |
-| Enviar Email ao Cliente (validation task) | ✅ Complete |
+| Enviar Email ao Cliente (all task types) | ✅ Complete |
 | `docs/build-brief.md` updated | ✅ Current |
 | DEV ONLY testing tools (7 tools) | ✅ Built, **must be deleted before final closure** |
 | Static QA (code analysis + build) | ✅ Complete |
@@ -183,6 +197,10 @@ Fixes applied between static QA and manual browser review sign-off:
 | Admin panel scroll preservation | ✅ Complete |
 | DEV Tool 6 preserves current user + role on clear | ✅ Complete |
 | DEV user switcher reads roles from store dynamically | ✅ Complete |
+| Clientes page — Responsável column with client-first routing | ✅ Complete |
+| Enviar Email ao Cliente restored to all task types | ✅ Complete |
+| Mapeamento "Sem função atribuída" label corrected | ✅ Complete |
+| Mapeamento "Por Estado de Tarefa" — Reatribui toggle + conditional role dropdown | ✅ Complete |
 | Client document: task types, triggers, timings, roles | ⏳ Awaited |
 | Second client review session | ⏳ Pending |
 | Final human QA pass | ⏳ Pending |

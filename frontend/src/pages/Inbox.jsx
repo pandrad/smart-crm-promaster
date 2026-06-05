@@ -331,11 +331,12 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
       .replace(",", "");
   }
 
-  // Resolve default owner for a task type via mapeamento
-  function ownerForType(type) {
+  // Resolve default owner for a task type via mapeamento.
+  // Passes the email's senderName so client assignments take priority over round-robin.
+  function ownerForType(type, clientName) {
     const tt = store.getTaskTypes().find(t => t.label === type);
     if (!tt) return null;
-    return store.assignForTaskType(tt.id);
+    return store.assignForTaskType(tt.id, clientName);
   }
 
   // ── Triage actions ────────────────────────────────────────────────────────
@@ -347,7 +348,7 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
     const email = inboxEmails.find(e => e.id === emailId);
     if (!email) return;
 
-    const validatorOwner = ownerForType("Validação de Processo");
+    const validatorOwner = ownerForType("Validação de Processo", email.senderName);
     const seq = String(tarefas.length + 1).padStart(3, "0");
     const taskId = `T${seq}`;
 
@@ -400,7 +401,7 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
     const email = inboxEmails.find(e => e.id === emailId);
     if (!email) return;
 
-    const owner = ownerForType(type);
+    const owner = ownerForType(type, email.senderName);
     const seq   = String(tarefas.length + 1).padStart(3, "0");
 
     const newTarefa = {

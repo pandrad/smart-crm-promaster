@@ -62,12 +62,14 @@ const DEFAULT_TASK_STATUSES = [
   { id: 7, label: "Cancelamento Pendente", color: "#fb923c", bg: "#2d1505", systemRole: "Cancelamento Pendente" },
 ];
 
-// Mapeamento — maps role IDs to process status IDs, task type IDs, task status IDs
-// { processoStatus: { [statusId]: roleId }, taskType: { [typeId]: roleId }, taskStatus: { [statusId]: roleId } }
+// Mapeamento — maps role IDs to process status IDs, task type IDs, task status IDs.
+// taskStatusReatribui: per-status boolean — when true the mapeamento lookup runs and
+// can reassign the task owner on status change. Defaults ON for system-role statuses.
 const DEFAULT_MAPEAMENTO = {
-  processoStatus: {},
-  taskType:       {},
-  taskStatus:     {},
+  processoStatus:       {},
+  taskType:             {},
+  taskStatus:           {},
+  taskStatusReatribui:  { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true },
 };
 
 // User-role assignments — maps userId → array of roleIds
@@ -169,15 +171,33 @@ export const store = {
     return users[idx].name;
   },
 
-  // Resolve the responsible user for a given task type id
-  assignForTaskType(typeId) {
+  // ── Client responsibility assignments ────────────────────────────────────────
+  // Maps client name (string) → user name (string) for direct routing.
+  // When set, incoming work from that client bypasses round-robin and goes
+  // directly to the assigned user.
+  getClientAssignments()          { return load("crm_client_assignments", {}); },
+  saveClientAssignments(mapping)  { save("crm_client_assignments", mapping); },
+
+  // Resolve the responsible user for a given task type id.
+  // If clientName is provided and has a direct assignment, that takes priority
+  // over round-robin. Falls back to round-robin if no client assignment exists.
+  assignForTaskType(typeId, clientName) {
+    if (clientName) {
+      const clientMap = load("crm_client_assignments", {});
+      if (clientMap[clientName]) return clientMap[clientName];
+    }
     const mapeamento = load("crm_mapeamento", DEFAULT_MAPEAMENTO);
     const roleId = mapeamento.taskType?.[typeId] ?? null;
     return store.assignRoundRobin(roleId);
   },
 
-  // Resolve the responsible user for a given process status id
-  assignForProcessStatus(statusId) {
+  // Resolve the responsible user for a given process status id.
+  // Same client-first logic as assignForTaskType.
+  assignForProcessStatus(statusId, clientName) {
+    if (clientName) {
+      const clientMap = load("crm_client_assignments", {});
+      if (clientMap[clientName]) return clientMap[clientName];
+    }
     const mapeamento = load("crm_mapeamento", DEFAULT_MAPEAMENTO);
     const roleId = mapeamento.processoStatus?.[statusId] ?? null;
     return store.assignRoundRobin(roleId);

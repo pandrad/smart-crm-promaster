@@ -327,7 +327,7 @@ export function Main() {
           <Route path="/processos"  element={<Processos {...sharedProps} />} />
           <Route path="/tarefas"    element={<Tarefas   {...sharedProps} />} />
           <Route path="/inbox"      element={<Inbox     {...sharedProps} />} />
-          <Route path="/clientes"   element={<Clientes  processos={processos} onSelectProcesso={setSelected} />} />
+          <Route path="/clientes"   element={<Clientes  processos={processos} onSelectProcesso={setSelected} currentUser={currentUser} />} />
           <Route path="/arquivo"    element={<Arquivo   {...sharedProps} />} />
           <Route path="*"           element={<Navigate to="/processos" replace />} />
         </Routes>

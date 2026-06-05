@@ -6,7 +6,7 @@ import { StageBadge } from "../components/Primitives.jsx";
 import { Icon } from "../icons.jsx";
 
 // ── Client detail panel ───────────────────────────────────────────────────────
-function ClienteDrawer({ cliente, onClose, onSelectProcesso }) {
+function ClienteDrawer({ cliente, responsavel, onClose, onSelectProcesso }) {
   const { isMobile } = useWindowSize();
   return (
     <>
@@ -29,6 +29,11 @@ function ClienteDrawer({ cliente, onClose, onSelectProcesso }) {
               <h2 style={{ margin: "0 0 4px", fontSize: 17, fontWeight: 700, color: THEME.text, lineHeight: 1.2 }}>{cliente.name}</h2>
               {cliente.comprador && (
                 <div style={{ fontSize: 12, color: THEME.textDim }}>Contacto: {cliente.comprador}</div>
+              )}
+              {responsavel && (
+                <div style={{ fontSize: 12, color: THEME.textDim, marginTop: 2 }}>
+                  Responsável: <strong style={{ color: THEME.text }}>{responsavel}</strong>
+                </div>
               )}
             </div>
             <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4, flexShrink: 0 }}>
@@ -87,10 +92,39 @@ function ClienteDrawer({ cliente, onClose, onSelectProcesso }) {
 }
 
 // ── Clientes page ─────────────────────────────────────────────────────────────
-export function Clientes({ processos, onSelectProcesso }) {
+export function Clientes({ processos, onSelectProcesso, currentUser }) {
   const { isMobile } = useWindowSize();
-  const [search,   setSearch]   = useState("");
-  const [selected, setSelected] = useState(null);
+  const [search,      setSearch]      = useState("");
+  const [selected,    setSelected]    = useState(null);
+  const [assignments, setAssignments] = useState(() => store.getClientAssignments());
+
+  const isAdmin      = currentUser?.role === "admin";
+  const isSupervisor = currentUser?.role === "supervisor";
+  const canAssign    = isAdmin || isSupervisor;
+
+  // Eligible users for client responsibility: users with client-facing roles
+  // (Resp. Cotação, Resp. Comercial) — identified by matching role labels
+  const allUsers  = store.getUsers().filter(u => u.active !== false);
+  const allRoles  = store.getRoles();
+  const userRoles = store.getUserRoles();
+  const clientFacingRoleIds = allRoles
+    .filter(r => /cotação|comercial|abertura|fecho/i.test(r.label))
+    .map(r => r.id);
+  const eligibleUsers = allUsers.filter(u => {
+    const ids = userRoles[u.id] ?? [];
+    // include if they hold a client-facing role, or if no roles defined yet (show all active)
+    return clientFacingRoleIds.length === 0 || ids.some(id => clientFacingRoleIds.includes(id));
+  });
+  // Fallback: if no role-filtered users found, show all active users
+  const responsavelOptions = eligibleUsers.length > 0 ? eligibleUsers : allUsers;
+
+  function setClientResponsavel(clientName, userName) {
+    const updated = { ...assignments, [clientName]: userName || null };
+    // Remove null entries to keep store clean
+    if (!userName) delete updated[clientName];
+    setAssignments(updated);
+    store.saveClientAssignments(updated);
+  }
 
   const stages = store.getStages();
 
@@ -140,16 +174,36 @@ export function Clientes({ processos, onSelectProcesso }) {
           {rows.map(c => {
             const open = c.processos.filter(p => p.status < 7 && !p.archived).length;
             const latest = [...c.processos].sort((a, b) => b.created.localeCompare(a.created))[0];
+            const resp = assignments[c.name];
             return (
-              <div key={c.name} onClick={() => setSelected(c)} style={{ background: THEME.card, borderRadius: 10, border: `1px solid ${THEME.border}`, padding: "12px 14px", cursor: "pointer" }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: THEME.text, marginBottom: 4 }}>{c.name}</div>
-                {c.comprador && <div style={{ fontSize: 12, color: THEME.textMuted, marginBottom: 8 }}>{c.comprador}</div>}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <span style={{ fontSize: 12, color: THEME.textDim }}>{c.processos.length} proc.</span>
-                    {open > 0 && <span style={{ background: "#1e3a5f", color: "#60a5fa", borderRadius: 9999, fontSize: 11, fontWeight: 700, padding: "1px 8px" }}>{open} abertos</span>}
+              <div key={c.name} style={{ background: THEME.card, borderRadius: 10, border: `1px solid ${THEME.border}`, padding: "12px 14px" }}>
+                <div onClick={() => setSelected(c)} style={{ cursor: "pointer" }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: THEME.text, marginBottom: 4 }}>{c.name}</div>
+                  {c.comprador && <div style={{ fontSize: 12, color: THEME.textMuted, marginBottom: 6 }}>{c.comprador}</div>}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: resp || canAssign ? 8 : 0 }}>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <span style={{ fontSize: 12, color: THEME.textDim }}>{c.processos.length} proc.</span>
+                      {open > 0 && <span style={{ background: "#1e3a5f", color: "#60a5fa", borderRadius: 9999, fontSize: 11, fontWeight: 700, padding: "1px 8px" }}>{open} abertos</span>}
+                    </div>
+                    {latest && <StageBadge id={latest.status} />}
                   </div>
-                  {latest && <StageBadge id={latest.status} />}
+                </div>
+                {/* Responsável row — shown to all, editable by admin/supervisor */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${THEME.border}`, paddingTop: 8 }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0 }}>Responsável</span>
+                  {canAssign ? (
+                    <select
+                      value={resp || ""}
+                      onChange={e => setClientResponsavel(c.name, e.target.value)}
+                      onClick={e => e.stopPropagation()}
+                      style={{ flex: 1, fontSize: 11, border: `1px solid ${THEME.border}`, borderRadius: 6, padding: "3px 7px", background: THEME.sidebar, color: resp ? THEME.text : THEME.textDim, outline: "none", cursor: "pointer" }}
+                    >
+                      <option value="">— Sem responsável —</option>
+                      {responsavelOptions.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                    </select>
+                  ) : (
+                    <span style={{ fontSize: 12, color: resp ? THEME.text : THEME.textDim }}>{resp || "—"}</span>
+                  )}
                 </div>
               </div>
             );
@@ -162,15 +216,16 @@ export function Clientes({ processos, onSelectProcesso }) {
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
               <thead>
                 <tr style={{ background: THEME.sidebar, borderBottom: `1px solid ${THEME.border}` }}>
-                  {["Cliente", "Contacto", "Processos", "Em aberto", "Valor total", "Último processo"].map(h => (
+                  {["Cliente", "Contacto", "Responsável", "Processos", "Em aberto", "Valor total", "Último processo"].map(h => (
                     <th key={h} style={{ padding: "9px 14px", fontSize: 10, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "left", whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.map(c => {
-                  const open = c.processos.filter(p => p.status < 7 && !p.archived).length;
+                  const open   = c.processos.filter(p => p.status < 7 && !p.archived).length;
                   const latest = [...c.processos].sort((a, b) => b.created.localeCompare(a.created))[0];
+                  const resp   = assignments[c.name];
                   return (
                     <tr key={c.name} onClick={() => setSelected(c)}
                       style={{ borderBottom: `1px solid ${THEME.borderLight}`, cursor: "pointer", background: THEME.bg }}
@@ -179,6 +234,21 @@ export function Clientes({ processos, onSelectProcesso }) {
                     >
                       <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600, color: THEME.text }}>{c.name}</td>
                       <td style={{ padding: "10px 14px", fontSize: 12, color: THEME.textMuted }}>{c.comprador || "—"}</td>
+                      {/* Responsável — dropdown for admin/supervisor, read-only text for others */}
+                      <td style={{ padding: "6px 14px" }} onClick={e => canAssign && e.stopPropagation()}>
+                        {canAssign ? (
+                          <select
+                            value={resp || ""}
+                            onChange={e => setClientResponsavel(c.name, e.target.value)}
+                            style={{ fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 6, padding: "4px 8px", background: THEME.sidebar, color: resp ? THEME.text : THEME.textDim, outline: "none", cursor: "pointer", maxWidth: 160 }}
+                          >
+                            <option value="">— Sem responsável —</option>
+                            {responsavelOptions.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                          </select>
+                        ) : (
+                          <span style={{ fontSize: 12, color: resp ? THEME.text : THEME.textDim }}>{resp || "—"}</span>
+                        )}
+                      </td>
                       <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600, color: THEME.text, textAlign: "center" }}>{c.processos.length}</td>
                       <td style={{ padding: "10px 14px", textAlign: "center" }}>
                         {open > 0
@@ -212,7 +282,12 @@ export function Clientes({ processos, onSelectProcesso }) {
       )}
 
       {selected && (
-        <ClienteDrawer cliente={selected} onClose={() => setSelected(null)} onSelectProcesso={onSelectProcesso} />
+        <ClienteDrawer
+          cliente={selected}
+          responsavel={assignments[selected.name] ?? null}
+          onClose={() => setSelected(null)}
+          onSelectProcesso={onSelectProcesso}
+        />
       )}
     </div>
   );
