@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation, Routes, Route, Navigate } from "react-router-dom";
 import { useWindowSize } from "../utils.js";
 import { PROCESSOS, TAREFAS, INBOX_EMAILS } from "../mock/data.js";
@@ -153,8 +153,16 @@ export function Main() {
     setThemeVersion(v => v + 1);
   }
 
-  const navigate = useNavigate();
-  const accent   = branding.accent || THEME.accent;
+  const navigate  = useNavigate();
+  const accent    = branding.accent   || THEME.accent;
+  const appName   = branding.appName  || "Smart CRM";
+  const appLogo   = branding.logoUrl  || "";
+  const appSubtitle = branding.subtitle || "";
+
+  // Update browser tab title whenever branding changes
+  useEffect(() => {
+    document.title = branding.appName || "Smart CRM";
+  }, [branding.appName]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   function handleProcessoUpdate(updated) {
@@ -268,6 +276,8 @@ export function Main() {
         tarefasBadge={tarefasBadge}
         inboxBadge={inboxBadge}
         accent={accent}
+        appName={appName}
+        appLogo={appLogo}
         onOpenProfile={() => setProfileOpen(true)}
         onOpenAdmin={() => setAdminOpen(true)}
         onLogout={handleLogout}
@@ -281,10 +291,13 @@ export function Main() {
           {/* App name on mobile */}
           {isMobile && (
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 26, height: 26, background: accent, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icon name="bar" size={13} color="white" />
+              <div style={{ width: 26, height: 26, background: accent, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                {appLogo
+                  ? <img src={appLogo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : <Icon name="bar" size={13} color="white" />
+                }
               </div>
-              <span style={{ fontSize: 13, fontWeight: 700, color: THEME.text }}>Smart CRM</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: THEME.text }}>{appName}</span>
             </div>
           )}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: isMobile ? 0 : "auto" }}>

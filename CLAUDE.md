@@ -24,7 +24,7 @@ All screens fully interactive with mock data. Dev server: `cd frontend && npm ru
 | `src/components/TableView.jsx` | Sortable table, per-column filters, priority inline change, FU conditional |
 | `src/components/KanbanView.jsx` | Kanban with drag-and-drop; non-owner cards locked |
 | `src/components/DetailDrawer.jsx` | Right panel: process number, Comprador, Consulta checklist, Excel link, FU conditional, reassign for supervisor/owner |
-| `src/components/AdminPanel.jsx` | Slide-over: Users, Estados, Tipos de Tarefa, Estados de Tarefa, Prioridades, Funções, Atribuição de Tarefas, SLA, Log Inbox, Marca, Importar |
+| `src/components/AdminPanel.jsx` | Slide-over: 9 tabs — Utilizadores, Funções, Atribuição de Utilizadores, Processos (estados + follow-up), Tarefas (tipos + estados com system roles), Mapeamento de Responsabilidades, SLA, Marca, Importar |
 | `src/components/SupervisorWidget.jsx` | Summary widget: stat cards + escalated tasks section (clickable → TaskDrawer) |
 | `src/components/Toast.jsx` | "Nova tarefa atribuída" notification — shows task type, client, assigning user |
 | `src/components/Primitives.jsx` | Avatar (photo support), badges — all read from store |
@@ -175,6 +175,14 @@ Fixes applied between static QA and manual browser review sign-off:
 | DEV ONLY testing tools (7 tools) | ✅ Built, **must be deleted before final closure** |
 | Static QA (code analysis + build) | ✅ Complete |
 | Technical QA pass (11 checks) | ✅ Complete — all checks passed |
+| Responsive design (mobile — `useWindowSize` hook) | ✅ Complete |
+| Task types and statuses admin-configurable | ✅ Complete |
+| Admin panel restructured (10 tabs, role system, mapeamento, SLA) | ✅ Complete |
+| Branding real-time propagation (sidebar, topbar, browser title) | ✅ Complete |
+| Admin panel auto-save (Atribuição, Mapeamento, SLA) | ✅ Complete |
+| Admin panel scroll preservation | ✅ Complete |
+| DEV Tool 6 preserves current user + role on clear | ✅ Complete |
+| DEV user switcher reads roles from store dynamically | ✅ Complete |
 | Client document: task types, triggers, timings, roles | ⏳ Awaited |
 | Second client review session | ⏳ Pending |
 | Final human QA pass | ⏳ Pending |

@@ -41,7 +41,7 @@ function NavItem({ icon, label, path, active, badge, disabled, onClick }) {
   );
 }
 
-export function Sidebar({ currentUser, processosBadge, tarefasBadge, inboxBadge, onOpenProfile, onOpenAdmin, onLogout, accent }) {
+export function Sidebar({ currentUser, processosBadge, tarefasBadge, inboxBadge, onOpenProfile, onOpenAdmin, onLogout, accent, appName, appLogo }) {
   const { isMobile } = useWindowSize();
   const navigate  = useNavigate();
   const location  = useLocation();
@@ -72,11 +72,14 @@ export function Sidebar({ currentUser, processosBadge, tarefasBadge, inboxBadge,
       {/* Logo area */}
       <div style={{ padding: "18px 16px 12px", borderBottom: `1px solid ${THEME.border}`, flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 32, height: 32, background: activeAccent, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Icon name="bar" size={16} color="white" />
+          <div style={{ width: 32, height: 32, background: activeAccent, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+            {appLogo
+              ? <img src={appLogo} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              : <Icon name="bar" size={16} color="white" />
+            }
           </div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: THEME.text, lineHeight: 1.2 }}>Smart CRM</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: THEME.text, lineHeight: 1.2 }}>{appName || "Smart CRM"}</div>
             <div style={{ fontSize: 10, color: THEME.textDim }}>Promaster</div>
           </div>
         </div>

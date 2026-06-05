@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { store, SYSTEM_ROLES } from "../store.js";
 import { MOCK_IMPORT_PREVIEW } from "../mock/data.js";
 import { Avatar, Tag } from "./Primitives.jsx";
@@ -300,7 +300,6 @@ function AtribuicaoTab({ onSwitchTab }) {
   const roles = store.getRoles();
   const users = store.getUsers().filter(u => u.active !== false);
   const [mapping, setMapping] = useState(() => store.getUserRoles());
-  const [saved, setSaved] = useState(false);
 
   if (roles.length === 0) {
     return (
@@ -320,14 +319,10 @@ function AtribuicaoTab({ onSwitchTab }) {
     setMapping(prev => {
       const current = prev[userId] ?? [];
       const next    = current.includes(roleId) ? current.filter(id => id !== roleId) : [...current, roleId];
-      return { ...prev, [userId]: next };
+      const updated = { ...prev, [userId]: next };
+      store.saveUserRoles(updated);  // auto-save on every toggle
+      return updated;
     });
-  }
-
-  function handleSave() {
-    store.saveUserRoles(mapping);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
   }
 
   return (
@@ -336,7 +331,7 @@ function AtribuicaoTab({ onSwitchTab }) {
       <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 16 }}>
         Atribua uma ou mais funções a cada utilizador. Quando vários utilizadores partilham a mesma função, a atribuição é feita em rotação (round-robin).
       </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {users.map(u => {
           const assigned = mapping[u.id] ?? [];
           return (
@@ -360,12 +355,6 @@ function AtribuicaoTab({ onSwitchTab }) {
             </div>
           );
         })}
-      </div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <button onClick={handleSave} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-          Guardar atribuições
-        </button>
-        {saved && <span style={{ fontSize: 12, color: THEME.success, fontWeight: 500 }}>✓ Guardado</span>}
       </div>
     </div>
   );
@@ -412,9 +401,36 @@ function StatusList({ title, getItems, saveItems, dotShape, extraFields, canDele
   const [list,    setList]    = useState(() => getItems());
   const [editing, setEditing] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
-  const dragIdx = useRef(null);
+  const dragIdx     = useRef(null);
+  const scrollRef   = useRef(null);    // ref on the admin panel content pane
+  const scrollPosRef = useRef(0);      // saves scroll position before commit
 
-  function commit(next) { setList(next); saveItems(next); }
+  function findScrollPane() {
+    let el = scrollRef.current?.parentElement;
+    while (el) {
+      const ov = window.getComputedStyle(el).overflowY;
+      if (ov === "auto" || ov === "scroll") return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  function commit(next) {
+    const pane = findScrollPane();
+    if (pane) scrollPosRef.current = pane.scrollTop;
+    setList(next);
+    saveItems(next);
+  }
+
+  useEffect(() => {
+    if (scrollPosRef.current > 0) {
+      const pane = findScrollPane();
+      if (pane) {
+        pane.scrollTop = scrollPosRef.current;
+        scrollPosRef.current = 0;
+      }
+    }
+  });
 
   function save(form) {
     commit(editing === "new"
@@ -443,7 +459,7 @@ function StatusList({ title, getItems, saveItems, dotShape, extraFields, canDele
   }
 
   return (
-    <div style={{ flex: 1, minWidth: 280 }}>
+    <div ref={scrollRef} style={{ flex: 1, minWidth: 280 }}>
       <SectionHeader title={title} action="Novo" onAction={() => setEditing("new")} />
       {deleteError && (
         <div style={{ background: THEME.dangerBg, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: "9px 14px", fontSize: 12, color: THEME.danger, marginBottom: 12, display: "flex", gap: 8, alignItems: "flex-start" }}>
@@ -542,7 +558,35 @@ function MapeamentoTab({ onSwitchTab }) {
   const types   = store.getTaskTypes();
   const statuses = store.getTaskStatuses();
   const [mapping, setMapping] = useState(() => store.getMapeamento());
-  const [saved, setSaved] = useState(false);
+
+  // Preserve scroll position across re-renders caused by dropdown changes
+  const containerRef   = useRef(null);
+  const savedScrollRef = useRef(null);
+
+  function findScrollPane() {
+    let el = containerRef.current?.parentElement;
+    while (el) {
+      const style = window.getComputedStyle(el);
+      if (style.overflowY === "auto" || style.overflowY === "scroll") return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  function saveScroll() {
+    const pane = findScrollPane();
+    if (pane) savedScrollRef.current = pane.scrollTop;
+  }
+
+  useEffect(() => {
+    if (savedScrollRef.current !== null) {
+      const pane = findScrollPane();
+      if (pane) {
+        pane.scrollTop = savedScrollRef.current;
+        savedScrollRef.current = null;
+      }
+    }
+  });
 
   const missing = [];
   if (roles.length === 0)   missing.push({ label: "Funções",            tab: "roles"         });
@@ -570,13 +614,12 @@ function MapeamentoTab({ onSwitchTab }) {
   }
 
   function setMap(section, key, roleId) {
-    setMapping(prev => ({ ...prev, [section]: { ...(prev[section] ?? {}), [key]: roleId || null } }));
-  }
-
-  function handleSave() {
-    store.saveMapeamento(mapping);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    saveScroll();  // capture before the re-render
+    setMapping(prev => {
+      const updated = { ...prev, [section]: { ...(prev[section] ?? {}), [key]: roleId || null } };
+      store.saveMapeamento(updated);
+      return updated;
+    });
   }
 
   const roleOptions = [{ id: "", label: "— Sem responsável —" }, ...roles];
@@ -604,7 +647,7 @@ function MapeamentoTab({ onSwitchTab }) {
   );
 
   return (
-    <div>
+    <div ref={containerRef}>
       <SectionHeader title="Mapeamento de Responsabilidades" />
       <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 20 }}>
         Define qual função é responsável por cada estado de processo, tipo de tarefa, e estado de tarefa. Quando vários utilizadores têm a mesma função, a atribuição roda (round-robin).
@@ -612,12 +655,6 @@ function MapeamentoTab({ onSwitchTab }) {
       <Section title="Por Estado de Processo" hint="Quem recebe o processo quando atinge este estado" items={stages}   section="processoStatus" keyField="id" />
       <Section title="Por Tipo de Tarefa"      hint="Quem recebe a tarefa quando este tipo é criado"  items={types}    section="taskType"       keyField="id" />
       <Section title="Por Estado de Tarefa"    hint="Quem recebe a tarefa quando atinge este estado"  items={statuses} section="taskStatus"     keyField="id" />
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <button onClick={handleSave} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-          Guardar mapeamento
-        </button>
-        {saved && <span style={{ fontSize: 12, color: THEME.success, fontWeight: 500 }}>✓ Guardado</span>}
-      </div>
     </div>
   );
 }
@@ -629,19 +666,20 @@ function SLATab() {
   const types    = store.getTaskTypes();
   const statuses = store.getTaskStatuses();
   const [settings, setSettings] = useState(() => store.getSLASettings());
-  const [saved, setSaved] = useState(false);
 
   function set(section, key, value, unit) {
-    setSettings(prev => ({
-      ...prev,
-      [section]: {
-        ...(prev[section] ?? {}),
-        [key]: { value: parseInt(value, 10) || 0, unit: unit ?? prev[section]?.[key]?.unit ?? "horas" },
-      },
-    }));
+    setSettings(prev => {
+      const updated = {
+        ...prev,
+        [section]: {
+          ...(prev[section] ?? {}),
+          [key]: { value: parseInt(value, 10) || 0, unit: unit ?? prev[section]?.[key]?.unit ?? "horas" },
+        },
+      };
+      store.saveSLASettings(updated);  // auto-save on every change
+      return updated;
+    });
   }
-
-  function handleSave() { store.saveSLASettings(settings); setSaved(true); setTimeout(() => setSaved(false), 2500); }
 
   const Row = ({ item, section }) => {
     const entry = settings[section]?.[item.id] ?? { value: "", unit: "horas" };
@@ -680,10 +718,6 @@ function SLATab() {
       <Group title="Estados do Processo"  items={stages}   section="processoStatus" />
       <Group title="Tipos de Tarefa"       items={types}    section="taskType"       />
       <Group title="Estados de Tarefa"     items={statuses} section="taskStatus"     />
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <button onClick={handleSave} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Guardar SLA</button>
-        {saved && <span style={{ fontSize: 12, color: THEME.success, fontWeight: 500 }}>✓ Guardado</span>}
-      </div>
     </div>
   );
 }
@@ -792,24 +826,31 @@ function BrandingTab({ onBrandingChange }) {
   const [subtitle, setSubtitle] = useState(saved0.subtitle || "Gestão de cotações e follow-up");
   const [logoUrl,  setLogoUrl]  = useState(saved0.logoUrl  || "");
   const [accent,   setAccent]   = useState(saved0.accent   || "#2563eb");
-  const [saved,    setSaved]    = useState(false);
 
-  function handleSave() {
-    const b = { appName, subtitle, logoUrl, accent };
+  // Persist and propagate a branding snapshot immediately on every change
+  function applyBranding(patch) {
+    const b = { appName, subtitle, logoUrl, accent, ...patch };
     localStorage.setItem("crm_branding", JSON.stringify(b));
     onBrandingChange?.(b);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
   }
+
+  function handleNameChange(v)     { setAppName(v);  applyBranding({ appName: v }); }
+  function handleSubtitleChange(v) { setSubtitle(v); applyBranding({ subtitle: v }); }
+  function handleAccentChange(v)   { setAccent(v);   applyBranding({ accent: v }); }
+  function handleLogoChange(v)     { setLogoUrl(v);  applyBranding({ logoUrl: v }); }
 
   return (
     <div style={{ maxWidth: 540 }}>
       <SectionHeader title="Marca / Logótipo" />
       <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-        <FieldRow label="Logótipo"><LogoUploader logoUrl={logoUrl} accent={accent} onLogoChange={setLogoUrl} /></FieldRow>
-        <FieldRow label="Nome da aplicação"><input style={INPUT} value={appName} onChange={e => setAppName(e.target.value)} /></FieldRow>
-        <FieldRow label="Subtítulo"><input style={INPUT} value={subtitle} onChange={e => setSubtitle(e.target.value)} /></FieldRow>
-        <ColorSwatch label="Cor de destaque" value={accent} onChange={setAccent} />
+        <FieldRow label="Logótipo"><LogoUploader logoUrl={logoUrl} accent={accent} onLogoChange={handleLogoChange} /></FieldRow>
+        <FieldRow label="Nome da aplicação">
+          <input style={INPUT} value={appName} onChange={e => handleNameChange(e.target.value)} />
+        </FieldRow>
+        <FieldRow label="Subtítulo">
+          <input style={INPUT} value={subtitle} onChange={e => handleSubtitleChange(e.target.value)} />
+        </FieldRow>
+        <ColorSwatch label="Cor de destaque" value={accent} onChange={handleAccentChange} />
         <div>
           <div style={{ fontSize: 11, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Pré-visualização</div>
           <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 10, padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
@@ -822,10 +863,7 @@ function BrandingTab({ onBrandingChange }) {
             </div>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button onClick={handleSave} style={{ background: "#2563eb", color: "white", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Guardar alterações</button>
-          {saved && <span style={{ fontSize: 12, color: "#15803d", fontWeight: 500 }}>✓ Guardado — reflectido na barra de navegação</span>}
-        </div>
+        <p style={{ margin: 0, fontSize: 12, color: THEME.textDim }}>As alterações são aplicadas imediatamente na barra lateral e no título do browser.</p>
       </div>
     </div>
   );

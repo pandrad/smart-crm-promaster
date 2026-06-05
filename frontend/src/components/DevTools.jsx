@@ -128,8 +128,18 @@ function WithConfirm({ label, icon, color, bg, message, onConfirm }) {
 // ── Tool 1 — User Switcher ────────────────────────────────────────────────────
 
 function UserSwitcher({ currentUser, onSwitchUser }) {
-  const users = store.getUsers().filter(u => u.active !== false);
   const [open, setOpen] = useState(false);
+
+  // Read fresh from store every render so roles are never stale
+  const users      = store.getUsers().filter(u => u.active !== false);
+  const allRoles   = store.getRoles();
+  const userRoles  = store.getUserRoles();
+
+  function roleLabels(userId) {
+    const ids = userRoles[userId] ?? [];
+    if (ids.length === 0) return u => u.role || "—";  // fallback to legacy field
+    return ids.map(id => allRoles.find(r => r.id === id)?.label ?? id).join(", ");
+  }
 
   return (
     <div>
@@ -145,6 +155,10 @@ function UserSwitcher({ currentUser, onSwitchUser }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {users.map(u => {
             const isActive = u.email === currentUser?.email;
+            const ids      = userRoles[u.id] ?? [];
+            const labels   = ids.length > 0
+              ? ids.map(id => allRoles.find(r => r.id === id)?.label ?? id).join(", ")
+              : (u.role || "—");
             return (
               <button
                 key={u.id}
@@ -159,8 +173,8 @@ function UserSwitcher({ currentUser, onSwitchUser }) {
               >
                 <Avatar name={u.name} size={18} photo={u.photo} />
                 <span style={{ flex: 1, textAlign: "left" }}>{u.name}</span>
-                <span style={{ fontSize: 9, opacity: 0.7 }}>{u.role}</span>
-                {isActive && <span style={{ fontSize: 9, color: "#4ade80" }}>●</span>}
+                <span style={{ fontSize: 9, opacity: 0.85, maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{labels}</span>
+                {isActive && <span style={{ fontSize: 9, color: "#4ade80", flexShrink: 0 }}>●</span>}
               </button>
             );
           })}
@@ -280,12 +294,28 @@ export function DevTools({
   }
 
   // ── Tool 6: Clear admin data ──────────────────────────────────────────────
-  // Clears all admin-configured data structures, keeping only the current user.
+  // Clears all admin-configured data structures.
+  // The current user, their role assignments, and the Admin role are all
+  // preserved so the admin can continue configuring from scratch without
+  // losing access.
   function handleClearAdminData() {
     const me = store.getUsers().find(u => u.email === currentUser?.email);
+
+    // Preserve current user
     store.saveUsers(me ? [me] : []);
-    store.saveRoles([]);
-    store.saveUserRoles({});
+
+    // Preserve Admin role so the current user retains admin access
+    const allRoles    = store.getRoles();
+    const currentRoles = store.getUserRoles();
+    const myRoleIds   = me ? (currentRoles[me.id] ?? []) : [];
+    const rolesToKeep = allRoles.filter(r => myRoleIds.includes(r.id));
+    store.saveRoles(rolesToKeep);
+
+    // Preserve the current user's role assignments; wipe everyone else's
+    const myRoleMapping = me ? { [me.id]: myRoleIds } : {};
+    store.saveUserRoles(myRoleMapping);
+
+    // Wipe all other admin-configured data
     store.saveStages([]);
     store.saveFUStatuses([]);
     store.saveTaskTypes([]);
