@@ -65,11 +65,16 @@ const DEFAULT_TASK_STATUSES = [
 // Mapeamento — maps role IDs to process status IDs, task type IDs, task status IDs.
 // taskStatusReatribui: per-status boolean — when true the mapeamento lookup runs and
 // can reassign the task owner on status change. Defaults ON for system-role statuses.
+// processoStatusReatribui: per-status boolean — when true changing to that process
+// status triggers the Mapeamento lookup and reassigns the responsible person.
+// Defaults ON only for "Para Fechar" (id 6) and "Fechado" (id 7) since those
+// explicitly hand off to a new person; all other statuses default OFF.
 const DEFAULT_MAPEAMENTO = {
-  processoStatus:       {},
-  taskType:             {},
-  taskStatus:           {},
-  taskStatusReatribui:  { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true },
+  processoStatus:          {},
+  taskType:                {},
+  taskStatus:              {},
+  taskStatusReatribui:     { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true },
+  processoStatusReatribui: { 6: true, 7: true },
 };
 
 // User-role assignments — maps userId → array of roleIds

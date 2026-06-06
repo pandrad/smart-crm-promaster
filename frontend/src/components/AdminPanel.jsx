@@ -255,14 +255,25 @@ function RolesTab() {
   }
 
   function tryDelete(role) {
-    // Check if used in user assignments
+    // Block if the role is still assigned to any user — must remove from Atribuição first.
     const userRoles = store.getUserRoles();
     const usedByUser = Object.values(userRoles).some(ids => ids.includes(role.id));
     if (usedByUser) { setError(`A função "${role.label}" está atribuída a utilizadores. Remova a atribuição primeiro na tab Atribuição.`); return; }
-    // Check if used in mapeamento
+
+    // Auto-clean any Mapeamento entries that reference this role ID before deleting.
     const m = store.getMapeamento();
-    const usedInMap = [...Object.values(m.processoStatus ?? {}), ...Object.values(m.taskType ?? {}), ...Object.values(m.taskStatus ?? {})].includes(role.id);
-    if (usedInMap) { setError(`A função "${role.label}" está mapeada em Mapeamento de Responsabilidades. Remova o mapeamento primeiro.`); return; }
+    function cleanSection(section) {
+      if (!section) return {};
+      return Object.fromEntries(Object.entries(section).filter(([, v]) => v !== role.id));
+    }
+    const cleaned = {
+      ...m,
+      processoStatus:      cleanSection(m.processoStatus),
+      taskType:            cleanSection(m.taskType),
+      taskStatus:          cleanSection(m.taskStatus),
+    };
+    store.saveMapeamento(cleaned);
+
     commit(roles.filter(r => r.id !== role.id));
   }
 
@@ -321,6 +332,17 @@ function AtribuicaoTab({ onSwitchTab }) {
       const next    = current.includes(roleId) ? current.filter(id => id !== roleId) : [...current, roleId];
       const updated = { ...prev, [userId]: next };
       store.saveUserRoles(updated);  // auto-save on every toggle
+
+      // Keep crm_users in sync: set user.role to their primary role (first in array)
+      // so the session-based privilege system (currentUser.role) stays consistent.
+      const primaryRoleId = next[0] ?? null;
+      const primaryRole   = primaryRoleId ? store.getRoles().find(r => r.id === primaryRoleId) : null;
+      const storeUsers    = store.getUsers();
+      const syncedUsers   = storeUsers.map(u =>
+        u.id === userId ? { ...u, role: primaryRole?.id ?? null } : u
+      );
+      store.saveUsers(syncedUsers);
+
       return updated;
     });
   }
@@ -557,7 +579,9 @@ function MapeamentoTab({ onSwitchTab }) {
   const stages  = store.getStages();
   const types   = store.getTaskTypes();
   const statuses = store.getTaskStatuses();
-  const [mapping, setMapping] = useState(() => store.getMapeamento());
+  const [mapping,    setMapping]    = useState(() => store.getMapeamento());
+  // noUsersBanner: { roleId, roleLabel } — set when a saved entry has no assigned users
+  const [noUsersBanner, setNoUsersBanner] = useState(null);
 
   // Preserve scroll position across re-renders caused by dropdown changes
   const containerRef   = useRef(null);
@@ -587,6 +611,12 @@ function MapeamentoTab({ onSwitchTab }) {
       }
     }
   });
+
+  // Returns true when the given roleId has at least one user assigned in crm_user_roles
+  function roleHasUsers(roleId) {
+    if (!roleId) return true; // empty = no mapping, no warning needed
+    return store.resolveRoleUsers(roleId).length > 0;
+  }
 
   const missing = [];
   if (roles.length === 0)   missing.push({ label: "Funções",            tab: "roles"         });
@@ -620,6 +650,13 @@ function MapeamentoTab({ onSwitchTab }) {
       store.saveMapeamento(updated);
       return updated;
     });
+    // Fix 4: show inline guidance if the selected role has no assigned users
+    if (roleId && !roleHasUsers(roleId)) {
+      const role = roles.find(r => r.id === roleId);
+      setNoUsersBanner({ roleId, roleLabel: role?.label ?? roleId });
+    } else {
+      setNoUsersBanner(null);
+    }
   }
 
   function toggleReatribui(statusId) {
@@ -632,26 +669,53 @@ function MapeamentoTab({ onSwitchTab }) {
     });
   }
 
+  function toggleProcessoReatribui(statusId) {
+    saveScroll();
+    setMapping(prev => {
+      const current = prev.processoStatusReatribui ?? {};
+      const updated = { ...prev, processoStatusReatribui: { ...current, [statusId]: !current[statusId] } };
+      store.saveMapeamento(updated);
+      return updated;
+    });
+  }
+
   const roleOptions = [{ id: "", label: "— Sem função atribuída —" }, ...roles];
+
+  // Fix 3: warning icon shown next to any dropdown whose selected role has no users
+  const WarnIcon = ({ roleId }) => {
+    if (!roleId || roleHasUsers(roleId)) return null;
+    return (
+      <span
+        title="Esta função não tem utilizadores atribuídos"
+        style={{ display: "inline-flex", alignItems: "center", color: "#f59e0b", flexShrink: 0 }}
+      >
+        <Icon name="alert" size={14} color="#f59e0b" />
+      </span>
+    );
+  };
 
   const Section = ({ title, hint, items, section, keyField }) => (
     <div style={{ marginBottom: 28 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{title}</div>
       {hint && <p style={{ fontSize: 12, color: THEME.textDim, marginTop: 0, marginBottom: 12 }}>{hint}</p>}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {items.map(item => (
-          <div key={item.id} style={{ background: THEME.sidebar, borderRadius: 9, border: `1px solid ${THEME.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ width: 10, height: 10, borderRadius: 3, background: item.color, flexShrink: 0 }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{item.label}</span>
-            <select
-              value={mapping[section]?.[item[keyField]] ?? ""}
-              onChange={e => setMap(section, item[keyField], e.target.value)}
-              style={{ fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "6px 10px", background: THEME.bg, color: THEME.text, outline: "none", minWidth: 180 }}
-            >
-              {roleOptions.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
-            </select>
-          </div>
-        ))}
+        {items.map(item => {
+          const selectedRole = mapping[section]?.[item[keyField]] ?? "";
+          return (
+            <div key={item.id} style={{ background: THEME.sidebar, borderRadius: 9, border: `1px solid ${THEME.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ width: 10, height: 10, borderRadius: 3, background: item.color, flexShrink: 0 }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{item.label}</span>
+              <WarnIcon roleId={selectedRole} />
+              <select
+                value={selectedRole}
+                onChange={e => setMap(section, item[keyField], e.target.value)}
+                style={{ fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "6px 10px", background: THEME.bg, color: THEME.text, outline: "none", minWidth: 180 }}
+              >
+                {roleOptions.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+              </select>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -662,21 +726,81 @@ function MapeamentoTab({ onSwitchTab }) {
       <p style={{ fontSize: 13, color: THEME.textDim, marginTop: 0, marginBottom: 20 }}>
         Define qual função é responsável por cada estado de processo, tipo de tarefa, e estado de tarefa. Quando vários utilizadores têm a mesma função, a atribuição roda (round-robin).
       </p>
-      <Section title="Por Estado de Processo" hint="Quem recebe o processo quando atinge este estado" items={stages}   section="processoStatus" keyField="id" />
-      <Section title="Por Tipo de Tarefa"      hint="Quem recebe a tarefa quando este tipo é criado"  items={types}    section="taskType"       keyField="id" />
+
+      {/* Fix 4 — inline guidance banner when a saved entry has no users */}
+      {noUsersBanner && (
+        <div style={{ background: "#1c1505", border: "1px solid #f59e0b44", borderRadius: 9, padding: "10px 14px", marginBottom: 20, display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <Icon name="alert" size={14} color="#f59e0b" style={{ flexShrink: 0, marginTop: 1 }} />
+          <span style={{ fontSize: 12, color: "#fbbf24", flex: 1 }}>
+            Atenção: a função <strong style={{ color: "#fde68a" }}>{noUsersBanner.roleLabel}</strong> não tem utilizadores atribuídos.{" "}
+            <button onClick={() => onSwitchTab("assignment")} style={{ background: "none", border: "none", cursor: "pointer", color: "#f59e0b", textDecoration: "underline", fontSize: 12, padding: 0 }}>
+              Vá ao separador Atribuição
+            </button>{" "}
+            para atribuir utilizadores a esta função.
+          </span>
+          <button onClick={() => setNoUsersBanner(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#f59e0b", padding: 0 }}>
+            <Icon name="x" size={12} color="#f59e0b" />
+          </button>
+        </div>
+      )}
+
+      {/* Por Estado de Processo — with Reatribui toggle (Enhancement) */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Por Estado de Processo</div>
+        <p style={{ fontSize: 12, color: THEME.textDim, marginTop: 0, marginBottom: 12 }}>
+          Quem recebe o processo quando atinge este estado. O toggle <strong style={{ color: THEME.text }}>Reatribui</strong> controla se a mudança de estado desencadeia uma nova atribuição.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {stages.map(item => {
+            const reatribui   = (mapping.processoStatusReatribui ?? {})[item.id] ?? false;
+            const selectedRole = mapping.processoStatus?.[item.id] ?? "";
+            return (
+              <div key={item.id} style={{ background: THEME.sidebar, borderRadius: 9, border: `1px solid ${THEME.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ width: 10, height: 10, borderRadius: 3, background: item.color, flexShrink: 0 }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{item.label}</span>
+                {reatribui && <WarnIcon roleId={selectedRole} />}
+                {reatribui && (
+                  <select
+                    value={selectedRole}
+                    onChange={e => setMap("processoStatus", item.id, e.target.value)}
+                    style={{ fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "6px 10px", background: THEME.bg, color: THEME.text, outline: "none", minWidth: 160 }}
+                  >
+                    {roleOptions.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+                  </select>
+                )}
+                <button
+                  onClick={() => toggleProcessoReatribui(item.id)}
+                  title={reatribui ? "Reatribuição activa — clique para desactivar" : "Reatribuição inactiva — clique para activar"}
+                  style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}
+                >
+                  <div style={{ width: 32, height: 18, borderRadius: 9, background: reatribui ? THEME.accent : THEME.border, position: "relative", transition: "background 0.15s" }}>
+                    <div style={{ position: "absolute", top: 2, left: reatribui ? 16 : 2, width: 14, height: 14, borderRadius: "50%", background: "white", transition: "left 0.15s" }} />
+                  </div>
+                  <span style={{ fontSize: 11, color: reatribui ? THEME.text : THEME.textDim, minWidth: 58 }}>Reatribui</span>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <Section title="Por Tipo de Tarefa" hint="Quem recebe a tarefa quando este tipo é criado" items={types} section="taskType" keyField="id" />
+
       <div style={{ marginBottom: 28 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Por Estado de Tarefa</div>
         <p style={{ fontSize: 12, color: THEME.textDim, marginTop: 0, marginBottom: 12 }}>Quem recebe a tarefa quando atinge este estado. O toggle <strong style={{ color: THEME.text }}>Reatribui</strong> controla se a mudança de estado desencadeia uma nova atribuição.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {statuses.map(item => {
-            const reatribui = (mapping.taskStatusReatribui ?? {})[item.id] ?? false;
+            const reatribui    = (mapping.taskStatusReatribui ?? {})[item.id] ?? false;
+            const selectedRole = mapping.taskStatus?.[item.id] ?? "";
             return (
               <div key={item.id} style={{ background: THEME.sidebar, borderRadius: 9, border: `1px solid ${THEME.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
                 <div style={{ width: 10, height: 10, borderRadius: 3, background: item.color, flexShrink: 0 }} />
                 <span style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{item.label}</span>
+                {reatribui && <WarnIcon roleId={selectedRole} />}
                 {reatribui && (
                   <select
-                    value={mapping.taskStatus?.[item.id] ?? ""}
+                    value={selectedRole}
                     onChange={e => setMap("taskStatus", item.id, e.target.value)}
                     style={{ fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "6px 10px", background: THEME.bg, color: THEME.text, outline: "none", minWidth: 160 }}
                   >

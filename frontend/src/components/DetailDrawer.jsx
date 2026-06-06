@@ -314,7 +314,18 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
   function photoOf(name) { return users.find(u => u.name === name)?.photo; }
 
   function handleStatusSave(newStatus, newFu) {
-    const updated = { ...p, status: newStatus, ...(newFu !== undefined ? { fu: newFu } : {}) };
+    const mapeamento   = store.getMapeamento();
+    const reatribuiMap = mapeamento.processoStatusReatribui ?? {};
+    let patch = { status: newStatus, ...(newFu !== undefined ? { fu: newFu } : {}) };
+
+    // When Reatribui is ON for this process status, run the Mapeamento lookup
+    // and reassign the Resp. Cotação (owner) to the mapped role's next user.
+    if (reatribuiMap[newStatus]) {
+      const newOwner = store.assignForProcessStatus(newStatus, p.client || null);
+      if (newOwner) patch = { ...patch, owner: newOwner };
+    }
+
+    const updated = { ...p, ...patch };
     setP(updated); onUpdate?.(updated);
   }
 

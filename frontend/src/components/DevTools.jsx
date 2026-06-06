@@ -162,7 +162,15 @@ function UserSwitcher({ currentUser, onSwitchUser }) {
             return (
               <button
                 key={u.id}
-                onClick={() => { onSwitchUser({ email: u.email, role: u.role, name: u.name, photo: u.photo }); setOpen(false); }}
+                onClick={() => {
+                  // Resolve primary role from crm_user_roles; fall back to legacy u.role
+                  const assignedIds = userRoles[u.id] ?? [];
+                  const primaryRole = assignedIds.length > 0
+                    ? (allRoles.find(r => r.id === assignedIds[0])?.id ?? u.role)
+                    : u.role;
+                  onSwitchUser({ email: u.email, role: primaryRole, name: u.name, photo: u.photo });
+                  setOpen(false);
+                }}
                 style={{
                   ...BTN_BASE, justifyContent: "flex-start", gap: 8,
                   background: isActive ? "#1e3a5f" : "#0f172a",

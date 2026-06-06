@@ -168,6 +168,20 @@ Changes applied after the technical QA pass:
 | Mapeamento label fix | "Sem responsável" → "Sem função atribuída" in all three mapping dropdowns | `AdminPanel.jsx` |
 | Mapeamento — Reatribui toggle | "Por Estado de Tarefa" subsection gains a toggle per status row; when ON the role dropdown appears and the mapeamento lookup runs on status change; stored in `crm_mapeamento.taskStatusReatribui`; system-role statuses default ON | `AdminPanel.jsx`, `store.js`, `Tarefas.jsx` |
 
+### Bug fixes and enhancements — pre-QA pass (second round)
+
+Two fundamental routing bugs diagnosed and fixed, plus one enhancement:
+
+| Change | Detail | Files |
+|--------|--------|-------|
+| Bug fix — DEV user switcher loses admin role | `onSwitchUser` in DevTools was reading `u.role` (legacy field, never updated by Atribuição tab). Now resolves primary role from `crm_user_roles[u.id][0]`, falling back to `u.role` | `DevTools.jsx` |
+| Bug fix — AtribuicaoTab role sync | `toggleRole()` now also writes back to `crm_users`, setting `user.role` to the first assigned role ID (or null). Keeps session privilege system (`currentUser.role === "admin"`) in sync with new Atribuição assignments | `AdminPanel.jsx` |
+| Bug fix — Role delete cascade | `RolesTab.tryDelete()` previously blocked deletion when a role was used in Mapeamento. Now auto-cleans all three Mapeamento sections (processoStatus, taskType, taskStatus) before deleting; user-assignment block is preserved | `AdminPanel.jsx` |
+| Mapeamento — warning icon | `WarnIcon` component shown next to any Mapeamento dropdown whose selected role has no users in `crm_user_roles`. Yellow alert icon, tooltip: "Esta função não tem utilizadores atribuídos" | `AdminPanel.jsx` |
+| Mapeamento — inline guidance banner | When `setMap()` saves an entry and the selected role has no assigned users, a yellow banner appears with the role name and a direct link to the Atribuição tab | `AdminPanel.jsx` |
+| Enhancement — Reatribui toggle for Estados de Processo | "Por Estado de Processo" section in Mapeamento tab now has the same Reatribui toggle pattern as task statuses. Stored in `crm_mapeamento.processoStatusReatribui`; defaults ON for "Para Fechar" (id 6) and "Fechado" (id 7), OFF for all others | `AdminPanel.jsx`, `store.js` |
+| Enhancement — DetailDrawer respects processoStatusReatribui | `handleStatusSave()` checks `processoStatusReatribui[newStatus]`; when ON, calls `assignForProcessStatus()` and patches `owner` before saving. When OFF, status updates but responsible person is unchanged | `DetailDrawer.jsx` |
+
 ### Stage 1 status — open, pending final sign-off
 
 | Item | Status |
@@ -201,6 +215,13 @@ Changes applied after the technical QA pass:
 | Enviar Email ao Cliente restored to all task types | ✅ Complete |
 | Mapeamento "Sem função atribuída" label corrected | ✅ Complete |
 | Mapeamento "Por Estado de Tarefa" — Reatribui toggle + conditional role dropdown | ✅ Complete |
+| Bug fix — DEV user switcher role sync (crm_user_roles → session object) | ✅ Complete |
+| Bug fix — AtribuicaoTab syncs crm_users.role on every toggle | ✅ Complete |
+| Bug fix — Role delete cascade: Mapeamento auto-cleaned on role deletion | ✅ Complete |
+| Mapeamento — warning icon for roles with no assigned users | ✅ Complete |
+| Mapeamento — inline guidance banner when saved role has no users | ✅ Complete |
+| Mapeamento "Por Estado de Processo" — Reatribui toggle + conditional role dropdown | ✅ Complete |
+| DetailDrawer status change checks processoStatusReatribui before reassigning | ✅ Complete |
 | Client document: task types, triggers, timings, roles | ⏳ Awaited |
 | Second client review session | ⏳ Pending |
 | Final human QA pass | ⏳ Pending |
