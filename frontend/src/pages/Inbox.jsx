@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { THEME } from "../theme.js";
 import { store } from "../store.js";
 import { useWindowSize } from "../utils.js";
-import { getAISuggestion } from "../api/client.js";
+import { getAISuggestion, getAISimulationEnabled } from "../api/client.js";
 import { getTypeColor } from "./Tarefas.jsx";
 import { Tag } from "../components/Primitives.jsx";
 import { Icon } from "../icons.jsx";
@@ -303,26 +303,35 @@ function EmailPreviewPanel({ email, processos, tarefas, currentUser, onClose, on
   );
 }
 
+// ── Section divider ───────────────────────────────────────────────────────────
+function SectionDivider({ label, count }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "8px 0 4px" }}>
+      <span style={{ fontSize: 10, fontWeight: 700, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap" }}>
+        {label}
+      </span>
+      {count !== undefined && (
+        <span style={{ fontSize: 10, fontWeight: 600, color: THEME.textDim, background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 10, padding: "1px 7px" }}>
+          {count}
+        </span>
+      )}
+      <div style={{ flex: 1, height: 1, background: THEME.border }} />
+    </div>
+  );
+}
+
 // ── Inbox page ────────────────────────────────────────────────────────────────
 export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, tarefas, setTarefas, currentUser, accent }) {
-  // No local copy — read inboxEmails from Main state directly so DevTools updates
-  // are reflected immediately without leaving and re-entering the page.
   const [selectedEmail, setSelectedEmail] = useState(null);  // email object | null
   const [clientCreated, setClientCreated] = useState(new Set()); // email ids whose new-client banner was dismissed
 
-  // Visible = non-internal, pending
-  const visible = inboxEmails.filter(e => !e.isInternal && e.status === "pending");
+  // Track which email IDs have already been auto-processed in this session
+  // to prevent double-processing when inboxEmails reference changes.
+  const autoProcessedRef = useRef(new Set());
 
   function syncEmails(next) {
     setInboxEmails(next);
     store.saveInboxEmails(next);
-  }
-
-  function markEmailProcessed(id, patch = {}) {
-    const next = inboxEmails.map(e => e.id === id ? { ...e, status: "processed", ...patch } : e);
-    syncEmails(next);
-    // Close panel if the processed email was selected
-    setSelectedEmail(prev => prev?.id === id ? null : prev);
   }
 
   function nowTs() {
@@ -339,11 +348,86 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
     return store.assignForTaskType(tt.id, clientName);
   }
 
+  // ── AI auto-triage ────────────────────────────────────────────────────────
+  // Runs whenever inboxEmails changes. For each pending email not yet processed,
+  // calls getAISuggestion. If confidence >= 0.6 and type is not Não Classificado,
+  // creates a task and marks the email as auto-triaged.
+  useEffect(() => {
+    if (!getAISimulationEnabled()) return;
+
+    const pendingEmails = inboxEmails.filter(
+      e => !e.isInternal && e.status === "pending" && !autoProcessedRef.current.has(e.id)
+    );
+    if (pendingEmails.length === 0) return;
+
+    let emailsChanged = false;
+    let updatedEmails = [...inboxEmails];
+    const newTasks = [];
+
+    for (const email of pendingEmails) {
+      autoProcessedRef.current.add(email.id);
+      const suggestion = getAISuggestion(email);
+      if (!suggestion) continue;
+      if (suggestion.confidence < 0.6 || suggestion.type === "Não Classificado") continue;
+
+      const taskTypes  = store.getTaskTypes();
+      const taskTypeObj = taskTypes.find(t => t.label === suggestion.type);
+      if (!taskTypeObj) continue;
+
+      const owner = store.assignForTaskType(taskTypeObj.id, email.senderName);
+      const seq   = String((tarefas.length + newTasks.length + 1)).padStart(3, "0");
+      const taskId = `T${seq}`;
+
+      newTasks.push({
+        id:            taskId,
+        type:          suggestion.type,
+        status:        "Por Fazer",
+        owner,
+        client:        email.senderName,
+        originEmail: {
+          sender:      email.sender,
+          senderName:  email.senderName,
+          subject:     email.subject,
+          preview:     email.preview,
+          body:        email.body || "",
+          attachments: email.attachments || [],
+        },
+        originProcesso: null,
+        description:   `[IA] Email de ${email.senderName}: ${email.subject}`,
+        escalationNote: null,
+        priority:      "Normal",
+        created:       "15/05/2026",
+        due:           "17/05/2026",
+        history: [
+          { actor: "IA (Simulado)", action: "Criada automaticamente", note: `${suggestion.type} · ${Math.round(suggestion.confidence * 100)}% confiança`, ts: nowTs() },
+        ],
+      });
+
+      updatedEmails = updatedEmails.map(e =>
+        e.id === email.id
+          ? { ...e, status: "auto-triaged", autoTaskType: suggestion.type, autoOwner: owner, autoTaskId: taskId, autoConfidence: suggestion.confidence }
+          : e
+      );
+      emailsChanged = true;
+    }
+
+    if (emailsChanged) {
+      const nextTarefas = [...tarefas, ...newTasks];
+      setTarefas(nextTarefas);
+      store.saveTarefas(nextTarefas);
+      syncEmails(updatedEmails);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inboxEmails]);
+
+  function markEmailProcessed(id, patch = {}) {
+    const next = inboxEmails.map(e => e.id === id ? { ...e, status: "processed", ...patch } : e);
+    syncEmails(next);
+    setSelectedEmail(prev => prev?.id === id ? null : prev);
+  }
+
   // ── Triage actions ────────────────────────────────────────────────────────
 
-  // "Confirmar como Processo" → creates a Validação de Processo task.
-  // The validator (Resp. Cotação) will review and either open the process or return it.
-  // No process is created here. Email is marked "triaged" (not deleted, accessible in processed view).
   function handlePreEntrada(emailId) {
     const email = inboxEmails.find(e => e.id === emailId);
     if (!email) return;
@@ -356,9 +440,9 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
       id:              taskId,
       type:            "Validação de Processo",
       status:          "Por Fazer",
-      owner:           validatorOwner,        // Resp. Cotação validates first
-      triagedBy:       currentUser?.name || "Sistema", // who triaged from inbox
-      validatorOwner:  validatorOwner,        // stored separately so Devolver knows who to return to
+      owner:           validatorOwner,
+      triagedBy:       currentUser?.name || "Sistema",
+      validatorOwner:  validatorOwner,
       client:          email.senderName,
       originEmail: {
         sender:        email.sender,
@@ -387,7 +471,6 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
     const nextTarefas = [...tarefas, newTarefa];
     setTarefas(nextTarefas);
     store.saveTarefas(nextTarefas);
-    // Mark email as "triaged" — remains accessible, never deleted
     const next = inboxEmails.map(e => e.id === emailId
       ? { ...e, status: "triaged", triagedTaskId: taskId }
       : e
@@ -396,7 +479,6 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
     setSelectedEmail(null);
   }
 
-  // "Confirmar como Tarefa" → creates a task of the chosen type
   function handleConfirmTarefa(emailId, type) {
     const email = inboxEmails.find(e => e.id === emailId);
     if (!email) return;
@@ -445,7 +527,6 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
     setSelectedEmail(prev => prev?.id === emailId ? null : prev);
   }
 
-  // Unified action dispatcher called from the preview panel
   function handleAction(type, emailId, extra) {
     if (type === "preEntrada") handlePreEntrada(emailId);
     if (type === "tarefa")     handleConfirmTarefa(emailId, extra);
@@ -457,7 +538,11 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
     setClientCreated(prev => new Set([...prev, emailId]));
   }
 
-  const pendingCount = visible.length;
+  // Split: auto-triaged (AI simulation was ON when email arrived) vs pending manual
+  const autoTriaged = inboxEmails.filter(e => !e.isInternal && e.status === "auto-triaged");
+  const pending     = inboxEmails.filter(e => !e.isInternal && e.status === "pending");
+
+  const totalVisible = autoTriaged.length + pending.length;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100%", background: THEME.bg }}>
@@ -466,21 +551,96 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
       <div style={{ padding: "20px 24px 16px" }}>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: THEME.text }}>Inbox</h1>
         <div style={{ fontSize: 12, color: THEME.textDim, marginTop: 2 }}>
-          {pendingCount} {pendingCount === 1 ? "email pendente" : "emails pendentes"} de triagem · clique para abrir
+          {pending.length > 0
+            ? `${pending.length} ${pending.length === 1 ? "email pendente" : "emails pendentes"} de triagem manual`
+            : totalVisible > 0
+            ? "Todos os emails foram processados automaticamente"
+            : "Inbox vazia"
+          }
+          {autoTriaged.length > 0 && pending.length > 0 && ` · ${autoTriaged.length} processados automaticamente`}
         </div>
       </div>
 
-      {/* Email list — each row is clickable, no inline action buttons */}
+      {/* Email list */}
       <div style={{ padding: "0 24px 32px", display: "flex", flexDirection: "column", gap: 8 }}>
 
-        {visible.length === 0 && (
+        {totalVisible === 0 && (
           <div style={{ textAlign: "center", padding: "60px 0", color: THEME.textDim, fontSize: 14 }}>
             <Icon name="inbox" size={32} color={THEME.border} style={{ display: "block", margin: "0 auto 12px" }} />
             Inbox vazia — sem emails pendentes
           </div>
         )}
 
-        {visible.map(email => {
+        {/* ── Section 1: Processados automaticamente ── */}
+        {autoTriaged.length > 0 && (
+          <>
+            <SectionDivider label="Processados automaticamente" count={autoTriaged.length} />
+            {autoTriaged.map(email => {
+              const aiC = email.autoTaskType ? getTypeColor(email.autoTaskType) : null;
+              return (
+                <div
+                  key={email.id}
+                  style={{
+                    background: THEME.card,
+                    border: `1px solid ${THEME.border}`,
+                    borderRadius: 10,
+                    padding: "12px 16px",
+                    opacity: 0.65,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                    {/* Email icon */}
+                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: THEME.sidebar, border: `1px solid ${THEME.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                      <Icon name="cpu" size={14} color="#c084fc" />
+                    </div>
+
+                    {/* Email info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: THEME.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {email.senderName}
+                        </span>
+                        <span style={{ fontSize: 11, color: THEME.textDim, flexShrink: 0 }}>{email.received}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: THEME.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 4 }}>
+                        {email.subject}
+                      </div>
+                      {/* Task type + owner */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        {aiC && (
+                          <Tag bg={aiC.bg} color={aiC.color}>{email.autoTaskType}</Tag>
+                        )}
+                        <span style={{ fontSize: 9, fontWeight: 700, color: "#c084fc", background: "#2e1065", borderRadius: 3, padding: "1px 5px", letterSpacing: "0.05em" }}>SIM</span>
+                        {email.autoOwner && (
+                          <span style={{ fontSize: 11, color: THEME.textDim }}>→ {email.autoOwner}</span>
+                        )}
+                        {email.autoConfidence && (
+                          <span style={{ fontSize: 10, color: THEME.textDim }}>{Math.round(email.autoConfidence * 100)}% confiança</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {/* ── Section 2: Requerem atenção manual ── */}
+        {(pending.length > 0 || (autoTriaged.length > 0 && pending.length === 0)) && (
+          <SectionDivider
+            label="Requerem atenção manual"
+            count={pending.length > 0 ? pending.length : undefined}
+          />
+        )}
+
+        {pending.length === 0 && autoTriaged.length > 0 && (
+          <div style={{ textAlign: "center", padding: "20px 0", color: THEME.textDim, fontSize: 13 }}>
+            Sem emails a aguardar triagem manual
+          </div>
+        )}
+
+        {pending.map(email => {
           const aiSug  = getAISuggestion(email);
           const aiC    = aiSug ? getTypeColor(aiSug.type) : null;
           const isSelected = selectedEmail?.id === email.id;
@@ -549,7 +709,7 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
         })}
       </div>
 
-      {/* Email preview panel */}
+      {/* Email preview panel — only for pending emails */}
       {selectedEmail && (
         <EmailPreviewPanel
           email={selectedEmail}

@@ -1,392 +1,163 @@
 # Smart CRM — Promaster
 
-Internal web app replacing a SharePoint-based quotation tracking system for Promaster (industrial parts, Angola). Automates email intake, AI classification, and process management.
+Internal web app replacing SharePoint quotation tracking for Promaster (industrial parts, Angola). React frontend with mock data. Backend not yet built.
 
-## Current Step
+---
 
-**Step 1 — Frontend with mock data: COMPLETE. Sent to client for review.**
+## Current State
 
-### What was built
-All screens fully interactive with mock data. Dev server: `cd frontend && npm run dev` → http://localhost:5299
+**Stage 1 — Frontend with mock data.**
+All screens complete. Technical QA passed. Awaiting: client document on task types/triggers/timings → second client review → final human QA pass → Stage 1 closure.
 
-| File | Screen / Purpose |
-|------|-----------------|
-| `src/pages/Login.jsx` | Login — mock credentials, saves name to localStorage |
-| `src/pages/Main.jsx` | Layout shell — sidebar + route outlet, shared state, global modals |
-| `src/pages/Processos.jsx` | Dashboard — stats bar, filters, table/kanban views |
-| `src/pages/Tarefas.jsx` | Task management — full task model, validation workflow actions, history timeline |
-| `src/pages/Inbox.jsx` | Email triage — preview panel with full body, 4 actions; Confirmar como Processo creates Validação de Processo task |
-| `src/pages/Clientes.jsx` | Client list derived from processos — table + detail drawer with process history |
-| `src/pages/Arquivo.jsx` | Archived processes — read-only table |
-| `src/components/Sidebar.jsx` | Persistent left nav — 3 zones, badges, user chip, logout; Clientes enabled |
-| `src/components/StatsBar.jsx` | 6 clickable stat cards incl. Transitados — user-specific in Meus processos |
-| `src/components/Toolbar.jsx` | Search + filters + column visibility toggle + table/kanban toggle |
-| `src/components/TableView.jsx` | Sortable table, per-column filters, priority inline change, FU conditional |
-| `src/components/KanbanView.jsx` | Kanban with drag-and-drop; non-owner cards locked |
-| `src/components/DetailDrawer.jsx` | Right panel: process number, Comprador, Consulta checklist, Excel link, FU conditional, reassign for supervisor/owner |
-| `src/components/AdminPanel.jsx` | Slide-over: 9 tabs — Utilizadores, Funções, Atribuição de Utilizadores, Processos (estados + follow-up), Tarefas (tipos + estados com system roles), Mapeamento de Responsabilidades, SLA, Marca, Importar |
-| `src/components/SupervisorWidget.jsx` | Summary widget: stat cards + escalated tasks section (clickable → TaskDrawer) |
-| `src/components/Toast.jsx` | "Nova tarefa atribuída" notification — shows task type, client, assigning user |
-| `src/components/Primitives.jsx` | Avatar (photo support), badges — all read from store |
-| `src/theme.js` | Dark/light theme system — mutable THEME object, applyTheme(), persisted to localStorage |
+Dev server: `cd frontend && npm run dev` → http://localhost:5299
+Demo login: `admin@promaster.co` / `admin123` · `supervisor@promaster.co` / `super123` · `adelina@promaster.co` / `pass123`
 
-### File structure (finalised — do not reorganise)
+**⚠ Before Stage 1 closes:** delete `src/components/DevTools.jsx` and remove its import from `src/pages/Main.jsx`.
+
+---
+
+## Steps to Close Stage 1
+
+1. Apply client feedback from second review session
+2. Final human QA pass across all screens (see `docs/stage1-testing-guide.md`)
+3. Delete DevTools.jsx + remove import from Main.jsx
+4. Final commit: `Stage 1 complete — frontend closed`
+5. Push to GitHub
+6. Build v4 deliverable → `delivery/v4/`
+7. Proceed to Stage 2: schema finalisation (`database/schema.sql`)
+
+---
+
+## File Structure
 
 ```
 frontend/src/
-├── api/
-│   └── client.js       — fetch stubs: login, getProcessos, getUsers,
-│                          getStages, getFUStatuses, getPriorities.
-│                          Swap stub bodies for real fetch() in Stage 5.
-├── mock/
-│   └── data.js         — all Stage 1 mock content: PROCESSOS, TAREFAS,
-│                          INBOX_EMAILS (with full body text), MOCK_CREDENTIALS,
-│                          MOCK_TOAST, MOCK_IMPORT_PREVIEW
-├── components/         — UI components (import from utils/store/mock only)
-├── pages/              — Login.jsx, Main.jsx, Processos.jsx, Tarefas.jsx,
-│                          Inbox.jsx, Arquivo.jsx
-├── data.js             — seed arrays only (STAGES, FOLLOWUP_STATUSES, USERS)
-│                          imported by store.js alone — no components touch it
-├── store.js            — localStorage runtime state; seeds from data.js;
-│                          holds getTaskTypes(), getTaskStatuses(),
-│                          getTaskAssignment(), getSLASettings(), and all
-│                          other admin-configurable state
-├── theme.js            — dark/light theme system; mutable THEME object,
-│                          applyTheme(), getStoredTheme(), saveTheme()
-├── utils.js            — pure utilities: daysLeft(), useWindowSize()
-└── icons.jsx           — inline SVG icons
+├── api/client.js        — fetch stubs; swap for real fetch() in Stage 5
+├── mock/data.js         — all mock content: PROCESSOS, TAREFAS, INBOX_EMAILS,
+│                          MOCK_CREDENTIALS, MOCK_TOAST, MOCK_IMPORT_PREVIEW
+├── data.js              — seed arrays only; consumed by store.js alone
+├── store.js             — all admin-configurable runtime state (localStorage)
+├── theme.js             — dark/light theme system
+├── utils.js             — daysLeft(), useWindowSize(), simulateAIClassification()
+├── icons.jsx            — inline SVG icons
+├── pages/               — Login, Main, Processos, Tarefas, Inbox, Clientes, Arquivo
+└── components/          — Sidebar, StatsBar, Toolbar, TableView, KanbanView,
+                           DetailDrawer, AdminPanel, SupervisorWidget,
+                           Toast, Primitives, DevTools
 ```
 
-### Separation of concerns — confirmed clean
-- `data.js` — seeds only, one consumer (`store.js`)
-- `mock/data.js` — all hardcoded demo content, no logic
-- `utils.js` — pure functions + `useWindowSize()` hook, no data
-- `theme.js` — dark/light colour system, no application data
-- `store.js` — admin-editable runtime state, localStorage-backed; includes task types, task statuses, SLA settings
-- `api/client.js` — data-fetching layer; currently returns mock data, ready for real API
-- Components import `daysLeft`/`useWindowSize` from `utils.js`, `PROCESSOS` from `mock/data.js`, everything else from `store`
+**Do not reorganise this structure.**
 
-### Deliverable folder
-`delivery/` — one subfolder per UI version. Never delete previous versions. Each subfolder contains: the HTML app, the Portuguese instructions as `.md`, and the same instructions as `.pdf`.
+---
 
-```
-delivery/
-├── v1/   — original light-theme prototype (first client review)
-│   ├── Smart CRM — Promaster v1.html             (app — open in browser)
-│   ├── Instruções — Smart CRM Promaster v1.html   (instructions — open in browser)
-│   └── Instruções — Smart CRM Promaster v1.md     (source)
-└── v2/   — Mission Control redesign (dark theme, sidebar, Tarefas, Inbox, Arquivo)
-    ├── Smart CRM — Promaster v2.html             (app — open in browser)
-    ├── Instruções — Smart CRM Promaster v2.html   (instructions — open in browser)
-    └── Instruções — Smart CRM Promaster v2.md     (source)
-```
+## Key Pages and Components
 
-Both the app and the instructions are self-contained HTML files — client opens them directly in any browser. Instructions are print-ready (clean print stylesheet included).
+| File | Purpose |
+|------|---------|
+| `Main.jsx` | Layout shell — sidebar, routing, shared state, global modals |
+| `Processos.jsx` | Dashboard — stats bar, filters, table/kanban |
+| `Tarefas.jsx` | Task management — full workflow, validation, history timeline |
+| `Inbox.jsx` | Email triage — 4 manual actions + AI auto-triage when simulation ON; two-section layout (auto-triaged / manual) |
+| `Clientes.jsx` | Client list — table + detail drawer + Responsável column |
+| `AdminPanel.jsx` | 9 tabs: Utilizadores, Funções, Atribuição, Processos, Tarefas, Mapeamento, SLA, Marca, Importar |
+| `DetailDrawer.jsx` | Process detail — number, Comprador, Consulta checklist, Excel link, FU conditional |
+| `DevTools.jsx` | 7 DEV-only tools — **delete before Stage 1 closure** |
 
-Demo login: `admin@promaster.co` / `admin123` (Admin) · `supervisor@promaster.co` / `super123` (Supervisor) · `adelina@promaster.co` / `pass123` (standard)
+---
 
-**To add a new version:** create `delivery/vN/`, write the `.md` instructions, run `node /tmp/md-to-html.js` (adapt paths) to generate the instructions HTML. Rebuild app HTML: enable `vite-plugin-singlefile`, build, patch `type="module"` out, move script after `#root`, restore config.
+## Admin Panel Structure
 
-### Mission Control redesign — all phases complete and pushed to GitHub
+Tabs in order:
+1. Utilizadores — add/edit/delete users (no role assignment here)
+2. Funções — add/edit/delete roles
+3. Atribuição de Utilizadores — assign users to roles (one user → many roles; one role → many users, round-robin)
+4. Processos — Estados de Processo + Estados de Follow-up
+5. Tarefas — Tipos de Tarefa + Estados de Tarefa (with System Role field)
+6. Mapeamento de Responsabilidades — por estado de processo / por tipo de tarefa / por estado de tarefa (each with Reatribui toggle)
+7. SLA — timings per process status, task type, task status
+8. Marca — branding
+9. Importar — CSV/Excel bulk import
 
-| Phase | What was done | Commit |
-|-------|--------------|--------|
-| A | Data foundations: 11-stage status list, Supervisor role, TAREFAS + INBOX_EMAILS mock data, new icons | fc30f90 |
-| B | Layout shell: dark sidebar, Main.jsx restructured, Processos.jsx extracted, stub pages, App.jsx routes | fc30f90 |
-| C | All components adapted to dark theme: StatsBar, Toolbar, TableView, KanbanView, Primitives, Toast, Login, AdminPanel | 9b0cf42 |
-| D | DetailDrawer updates: process number prominence, Comprador first, FU conditional, Consulta checklist, Excel link, supervisor/owner reassign | 6f3bdb6 |
-| E | New screens: Tarefas (full table + TaskDrawer), Inbox (4 triage actions + new-client flow), Arquivo | a7a7195 |
-| F | AdminPanel dark theme polish, CLAUDE.md updated | 18d7513 |
+---
 
-### Task model redesign — complete and pushed to GitHub (parked for QA)
+## Responsibility Routing Logic
 
-Second iteration based on confirmed client feedback. Tarefas is now the primary work surface.
+When a trigger fires (process status change, task created, email triaged):
+1. Check `crm_client_assignments` — if client has assigned user, route there
+2. Otherwise look up mapped role in `crm_mapeamento`
+3. Find users with that role in `crm_user_roles`
+4. Assign round-robin via `crm_rr_counters`
 
-| Phase | What was done | Commit |
-|-------|--------------|--------|
-| A | New task model (owner, history[], escalationNote, originEmail with body), 8 mock tasks, inbox emails with full body text, store.getTaskAssignment() with per-type default owners | e7cfadf |
-| B | Inbox rewrite: email preview panel (full body, all 4 actions inside), fixed triage flow — Confirmar como Processo creates Pré-Entrada task, not a process | 3fd861c |
-| C | Tarefas redesign: 8 types, 5 statuses, 4 fully working actions (Abrir Processo, Concluir, Passar, Escalar/Retomar), history timeline in TaskDrawer | 3fd861c |
-| D | SupervisorWidget: escalated tasks section (clickable → TaskDrawer), stat cards updated | 3fd861c |
-| E | Wiring: shell-level TaskDrawer in Main, onOpenTask through Processos → SupervisorWidget, AdminPanel task type assignment section added alongside existing process role section, sidebar badge fixed | 3fd861c |
-| Fix | QA reset button fixed (themeVersion bump, all keys cleared), renamed to "Repor dados mock" | 75085ae |
+**Reatribui toggle:** each process status and task status has a `reassigns` boolean. When OFF, status updates but responsible person does not change.
 
-### Inbox validation workflow — implemented
+**System roles:** 7 fixed task status behaviours (Escalado, Devolvido, Cancelamento Pendente, Cancelado, Concluído, Em Curso, Por Fazer). Admin can rename/recolour but cannot delete. Action buttons set status via `sysStatus()` dynamic lookup — never hardcoded strings.
 
-Third iteration: "Confirmar como Processo" in the Inbox now creates a **Validação de Processo** task instead of a Pré-Entrada task. The Resp. Cotação validates before any process is opened. Core principle: nothing is ever deleted — every action, note, and status change is permanently recorded in the task timeline.
+---
 
-| What changed | Files |
-|---|---|
-| New task type `Validação de Processo` with `triagedBy` + `validatorOwner` fields | `Tarefas.jsx`, `store.js` |
-| New statuses: `Devolvido`, `Cancelado` | `Tarefas.jsx` |
-| 4 new modals: `ValidarModal`, `DevolverModal`, `ResubmeterModal`, `CancelarTarefaModal` | `Tarefas.jsx` |
-| 3 new actions in TaskDrawer (validator: Validar/Devolver; triage author: Resubmeter; owner only: Cancelar) | `Tarefas.jsx` |
-| `handlePreEntrada` creates Validação task (not Pré-Entrada); email marked `triaged` not `processed` | `Inbox.jsx` |
-| T009 (Devolvido + full back-and-forth thread) and T010 (Por Fazer) mock tasks; E003 + E006 marked triaged | `mock/data.js` |
+## DEV Tools (7 tools — DEV only)
 
-### DEV ONLY testing tools — `src/components/DevTools.jsx`
+| # | Tool | Purpose |
+|---|------|---------|
+| 1 | Trocar utilizador | Switch session without login |
+| 2 | Gerar email aleatório | Add random inbox email |
+| 3 | Gerar processo aleatório | Add random process |
+| 4 | Limpar Inbox e Tarefas | Empty inbox + tasks |
+| 5 | Limpar Processos | Clear process list |
+| 6 | Limpar dados admin | Clear admin config (keeps current user) |
+| 7 | Repor todos os dados mock | Full reset to baseline |
 
-Seven QA tools mounted only when `import.meta.env.DEV === true`. Absent from production builds (confirmed 0 matches in dist bundle).
+AI simulation toggle in DEV panel: when ON, `simulateAIClassification()` runs automatically on every pending inbox email. Emails with confidence ≥ 0.6 and a recognised type are auto-triaged: a task is created via `store.assignForTaskType()` (client assignment checked first, then Mapeamento round-robin), and the email moves to the **Processados automaticamente** section. Emails below the threshold stay in **Requerem atenção manual**. When OFF, no auto-processing occurs and all emails stay pending. **`simulateAIClassification()` is DEV ONLY — do not use in backend.**
 
-| # | Tool | What it does |
-|---|------|-------------|
-| 1 | Trocar utilizador | Instantly switches logged-in session to any mock user without going through login |
-| 2 | Gerar email aleatório | Adds a random inbound email to the Inbox; appears in real time (Inbox reads prop directly, no local state copy) |
-| 3 | Gerar processo aleatório | Adds a random processo with sequential 2605NNN ID, random client/equipment from built-in lists, team from store |
-| 4 | Limpar Inbox e Tarefas | Resets both inbox and tasks to empty — clean slate for flow testing |
-| 5 | Limpar Processos | Clears the processo list entirely |
-| 6 | Limpar dados admin | Clears all admin config (keeps current user) — simulates fresh installation |
-| 7 | Repor todos os dados mock | Master reset — restores all processos, tarefas, inbox, and admin data to mock baseline |
+**Inbox two-section layout:** `auto-triaged` emails show in a muted read-only section (no action buttons) with task type tag, SIM badge, assigned person, and confidence. `pending` emails show in the manual section with the four action buttons in the preview panel as before. Email status field values: `pending` → `auto-triaged` | `triaged` | `processed` | `diversos`.
 
-**⚠ Must be deleted before Stage 2 client review.** Delete `src/components/DevTools.jsx` and remove its import from `src/pages/Main.jsx`.
-
-### Pre-QA fixes applied during human review
-
-Fixes applied between static QA and manual browser review sign-off:
-
-| Fix | Files | Commit |
-|-----|-------|--------|
-| Topbar "Repor dados mock" button removed (duplicated in DEV panel) | `Main.jsx` | 26cf8c4 |
-| Toast changed from "novo email" to "nova tarefa atribuída" — shows type badge, client, assigning user, note | `Toast.jsx`, `mock/data.js` | 26cf8c4 |
-| Clientes page built — table derived from processos, detail drawer with process history | `Clientes.jsx` | 26cf8c4 |
-| Sidebar Clientes item enabled (was disabled/greyed out) | `Sidebar.jsx` | 26cf8c4 |
-| Inbox real-time update fixed — removed local `emails` state, reads `inboxEmails` prop directly | `Inbox.jsx` | 4864a32 |
-| DEV Tool 3 added: Gerar processo aleatório | `DevTools.jsx` | 4864a32 |
-| DEV Tool 5 added: Limpar Processos | `DevTools.jsx` | 4864a32 |
-
-### Post-QA additions and fixes
-
-Changes applied after the technical QA pass:
-
-| Change | Detail | Files |
-|--------|--------|-------|
-| Clientes — Responsável column | Dropdown (admin/supervisor) or read-only (others) per client; eligible users filtered by client-facing role labels; auto-saves to `crm_client_assignments`; mobile card section included | `Clientes.jsx`, `store.js`, `Main.jsx` |
-| Client-first routing | `assignForTaskType` and `assignForProcessStatus` accept optional `clientName`; checks `crm_client_assignments` before round-robin | `store.js` |
-| Inbox triage passes client name | Both `ownerForType` call sites pass `email.senderName` so client assignment is checked on every triage action | `Inbox.jsx` |
-| AI simulation returns `suggestedResponsavel` | `simulateAIClassification` reads `getClientAssignments()` and includes the assigned user in its result | `utils.js` |
-| Enviar Email ao Cliente — all task types | Button moved out of validation-only block; appears for any non-done task; `handleEnviarEmailCliente` and `applyReatribui` applied uniformly | `Tarefas.jsx` |
-| Mapeamento label fix | "Sem responsável" → "Sem função atribuída" in all three mapping dropdowns | `AdminPanel.jsx` |
-| Mapeamento — Reatribui toggle | "Por Estado de Tarefa" subsection gains a toggle per status row; when ON the role dropdown appears and the mapeamento lookup runs on status change; stored in `crm_mapeamento.taskStatusReatribui`; system-role statuses default ON | `AdminPanel.jsx`, `store.js`, `Tarefas.jsx` |
-
-### Bug fixes and enhancements — pre-QA pass (second round)
-
-Two fundamental routing bugs diagnosed and fixed, plus one enhancement:
-
-| Change | Detail | Files |
-|--------|--------|-------|
-| Bug fix — DEV user switcher loses admin role | `onSwitchUser` in DevTools was reading `u.role` (legacy field, never updated by Atribuição tab). Now resolves primary role from `crm_user_roles[u.id][0]`, falling back to `u.role` | `DevTools.jsx` |
-| Bug fix — AtribuicaoTab role sync | `toggleRole()` now also writes back to `crm_users`, setting `user.role` to the first assigned role ID (or null). Keeps session privilege system (`currentUser.role === "admin"`) in sync with new Atribuição assignments | `AdminPanel.jsx` |
-| Bug fix — Role delete cascade | `RolesTab.tryDelete()` previously blocked deletion when a role was used in Mapeamento. Now auto-cleans all three Mapeamento sections (processoStatus, taskType, taskStatus) before deleting; user-assignment block is preserved | `AdminPanel.jsx` |
-| Mapeamento — warning icon | `WarnIcon` component shown next to any Mapeamento dropdown whose selected role has no users in `crm_user_roles`. Yellow alert icon, tooltip: "Esta função não tem utilizadores atribuídos" | `AdminPanel.jsx` |
-| Mapeamento — inline guidance banner | When `setMap()` saves an entry and the selected role has no assigned users, a yellow banner appears with the role name and a direct link to the Atribuição tab | `AdminPanel.jsx` |
-| Enhancement — Reatribui toggle for Estados de Processo | "Por Estado de Processo" section in Mapeamento tab now has the same Reatribui toggle pattern as task statuses. Stored in `crm_mapeamento.processoStatusReatribui`; defaults ON for "Para Fechar" (id 6) and "Fechado" (id 7), OFF for all others | `AdminPanel.jsx`, `store.js` |
-| Enhancement — DetailDrawer respects processoStatusReatribui | `handleStatusSave()` checks `processoStatusReatribui[newStatus]`; when ON, calls `assignForProcessStatus()` and patches `owner` before saving. When OFF, status updates but responsible person is unchanged | `DetailDrawer.jsx` |
-
-### Stage 1 status — open, pending final sign-off
-
-| Item | Status |
-|------|--------|
-| Frontend build (all screens) | ✅ Complete |
-| Mission Control dark theme redesign | ✅ Complete |
-| Task model (owner, history, escalation) | ✅ Complete |
-| Inbox validation workflow | ✅ Complete |
-| Clientes page | ✅ Complete |
-| No-deletion rule (architecture rule 6) | ✅ Enforced |
-| Responsive design (mobile — `useWindowSize` hook) | ✅ Complete |
-| Task types admin-configurable (store + AdminPanel tab) | ✅ Complete |
-| Task statuses admin-configurable (store + AdminPanel tab) | ✅ Complete |
-| SLA admin tab | ✅ Complete |
-| Log Inbox admin tab | ✅ Complete |
-| Cancellation approval workflow | ✅ Complete |
-| Enviar Email ao Cliente (all task types) | ✅ Complete |
-| `docs/build-brief.md` updated | ✅ Current |
-| DEV ONLY testing tools (7 tools) | ✅ Built, **must be deleted before final closure** |
-| Static QA (code analysis + build) | ✅ Complete |
-| Technical QA pass (11 checks) | ✅ Complete — all checks passed |
-| Responsive design (mobile — `useWindowSize` hook) | ✅ Complete |
-| Task types and statuses admin-configurable | ✅ Complete |
-| Admin panel restructured (10 tabs, role system, mapeamento, SLA) | ✅ Complete |
-| Branding real-time propagation (sidebar, topbar, browser title) | ✅ Complete |
-| Admin panel auto-save (Atribuição, Mapeamento, SLA) | ✅ Complete |
-| Admin panel scroll preservation | ✅ Complete |
-| DEV Tool 6 preserves current user + role on clear | ✅ Complete |
-| DEV user switcher reads roles from store dynamically | ✅ Complete |
-| Clientes page — Responsável column with client-first routing | ✅ Complete |
-| Enviar Email ao Cliente restored to all task types | ✅ Complete |
-| Mapeamento "Sem função atribuída" label corrected | ✅ Complete |
-| Mapeamento "Por Estado de Tarefa" — Reatribui toggle + conditional role dropdown | ✅ Complete |
-| Bug fix — DEV user switcher role sync (crm_user_roles → session object) | ✅ Complete |
-| Bug fix — AtribuicaoTab syncs crm_users.role on every toggle | ✅ Complete |
-| Bug fix — Role delete cascade: Mapeamento auto-cleaned on role deletion | ✅ Complete |
-| Mapeamento — warning icon for roles with no assigned users | ✅ Complete |
-| Mapeamento — inline guidance banner when saved role has no users | ✅ Complete |
-| Mapeamento "Por Estado de Processo" — Reatribui toggle + conditional role dropdown | ✅ Complete |
-| DetailDrawer status change checks processoStatusReatribui before reassigning | ✅ Complete |
-| Client document: task types, triggers, timings, roles | ⏳ Awaited |
-| Second client review session | ⏳ Pending |
-| Final human QA pass | ⏳ Pending |
-| Delete `DevTools.jsx`, remove import from `Main.jsx` | ⏳ Pending |
-| Stage 1 closed | ⏳ Pending all of the above |
-
-### Static QA result (complete)
-
-Full static analysis pass was run across all source files against the QA plan checklist.
-
-**One bug found and fixed:**
-- `AdminPanel.jsx` — `TASK_TYPE_LIST` was missing `"Validação de Processo"`, so the admin had no way to configure who receives validation tasks from Inbox triage. Fixed: added as first entry. Committed as `QA fix — Validacao de Processo added to task assignment tab`.
-
-**All other checks passed:**
-- Login, auth guard, 3 demo profiles — correct
-- DevTools: all tools wired, `import.meta.env.DEV` guard confirmed, absent from dist bundle
-- Processos filters, Meus/Todos tabs, sort, column visibility — correct
-- SupervisorWidget `onOpenTask` wiring, privilege flags — correct
-- DetailDrawer: FU conditional (`status >= 9`), Consulta checklist (`status === 5 && p.consulta`), `canReassign` — correct
-- KanbanView: `locked = !isOwned(p)`, draggable guard — correct
-- Tarefas: scope filter, `isValidation`/`isValidator`/`isTriagedBy`/`isOwner`/`isDone` flags — correct
-- Inbox `handlePreEntrada`: creates Validação task with correct `triagedBy`/`validatorOwner` fields, marks email `triaged` — correct
-- Validation modals (Validar, Devolver, Resubmeter, Cancelar) action guards — correct
-- T009/T010 field names match exactly what TaskDrawer reads — confirmed
-- No-deletion rule: no `delete`/`remove` in any task/email/process handler — confirmed
-- Arquivo: read-only, opens DetailDrawer — correct
-- Theme toggle — correct
-
-### Technical QA pass — partial (in progress)
-
-Automated Playwright QA pass run against 11 checks. DEV panel overlay (`z-index: 9999, position: fixed`) blocked table row clicks in headless mode for most admin-heavy checks. No app bugs were found — all failures were automation harness issues.
-
-| Check | Status | Notes |
-|-------|--------|-------|
-| 1 — Round-robin role assignment | ✅ PASS | 2 users assigned to role, Pré-Entrada mapped to Resp. Cotação, `crm_rr_counters` written on task creation |
-| 2 — Mapeamento dynamic refresh | ✅ PASS | New type appears in Mapeamento and SLA immediately, no page reload |
-| 3 — System role rename | ✅ PASS | "Escalado" → "Urgente"; store updated; sysStatus() resolves dynamically; Retomar button visible after Escalar |
-| 4 — Role delete cascade | ✅ PASS | Assigned role blocked (still present); unassigned role deleted cleanly |
-| 5 — System role status delete | ✅ PASS | System-role statuses (Escalado, Concluído) blocked with error; systemRole=Nenhum status deleted successfully |
-| 6 — Email attachments | ✅ PASS | Attach button present, chip shown and removable, email sent, attachment filename in timeline |
-| 7 — Pinned attachments | ✅ PASS | Email de Origem present; Modelo de Proposta.xlsx with correct SharePoint URL; both have "fixo" chips |
-| 8 — Follow-up status dynamic | ✅ PASS | "Aguarda Resposta" deleted from store and absent from picker; colour edit persisted in store |
-| 9 — AI simulation toggle | ✅ PASS | OFF→no SIM badges; toggle writes `dev_ai_simulation="true"`; OFF again→no SIM |
-| 10 — Alterar Estado structural | ✅ PASS | No free status dropdown in TaskDrawer; 12 statuses in filter toolbar only |
-| 11 — DEV Tools 6 & 7 | ✅ PASS | Clear empties all config; restore populates all 9 tabs, Mapeamento 3 sub-sections, SLA all rows |
-
-### Next action
-**All 11 technical QA checks passed.** Stage 1 remains open. Awaiting: client document on task types/triggers/timings/roles → second client review session → final human QA pass → delete DevTools.
-
-Steps to close Stage 1:
-1. Receive and apply client feedback from second review session
-2. Final human QA pass across all screens
-3. Delete `src/components/DevTools.jsx` and remove its import from `src/pages/Main.jsx`
-4. Final commit: `git commit -m "Stage 1 complete — frontend closed"`
-5. Push to GitHub
-6. Build v4 deliverable (vite-plugin-singlefile → patch → `delivery/v4/`)
-7. Write `delivery/v4/Instruções — Smart CRM Promaster v4.md`
-8. Proceed to Stage 2: schema finalisation (`database/schema.sql`)
-
-Dev server auto-starts on login via launch agent → http://localhost:5299
-
-See `docs/build-brief.md` § "Build Order" for full step list.
-
-### Responsive design — complete
-
-Mobile breakpoint: **768px and below**. Implementation: `useWindowSize()` hook in `src/utils.js` returns `{ width, isMobile }`. All responsive changes are conditional inline styles — no Tailwind, no CSS media queries, no new dependencies.
-
-| Component | Mobile behaviour |
-|-----------|-----------------|
-| `Sidebar.jsx` | Hidden (`return null`) — replaced by BottomNav |
-| `Main.jsx` | Root switches to `flexDirection: column`; BottomNav injected at bottom (56px, fixed); content area gets `paddingBottom: 56`; topbar shows app logo + user avatar |
-| `BottomNav` (in Main.jsx) | Processos, Tarefas, Inbox (admin/supervisor only), Clientes, Arquivo, Admin (admin/supervisor only) |
-| `StatsBar.jsx` | Horizontal scroll row (`overflow-x: auto`), cards `minWidth: 120` |
-| `Toolbar.jsx` | Filter selects collapse behind "Filtros" button → bottom sheet above nav bar; view toggle icon-only |
-| `TableView.jsx` | Table hidden; card list shown (process number, client, status badge, urgency, assignee) |
-| `DetailDrawer.jsx` | `92dvh` bottom sheet with drag handle; all modals anchor to bottom |
-| `Tarefas.jsx` | TaskDrawer as bottom sheet; task table → cards; all 9 modals anchor to bottom |
-| `AdminPanel.jsx` | Full-screen; tab bar icon-only (labels hidden, `title` for tooltip) |
-| `Inbox.jsx` | Preview panel as `92dvh` bottom sheet with drag handle |
-| `Clientes.jsx` | Table → cards; ClienteDrawer as bottom sheet |
-| `Arquivo.jsx` | Table → cards |
-| `SupervisorWidget.jsx` | 4-col grid → 2×2 |
-| `DevTools.jsx` | Repositioned to `top: 72, right: 8` (below topbar, clears bottom nav) |
-| `Login.jsx` | Already mobile-friendly, no change |
-
-Desktop layout is completely unchanged in all components.
-
-### Admin-configurable task types and statuses — complete
-
-Task types and task statuses are no longer hardcoded. They follow the same pattern as process statuses (Estados tab).
-
-| What changed | Detail |
-|---|---|
-| `store.js` | `DEFAULT_TASK_TYPES` (11 entries) and `DEFAULT_TASK_STATUSES` (7 entries) added as seed data with `id`, `label`, `color`, `bg`. New methods: `getTaskTypes()`, `saveTaskTypes()`, `getTaskStatuses()`, `saveTaskStatuses()`. localStorage keys: `crm_task_types`, `crm_task_statuses`. |
-| `AdminPanel.jsx` | Two new tabs: **Tipos de Tarefa** and **Estados de Tarefa** — both use the existing `StatusList` component (add, edit, drag-to-reorder, colour picker). `TASK_TYPE_LIST` in AssignmentTab now reads from `store.getTaskTypes()` dynamically. |
-| `Tarefas.jsx` | `TASK_TYPES` and `TASK_STATUSES` are now functions returning store labels. `TYPE_COLORS`/`STATUS_COLORS` hardcoded maps replaced by `getTypeColor(label)` and `getStatusColor(label)` helpers that look up `{ bg, color }` from live store data. |
-| `Toast.jsx`, `SupervisorWidget.jsx` | Import `getTypeColor` instead of `TYPE_COLORS`. |
-| `Inbox.jsx` | Local `TASK_TYPES` const replaced by `getInboxTaskTypes()` (reads store, filters system-only types). `AI_TYPE_COLORS` replaced by `getTypeColor`. |
+---
 
 ## Stage 4 — Reviewer Agent Protocol
 
-After each significant backend module is built, run a **separate Claude Code session with clean context** to review it before proceeding to the next module. Do not reuse the build session.
+After each backend module: open a separate Claude Code session with minimal context. Provide only the module spec and the code. Ask for bug review. Do not reuse the build session.
 
-Modules to review (in order): `graph_api.py`, `email_processor.py`, `claude_client.py`, `auth.py`, `models.py`, `notifications.py`, `importer.py`.
+Modules: `graph_api.py`, `email_processor.py`, `claude_client.py`, `auth.py`, `models.py`, `notifications.py`, `importer.py`
 
-Reviewer prompt template: `docs/reviewer-prompt.md`
+Reviewer prompt: `docs/reviewer-prompt.md`
+
+---
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 18 + Tailwind CSS |
+| Frontend | React 18, inline styles, useWindowSize hook (no Tailwind) |
 | Backend | Python 3.11 + FastAPI |
 | Database | PostgreSQL via Supabase |
-| Email | Microsoft Graph API (webhook) |
+| Email | Microsoft Graph API (webhook on info@promaster.co) |
 | AI | Claude API — `claude-sonnet-4-20250514` |
-| Hosting | Single VPS (DigitalOcean or Hetzner) |
+| Hosting | Railway (frontend + backend) + Supabase |
 
-## AI Classification Rule
+---
 
-The Claude API classification prompt **must never hardcode task type labels or process status labels**. At classification time the backend must:
+## Non-Negotiable Architecture Rules
 
-1. Fetch the current admin-configured task types from the `task_types` database table.
-2. Fetch the current admin-configured process statuses from the `statuses` table.
-3. Inject both lists dynamically into the classification prompt at request time.
+1. **All mock data in `src/mock/data.js`.** No hardcoded data in components.
+2. **All data fetching through `src/api/client.js`.** No direct fetch() in components.
+3. **No component imports `data.js` directly.** Only `store.js` consumes it.
+4. **All statuses, types, users read from `store.js`.** Never inline.
+5. **`/frontend` and `/backend` completely isolated.** HTTP API only.
+6. **No data ever permanently deleted.** Cancelled = marked. Archived = moved. Triaged = processed state. Exception: DEV tools only.
+7. **Never hardcode status labels, task type labels, or role names.** Always read from store or database dynamically.
+8. **Git — commit freely locally, never push without explicit instruction.**
+9. **All UI text pt-PT. Dates DD/MM/YYYY. Currency €1.234,56.**
 
-This ensures AI classification always respects whatever types and statuses the admin has defined, even after the admin adds, renames, or removes entries.
+---
 
-**Fallback rule:** If the model's classification does not match any configured task type label (case-insensitive), the task type defaults to `Não Classificado` and the task is assigned to the Supervisor for manual triage. The same fallback applies to process status classification — an unrecognised status label must never be written to the database.
+## AI Classification Rule (Backend — Stage 4)
 
-This rule applies to both the email-to-task classification path and any future process status suggestion path.
+Never hardcode task type or status labels in the classification prompt. At runtime: fetch current task types and process statuses from DB, inject dynamically into prompt. If classification returns unrecognised label → default to Não Classificado → assign to Supervisor.
 
-## Key Rules
-
-1. **Never hardcode statuses, task types, or task statuses.** Labels, colors, IDs always come from the database. This applies to the frontend (read from `store.js`) and the backend (fetch from DB before use — see AI Classification Rule above).
-2. **One process per email thread.** Match on Graph API `conversationId`.
-3. **Three roles per process.** Resp. Comercial, Resp. Cotação, Resp. Compra — always distinct people.
-4. **Files stay in Microsoft.** Store OneDrive/SharePoint URLs, never upload files to our server.
-5. **Frontend first (Step 1).** Build and get UI approved before any backend work. From Step 3 onward: run the backend before touching the frontend, and test Graph API with Graph Explorer before writing code.
-6. **Locale.** All UI text pt-PT. Dates DD/MM/YYYY. Currency `€1.234,56`.
-7. **Keep the prototype's visual style.** Do not redesign — connect to real data.
-8. **Git — commit locally freely, but never `git push` unless explicitly asked.** Commits are fine as local milestones; pushing to GitHub is a deliberate action that requires an explicit instruction.
-
-## Non-negotiable architecture rules
-
-These apply to every change made in every session, no exceptions:
-
-1. **All mock data lives in `src/mock/data.js`.** No component, page, or utility may contain hardcoded arrays, objects, or strings that represent application data (users, processes, statuses, credentials, sample rows, etc.).
-2. **All data fetching goes through `src/api/client.js`.** Components never call `fetch()`, import from `data.js`, or read from `mock/data.js` directly. They call a function in `api/client.js`, which currently returns mock data and will later call the real API.
-3. **No component may import `data.js` directly.** That file is consumed only by `store.js`. Components read runtime state from `store.js` or fetch data via `api/client.js`.
-
-4. **All statuses, task types, task statuses, users, priorities, and follow-up statuses must be read from `store.js`.** Never hardcode these values inline in a component, even as a fallback or placeholder. Always call the appropriate `store.get*()` method.
-5. **`/frontend` and `/backend` are completely isolated.** Nothing in `/frontend` may import from or reference `/backend`. Nothing in `/backend` may import from or reference `/frontend`. They communicate only via the HTTP API.
-
-6. **No data is ever permanently deleted.** This is the most important business rule in the entire application. Processes, tasks, emails, notes, attachments, and activity log entries are never deleted from the system. Every action is permanently recorded.
-   - **Cancelado** = record marked with status `Cancelado` and a mandatory reason field. The record stays, full history visible.
-   - **Arquivado** = record moved to archive view. The record stays, accessible via the Arquivo section.
-   - **Triaged** = inbox email moved to processed state. The record stays, accessible in processed emails view.
-   - The words `delete` and `remove` must never appear in any function name, API endpoint, or database operation that touches process, task, email, note, or activity log data.
-   - The only permitted exception is the **DEV ONLY** "Repor dados mock" button, which exists solely for mock data testing and must be removed before any production deployment (`import.meta.env.DEV` guard ensures it never appears in production builds).
-
-Violation of any of these rules must be corrected before the change is committed, regardless of how small or temporary the change appears to be.
+---
 
 ## References
 
-- Current design reference: `docs/mockup-mission-control.html` (Mission Control layout — approved)
-- Original light-theme prototype: `docs/prototype.html`
-- Full brief (updated to reflect current state): `docs/build-brief.md`
+- Testing guide: `docs/stage1-testing-guide.md`
+- Full brief: `docs/build-brief.md`
+- Design reference: `docs/mockup-mission-control.html`
+- Reviewer prompt: `docs/reviewer-prompt.md`
