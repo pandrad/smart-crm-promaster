@@ -784,7 +784,50 @@ function MapeamentoTab({ onSwitchTab }) {
         </div>
       </div>
 
-      <Section title="Por Tipo de Tarefa" hint="Quem recebe a tarefa quando este tipo é criado" items={types} section="taskType" keyField="id" />
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Por Tipo de Tarefa</div>
+        <p style={{ fontSize: 12, color: THEME.textDim, marginTop: 0, marginBottom: 12 }}>Quem recebe a tarefa quando este tipo é criado. O toggle <strong style={{ color: THEME.text }}>Reatribui</strong> controla se a criação de uma tarefa deste tipo desencadeia uma nova atribuição.</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {types.map(item => {
+            const reatribui    = (mapping.taskTypeReatribui ?? {})[item.id] ?? false;
+            const selectedRole = mapping.taskType?.[item.id] ?? "";
+            return (
+              <div key={item.id} style={{ background: THEME.sidebar, borderRadius: 9, border: `1px solid ${THEME.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ width: 10, height: 10, borderRadius: 3, background: item.color, flexShrink: 0 }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{item.label}</span>
+                {reatribui && <WarnIcon roleId={selectedRole} />}
+                {reatribui && (
+                  <select
+                    value={selectedRole}
+                    onChange={e => setMap("taskType", item.id, e.target.value)}
+                    style={{ fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "6px 10px", background: THEME.bg, color: THEME.text, outline: "none", minWidth: 160 }}
+                  >
+                    {roleOptions.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+                  </select>
+                )}
+                <button
+                  onClick={() => {
+                    saveScroll();
+                    setMapping(prev => {
+                      const current = prev.taskTypeReatribui ?? {};
+                      const updated = { ...prev, taskTypeReatribui: { ...current, [item.id]: !current[item.id] } };
+                      store.saveMapeamento(updated);
+                      return updated;
+                    });
+                  }}
+                  title={reatribui ? "Reatribuição activa — clique para desactivar" : "Reatribuição inactiva — clique para activar"}
+                  style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}
+                >
+                  <div style={{ width: 32, height: 18, borderRadius: 9, background: reatribui ? THEME.accent : THEME.border, position: "relative", transition: "background 0.15s" }}>
+                    <div style={{ position: "absolute", top: 2, left: reatribui ? 16 : 2, width: 14, height: 14, borderRadius: "50%", background: "white", transition: "left 0.15s" }} />
+                  </div>
+                  <span style={{ fontSize: 11, color: reatribui ? THEME.text : THEME.textDim, minWidth: 58 }}>Reatribui</span>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <div style={{ marginBottom: 28 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Por Estado de Tarefa</div>

@@ -88,7 +88,7 @@ When a trigger fires (process status change, task created, email triaged):
 3. Find users with that role in `crm_user_roles`
 4. Assign round-robin via `crm_rr_counters`
 
-**Reatribui toggle:** each process status and task status has a `reassigns` boolean. When OFF, status updates but responsible person does not change.
+**Reatribui toggle:** each process status, task type, and task status has a `reassigns` boolean stored in `crm_mapeamento` under `processoStatusReatribui`, `taskTypeReatribui`, and `taskStatusReatribui` respectively. When OFF, the role dropdown is hidden and no reassignment occurs. When ON, the dropdown is visible and a new owner is resolved on trigger.
 
 **System roles:** 7 fixed task status behaviours (Escalado, Devolvido, Cancelamento Pendente, Cancelado, Concluído, Em Curso, Por Fazer). Admin can rename/recolour but cannot delete. Action buttons set status via `sysStatus()` dynamic lookup — never hardcoded strings.
 
@@ -144,7 +144,7 @@ Reviewer prompt: `docs/reviewer-prompt.md`
 5. **`/frontend` and `/backend` completely isolated.** HTTP API only.
 6. **No data ever permanently deleted.** Cancelled = marked. Archived = moved. Triaged = processed state. Exception: DEV tools only.
 7. **Never hardcode status labels, task type labels, or role names.** Always read from store or database dynamically.
-8. **Git — commit freely locally, never push without explicit instruction.**
+8. **Git — commit freely locally. Never push without explicit per-message instruction. "Commit" does not mean "commit and push". Always stop after the commit and wait.**
 9. **All UI text pt-PT. Dates DD/MM/YYYY. Currency €1.234,56.**
 
 ---

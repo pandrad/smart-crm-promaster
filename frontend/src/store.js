@@ -75,6 +75,7 @@ const DEFAULT_MAPEAMENTO = {
   taskStatus:              {},
   taskStatusReatribui:     { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true },
   processoStatusReatribui: { 6: true, 7: true },
+  taskTypeReatribui:       {},
 };
 
 // User-role assignments — maps userId → array of roleIds
