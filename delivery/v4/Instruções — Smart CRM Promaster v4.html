@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart CRM — Notas de Versão v4 · Promaster</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px; line-height: 1.7; color: #1e293b;
+    background: #f8fafc; margin: 0; padding: 0;
+  }
+  .page { max-width: 860px; margin: 40px auto 80px; background: white;
+    border-radius: 12px; border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06); padding: 48px 56px; }
+  h1 { font-size: 26px; font-weight: 800; color: #0f172a;
+    border-bottom: 3px solid #2563eb; padding-bottom: 10px; margin: 0 0 24px; }
+  h2 { font-size: 18px; font-weight: 700; color: #0f172a;
+    border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin: 36px 0 14px; }
+  h3 { font-size: 15px; font-weight: 700; color: #2563eb; margin: 24px 0 8px; }
+  h4 { font-size: 14px; font-weight: 600; color: #475569; margin: 16px 0 6px; }
+  p  { margin: 6px 0 10px; color: #334155; }
+  code { background: #f1f5f9; border-radius: 4px; padding: 2px 6px;
+    font-family: "SF Mono", Menlo, monospace; font-size: 12.5px; color: #0f172a; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0 18px; font-size: 13px; }
+  th { background: #f1f5f9; font-weight: 600; color: #0f172a;
+    border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; }
+  td { border: 1px solid #e2e8f0; padding: 7px 12px; color: #334155; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  ul  { margin: 8px 0 12px 0; padding-left: 22px; }
+  li  { margin: 4px 0; color: #334155; }
+  ol  { margin: 8px 0 12px 0; padding-left: 22px; }
+  blockquote { border-left: 3px solid #2563eb; margin: 12px 0;
+    padding: 8px 16px; background: #eff6ff; color: #1e40af;
+    border-radius: 0 8px 8px 0; font-size: 13px; }
+  .note { border-left: 3px solid #f59e0b; margin: 12px 0;
+    padding: 8px 16px; background: #fffbeb; color: #92400e;
+    border-radius: 0 8px 8px 0; font-size: 13px; }
+  hr  { border: none; border-top: 1px solid #e2e8f0; margin: 28px 0; }
+  strong { color: #0f172a; }
+  em { color: #475569; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 9999px;
+    font-size: 11px; font-weight: 700; vertical-align: middle; }
+  .badge-new     { background: #dcfce7; color: #166534; }
+  .badge-updated { background: #dbeafe; color: #1e40af; }
+  .badge-fixed   { background: #fef3c7; color: #92400e; }
+  .badge-ai      { background: #ede9fe; color: #6d28d9; }
+  .footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #e2e8f0;
+    font-size: 12px; color: #94a3b8; text-align: center; }
+  @media (max-width: 700px) { .page { padding: 24px 20px; margin: 16px; } }
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; border: none; padding: 0; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Smart CRM — Promaster · Versão 4</h1>
+<p><em>Notas de versão e guia de utilização · Junho 2026</em></p>
+
+<hr/>
+
+<h2>Como abrir</h2>
+<ol>
+  <li>Abra o ficheiro <strong><code>Smart CRM — Promaster v4.html</code></strong> em qualquer navegador (Chrome, Edge ou Firefox recomendados).</li>
+  <li>Não é necessária ligação à Internet nem instalar nada.</li>
+  <li>Todos os dados são fictícios e servem apenas para demonstração.</li>
+</ol>
+
+<h2>Acessos de demonstração</h2>
+<table>
+  <tr><th>Perfil</th><th>Email</th><th>Palavra-passe</th><th>Permissões</th></tr>
+  <tr><td><strong>Administrador</strong></td><td><code>admin@promaster.co</code></td><td><code>admin123</code></td><td>Acesso total — painel de administração, reatribuição, prioridades, configuração do sistema</td></tr>
+  <tr><td><strong>Supervisor</strong></td><td><code>supervisor@promaster.co</code></td><td><code>super123</code></td><td>Reatribuir, alterar prioridades, widget de resumo, validar processos — sem acesso à configuração do sistema</td></tr>
+  <tr><td><strong>Utilizador standard</strong></td><td><code>adelina@promaster.co</code></td><td><code>pass123</code></td><td>Dashboard, gere os seus próprios processos e tarefas</td></tr>
+</table>
+<blockquote>Recomendamos testar com os três perfis para ver as diferenças de permissão, especialmente nos fluxos de triagem automática e de validação de processos.</blockquote>
+
+<hr/>
+
+<h2>O que há de novo nesta versão <span class="badge badge-new">v4</span></h2>
+
+<p>Esta versão concentra-se em quatro áreas: triagem automática por IA no Inbox, redesenho completo do painel de administração, fiabilidade do sistema de atribuição de responsabilidades, e design responsivo.</p>
+
+<h3>1. Triagem automática por IA no Inbox <span class="badge badge-ai">IA</span> <span class="badge badge-new">Novo</span></h3>
+<p>Quando a simulação de IA está activa no painel DEV, os emails pendentes são agora processados automaticamente sem intervenção manual. O comportamento é o seguinte:</p>
+<ul>
+  <li>Para cada email com estado <em>pendente</em>, a IA analisa o assunto e o corpo e atribui um tipo de tarefa com uma percentagem de confiança.</li>
+  <li>Se a confiança for <strong>≥ 60%</strong> e o tipo não for <em>Não Classificado</em>, a tarefa é criada automaticamente e o email passa para a secção <strong>Processados automaticamente</strong>.</li>
+  <li>Se a confiança for inferior a 60% ou o tipo for <em>Não Classificado</em>, o email fica em <strong>Requerem atenção manual</strong> para triagem humana.</li>
+</ul>
+<p>A atribuição do responsável pela tarefa criada automaticamente segue a mesma lógica do sistema: verifica primeiro se o cliente tem um utilizador directamente atribuído; se não, usa a tabela Mapeamento de Responsabilidades com rotação round-robin.</p>
+
+<h3>2. Inbox com duas secções <span class="badge badge-updated">Actualizado</span></h3>
+<p>O Inbox tem agora dois grupos separados por divisor visual:</p>
+<ul>
+  <li><strong>Processados automaticamente</strong> — emails triados pela IA. Mostram o tipo de tarefa criado, o badge <code>SIM</code> (simulado), o nome do responsável atribuído, e a percentagem de confiança. Sem botões de acção — estes emails estão tratados.</li>
+  <li><strong>Requerem atenção manual</strong> — emails que a IA não conseguiu classificar com confiança suficiente. Mantêm as quatro acções manuais de triagem como antes.</li>
+</ul>
+<p>Quando a simulação está desactivada, todos os emails ficam na secção manual e nenhum processamento automático ocorre.</p>
+
+<h3>3. Painel de administração redesenhado <span class="badge badge-updated">Actualizado</span></h3>
+<p>O painel de administração foi completamente reorganizado. As 9 abas actuais:</p>
+<table>
+  <tr><th>Aba</th><th>O que configura</th></tr>
+  <tr><td><strong>Utilizadores</strong></td><td>Adicionar, editar, desactivar/activar utilizadores</td></tr>
+  <tr><td><strong>Funções</strong></td><td>Criar e editar funções (ex: Resp. Cotação, Supervisor)</td></tr>
+  <tr><td><strong>Atribuição de Utilizadores</strong></td><td>Associar utilizadores a funções — um utilizador pode ter várias funções; uma função pode ter vários utilizadores (rotação round-robin)</td></tr>
+  <tr><td><strong>Processos</strong></td><td>Estados de Processo e Estados de Follow-up</td></tr>
+  <tr><td><strong>Tarefas</strong></td><td>Tipos de Tarefa e Estados de Tarefa (com campo de Papel de Sistema)</td></tr>
+  <tr><td><strong>Mapeamento de Responsabilidades</strong></td><td>Por estado de processo / por tipo de tarefa / por estado de tarefa — cada um com toggle <em>Reatribui responsável</em></td></tr>
+  <tr><td><strong>SLA</strong></td><td>Prazos por estado de processo, tipo de tarefa, e estado de tarefa</td></tr>
+  <tr><td><strong>Marca</strong></td><td>Logótipo, nome e cor de destaque</td></tr>
+  <tr><td><strong>Importar</strong></td><td>Importação em bloco de processos a partir de CSV/Excel</td></tr>
+</table>
+
+<h3>4. Mapeamento de Responsabilidades <span class="badge badge-new">Novo</span></h3>
+<p>A aba <strong>Mapeamento de Responsabilidades</strong> é nova e central para a lógica de atribuição automática. Para cada estado de processo, tipo de tarefa, e estado de tarefa, o administrador define qual a função responsável. O sistema usa esta tabela para atribuir automaticamente o responsável quando um email chega, uma tarefa é criada, ou um processo muda de estado.</p>
+<p>Cada linha tem um toggle <strong>Reatribui responsável</strong>:</p>
+<ul>
+  <li><strong>Activo</strong> — quando o processo/tarefa entra neste estado, o responsável é reatribuído automaticamente pela lógica de Mapeamento.</li>
+  <li><strong>Inactivo</strong> — o estado muda mas o responsável actual mantém-se.</li>
+</ul>
+<p>Alertas visuais aparecem quando uma função mapeada não tem utilizadores atribuídos — com ligação directa para a aba de Atribuição para corrigir.</p>
+
+<h3>5. Sistema de atribuição unificado <span class="badge badge-fixed">Corrigido</span></h3>
+<p>Existiam dois sistemas de funções paralelos que por vezes divergiam, causando que o utilizador parecesse perder permissões após alterações no painel de administração. Ambos os sistemas estão agora sincronizados: qualquer alteração na aba Atribuição de Utilizadores actualiza imediatamente as permissões activas, incluindo no DEV switcher de utilizador.</p>
+
+<h3>6. Eliminação de funções em cascata <span class="badge badge-fixed">Corrigido</span></h3>
+<p>Ao eliminar uma função no painel de administração, o sistema limpava entradas no Mapeamento de Responsabilidades de forma inconsistente. Agora, ao eliminar uma função, todas as referências a essa função no Mapeamento são automaticamente removidas — sem deixar entradas inválidas que causavam falhas silenciosas na atribuição automática.</p>
+
+<h3>7. Toggle Reatribui para estados de processo <span class="badge badge-new">Novo</span></h3>
+<p>O toggle <em>Reatribui responsável</em> que já existia para estados de tarefa foi alargado aos estados de processo. No painel Mapeamento → Por Estado de Processo, cada estado tem agora este toggle. Quando activo, mudar um processo para esse estado desencadeia uma reatribuição automática do responsável. Por defeito está activo para os estados <em>Para Fechar</em> e <em>Fechado</em>.</p>
+
+<h3>8. Routing cliente-primeiro <span class="badge badge-updated">Actualizado</span></h3>
+<p>A lógica de atribuição automática verifica agora primeiro se o cliente tem um utilizador directamente atribuído (configurável na aba Atribuição de Utilizadores). Se sim, o trabalho vai directamente para esse utilizador, ignorando o Mapeamento e o round-robin. Esta lógica aplica-se à triagem do Inbox, à criação de tarefas, e às alterações de estado de processo.</p>
+
+<h3>9. Tipos de tarefa e estados configuráveis pelo administrador <span class="badge badge-updated">Actualizado</span></h3>
+<p>Os tipos de tarefa e os estados de tarefa deixaram de ser fixos no código. O administrador pode agora criar, editar, reordenar e colorir tipos e estados directamente no painel. Sete estados de sistema têm comportamentos fixos (Por Fazer, Em Curso, Devolvido, Escalado, Cancelamento Pendente, Cancelado, Concluído) — o administrador pode renomear e mudar a cor, mas não pode eliminar estes estados. Os botões de acção no fluxo de tarefas actualizam-se automaticamente com base nos nomes configurados.</p>
+
+<h3>10. Design responsivo <span class="badge badge-updated">Actualizado</span></h3>
+<p>A aplicação adapta-se agora a ecrãs de telemóvel e tablet. Em mobile, a sidebar colapsa para um menu inferior, os painéis laterais abrem como drawers de baixo para cima, e as tabelas reorganizam-se em cartões.</p>
+
+<hr/>
+
+<h2>Guia completo da aplicação</h2>
+
+<h3>Navegação lateral (sidebar)</h3>
+<p>A barra lateral esquerda organiza-se em três zonas:</p>
+<p><strong>Principal</strong></p>
+<ul>
+  <li><strong>Processos</strong> — lista principal de cotações (badge: processos em aberto)</li>
+  <li><strong>Tarefas</strong> — todas as tarefas atribuídas ao utilizador (badge: tarefas activas)</li>
+  <li><strong>Inbox</strong> — emails a aguardar triagem (badge: emails pendentes)</li>
+</ul>
+<p><strong>Gestão</strong></p>
+<ul>
+  <li><strong>Clientes</strong> — lista de clientes derivada dos processos</li>
+  <li><strong>Arquivo</strong> — processos arquivados (mais de 3 anos, só de leitura)</li>
+</ul>
+<p><strong>Sistema</strong> <em>(apenas Admin e Supervisor)</em></p>
+<ul>
+  <li><strong>Administração</strong> — abre o painel de configuração do sistema</li>
+</ul>
+
+<hr/>
+
+<h3>Inbox</h3>
+
+<p>Emails recebidos organizados em duas secções quando a simulação de IA está activa:</p>
+
+<h4>Processados automaticamente</h4>
+<p>Emails triados pela IA com confiança ≥ 60%. Cada linha mostra o tipo de tarefa criado, o badge <code>SIM</code>, o responsável atribuído e a percentagem de confiança. Não há acções disponíveis — estes emails estão tratados.</p>
+
+<h4>Requerem atenção manual</h4>
+<p>Emails que a IA não classificou com confiança suficiente. Clique em qualquer email para abrir o painel com o corpo completo e as quatro acções de triagem:</p>
+<table>
+  <tr><th>Acção</th><th>O que acontece</th></tr>
+  <tr>
+    <td><strong>Confirmar como Processo</strong></td>
+    <td>Cria uma tarefa de Validação de Processo para o Resp. Cotação. Nenhum número de processo é gerado ainda.</td>
+  </tr>
+  <tr>
+    <td><strong>Confirmar como Tarefa</strong></td>
+    <td>Abre selector de tipo; cria a tarefa directamente com atribuição automática.</td>
+  </tr>
+  <tr>
+    <td><strong>Associar a Processo</strong></td>
+    <td>Associa o email a um número de processo existente.</td>
+  </tr>
+  <tr>
+    <td><strong>Diversos</strong></td>
+    <td>Remove o email da fila de triagem sem criar processo nem tarefa.</td>
+  </tr>
+</table>
+
+<hr/>
+
+<h3>Processos</h3>
+
+<h4>Barra de estatísticas</h4>
+<p>Seis cartões clicáveis que filtram a lista: Todos · Em Aberto · Em Atraso · Urgentes · Ganhos · Transitados.</p>
+
+<h4>Painel de detalhe</h4>
+<p>Clique numa linha ou cartão para abrir o painel lateral com:</p>
+<ul>
+  <li>Número do processo em destaque</li>
+  <li>Comprador e equipa com botão <strong>Reatribuir</strong></li>
+  <li>Checklist <strong>Consulta</strong> (visível apenas no estado Consulta)</li>
+  <li>Barra de pipeline visual e histórico</li>
+  <li>Follow-up — visível em estado ≥ Enviado</li>
+  <li>Alterar Estado — quando a mudança de estado tem Reatribui activo no Mapeamento, o responsável é actualizado automaticamente</li>
+</ul>
+
+<hr/>
+
+<h3>Tarefas</h3>
+
+<p>Tipos de tarefa e estados são configurados pelo administrador. Os botões de acção reflectem sempre os nomes actuais.</p>
+
+<p><strong>Acções disponíveis (tarefas normais):</strong></p>
+<ul>
+  <li><strong>Marcar como Concluído</strong> — nota opcional; registo permanente</li>
+  <li><strong>Passar</strong> — reatribui com nota obrigatória</li>
+  <li><strong>Escalar</strong> — eleva para Supervisor/Admin com nota obrigatória</li>
+  <li><strong>Enviar Email ao Cliente</strong> — abre modal para envio de email com nota opcional registada no histórico</li>
+</ul>
+
+<p><strong>Fluxo de Validação de Processo (tipo especial):</strong></p>
+<ul>
+  <li><strong>Validar e Criar Processo</strong> — Resp. Cotação aprova; processo criado com número e estado Entrada</li>
+  <li><strong>Devolver com Notas</strong> — Resp. Cotação devolve com nota obrigatória</li>
+  <li><strong>Resubmeter para Validação</strong> — utilizador resubmete após devolução com nota</li>
+  <li><strong>Cancelar Tarefa</strong> — motivo obrigatório; registo permanente</li>
+</ul>
+
+<hr/>
+
+<h3>Painel de Administração</h3>
+<p><em>Disponível para Admin e Supervisor.</em></p>
+<p>Ver tabela de abas acima na secção "O que há de novo". Destaques:</p>
+<ul>
+  <li><strong>Funções + Atribuição</strong> — separadas em duas abas distintas. Criação de funções em <em>Funções</em>; associação de utilizadores a funções em <em>Atribuição de Utilizadores</em>.</li>
+  <li><strong>Mapeamento de Responsabilidades</strong> — nova aba central. Define quem recebe cada tipo de trabalho. Alertas visuais quando uma função não tem utilizadores.</li>
+  <li><strong>SLA</strong> — nova aba. Define prazos por estado de processo, tipo de tarefa, e estado de tarefa.</li>
+  <li>Ao eliminar uma função, o sistema limpa automaticamente todas as referências no Mapeamento.</li>
+</ul>
+
+<hr/>
+
+<h3>Painel de ferramentas de teste <span class="badge badge-updated">Apenas nesta versão de revisão</span></h3>
+<p>O painel DEV no <strong>canto inferior direito</strong> (etiqueta <strong>⚠ DEV ONLY</strong> a vermelho) inclui agora o toggle de simulação de IA:</p>
+<ul>
+  <li><strong>Simulação IA: ON</strong> — novos emails pendentes são processados automaticamente. Emails com confiança ≥ 60% passam para "Processados automaticamente" com tarefa criada.</li>
+  <li><strong>Simulação IA: OFF</strong> — nenhum processamento automático; todos os emails ficam pendentes.</li>
+</ul>
+<p>As restantes 7 ferramentas mantêm-se iguais à v3 (Trocar utilizador, Gerar email aleatório, Gerar processo aleatório, Limpar Inbox e Tarefas, Limpar Processos, Limpar dados admin, Repor todos os dados mock).</p>
+<div class="note">As ferramentas de limpeza (4 a 7) pedem confirmação antes de executar. Use "Repor todos os dados mock" para voltar ao estado inicial sempre que necessário.</div>
+
+<hr/>
+
+<h2>Próximos passos</h2>
+<p>Após a vossa revisão e feedback desta versão:</p>
+<ol>
+  <li><strong>Documento de tipos de tarefa</strong> — confirmar os tipos, gatilhos e prazos que a Promaster utiliza actualmente</li>
+  <li><strong>Segunda sessão de revisão com o cliente</strong> — validar o fluxo completo com dados reais</li>
+  <li><strong>QA final</strong> e fecho do Stage 1 (protótipo frontend)</li>
+  <li><strong>Stage 2 — Esquema da base de dados</strong> com utilizadores, estados e SLAs confirmados</li>
+  <li><strong>Stage 3 — Integração Microsoft Graph API</strong> para ligação ao Outlook (<code>info@promaster.co</code>)</li>
+  <li><strong>Stage 4 — Backend</strong> (FastAPI + PostgreSQL via Supabase) com classificação IA real</li>
+</ol>
+
+<div class="footer">
+  <p>Smart CRM — Promaster · Versão 4 · Junho 2026</p>
+  <p>Desenvolvido por Pedro Andrade · <a href="mailto:pandrad@gmail.com" style="color:#2563eb;">pandrad@gmail.com</a></p>
+</div>
+
+</div>
+</body>
+</html>
