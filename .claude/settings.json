@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node qa-remaining.cjs)",
+      "Bash(rm -rf /private/tmp/claude-501/-Users-pedroandrade-Documents-Claude-Projects-smart-crm-promaster/*/tasks 2>/dev/null; grep -n \"useLocation\\\\|location\\\\.state\\\\|searchParams\\\\|useSearchParams\" /Users/pedroandrade/Documents/Claude/Projects/smart-crm-promaster/frontend/src/pages/Processos.jsx)",
+      "Bash(CLAUDE_CODE_TMPDIR=/tmp/claude-tmp mkdir -p /tmp/claude-tmp)",
+      "Bash(rm -rf /private/tmp/claude-501/-Users-pedroandrade-Documents-Claude-Projects-smart-crm-promaster/*/tasks/*)"
+    ],
+    "additionalDirectories": [
+      "/private/tmp/claude-501/-Users-pedroandrade-Documents-Claude-Projects-smart-crm-promaster/*"
+    ]
+  }
+}

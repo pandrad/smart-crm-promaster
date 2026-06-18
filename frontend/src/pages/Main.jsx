@@ -7,10 +7,11 @@ import { THEME, applyTheme, getStoredTheme, saveTheme } from "../theme.js";
 import { Sidebar } from "../components/Sidebar.jsx";
 import { DetailDrawer } from "../components/DetailDrawer.jsx";
 import { AdminPanel } from "../components/AdminPanel.jsx";
-import { Toast } from "../components/Toast.jsx";
+
 import { Avatar } from "../components/Primitives.jsx";
 import { Icon } from "../icons.jsx";
 
+import { Dashboard } from "./Dashboard.jsx";
 import { Processos } from "./Processos.jsx";
 import { Tarefas, TaskDrawer } from "./Tarefas.jsx";
 import { Inbox } from "./Inbox.jsx";
@@ -31,18 +32,18 @@ function BottomNav({ currentUser, processosBadge, tarefasBadge, inboxBadge, acce
   const ac = accent || THEME.accent;
 
   const items = [
-    { icon: "list",     label: "Processos",    route: "/processos", badge: processosBadge, show: true,          action: () => navigate("/processos") },
+    { icon: "bar",      label: "Dashboard",    route: "/dashboard", badge: null,           show: true,          action: () => navigate("/dashboard") },
     { icon: "tasks",    label: "Tarefas",      route: "/tarefas",   badge: tarefasBadge,   show: true,          action: () => navigate("/tarefas") },
+    { icon: "list",     label: "Processos",    route: "/processos", badge: processosBadge, show: true,          action: () => navigate("/processos") },
     { icon: "inbox",    label: "Inbox",        route: "/inbox",     badge: inboxBadge,     show: isPrivileged,  action: () => navigate("/inbox") },
     { icon: "users",    label: "Clientes",     route: "/clientes",  badge: null,           show: true,          action: () => navigate("/clientes") },
-    { icon: "archive",  label: "Arquivo",      route: "/arquivo",   badge: null,           show: true,          action: () => navigate("/arquivo") },
     { icon: "settings", label: "Admin",        route: null,         badge: null,           show: isPrivileged,  action: onOpenAdmin },
   ].filter(i => i.show);
 
   return (
     <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: 56, background: THEME.sidebar, borderTop: `1px solid ${THEME.border}`, display: "flex", zIndex: 200, flexShrink: 0 }}>
       {items.map(item => {
-        const active = item.route && (path === item.route || (item.route === "/processos" && path === "/"));
+        const active = item.route && (path === item.route || (item.route === "/dashboard" && path === "/"));
         return (
           <button
             key={item.label}
@@ -237,7 +238,7 @@ export function Main() {
   const tarefasBadge   = tarefas.filter(t => {
     if (!_activeLabels.has(t.status)) return false;
     if (isPrivileged) return true;
-    return t.owner === currentUser?.name || t.owner === null;
+    return t.owner === currentUser?.name;
   }).length;
   // Inbox badge only relevant for admin/supervisor (standard users don't see Inbox nav item)
   const inboxBadge = isPrivileged
@@ -323,13 +324,14 @@ export function Main() {
 
         {/* ── Page routes ── */}
         <Routes>
-          <Route path="/"           element={<Navigate to="/processos" replace />} />
+          <Route path="/"           element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard"  element={<Dashboard  {...sharedProps} />} />
           <Route path="/processos"  element={<Processos {...sharedProps} />} />
           <Route path="/tarefas"    element={<Tarefas   {...sharedProps} />} />
           <Route path="/inbox"      element={<Inbox     {...sharedProps} />} />
           <Route path="/clientes"   element={<Clientes  processos={processos} onSelectProcesso={setSelected} currentUser={currentUser} />} />
           <Route path="/arquivo"    element={<Arquivo   {...sharedProps} />} />
-          <Route path="*"           element={<Navigate to="/processos" replace />} />
+          <Route path="*"           element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </div>
 
@@ -369,7 +371,7 @@ export function Main() {
           onSave={handleProfileSave}
         />
       )}
-      <Toast currentUser={currentUser} />
+      {/* Toast disabled — may be reintroduced later */}
 
       {/* Mobile bottom navigation */}
       {isMobile && (

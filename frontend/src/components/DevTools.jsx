@@ -216,22 +216,69 @@ export function DevTools({
   }
 
   // ── Tool 2: Generate random inbox email ──────────────────────────────────
+  // ~15-20% of the time produces an unclassifiable email (low confidence,
+  // Não Classificado) using the same shape as the dedicated unclassifiable
+  // generator. The rest of the time picks a confident classified subject.
   function handleGenerateEmail() {
-    const sender  = randomPick(RANDOM_SENDERS);
-    const subject = randomPick(RANDOM_SUBJECTS);
+    const sender = randomPick(RANDOM_SENDERS);
+    const isUnclassifiable = Math.random() < 0.18;
+
+    let newEmail;
+    if (isUnclassifiable) {
+      newEmail = {
+        id:           `E_dev_${Date.now()}`,
+        sender:       "noreply@sistema-desconhecido.co.ao",
+        senderName:   "Sistema Desconhecido",
+        to:           "info@promaster.co",
+        subject:      `REF: ${randomInt(1000,9999)}-X / Assunto não identificável`,
+        preview:      "Na sequência da comunicação anterior, informamos que o processo referenciado foi actualizado no nosso sistema interno.",
+        body:         "Prezados,\n\nNa sequência da comunicação anterior, informamos que o processo referenciado foi actualizado no nosso sistema interno de gestão documental.\n\nPara mais informações consultar a plataforma.\n\nAtenciosamente,\nDepartamento de Sistemas",
+        attachments:  [],
+        received:     nowReceived(),
+        isInternal:   false,
+        isNewClient:  false,
+        aiSuggestion: { type: "Não Classificado", category: "Desconhecido", confidence: Math.round((0.10 + Math.random() * 0.45) * 100) / 100 },
+        status:       "pending",
+      };
+    } else {
+      const subject = randomPick(RANDOM_SUBJECTS);
+      newEmail = {
+        id:           `E_dev_${Date.now()}`,
+        sender:       sender.email,
+        senderName:   sender.name,
+        to:           "info@promaster.co",
+        subject:      subject.text,
+        preview:      subject.preview,
+        body:         `${subject.preview}\n\nEsta é uma mensagem de teste gerada automaticamente pelas ferramentas de desenvolvimento.\n\nCom os melhores cumprimentos,\n${sender.name}\n${sender.company}`,
+        attachments:  [],
+        received:     nowReceived(),
+        isInternal:   false,
+        isNewClient:  false,
+        aiSuggestion: { type: subject.type, category: subject.category, confidence: Math.round((0.75 + Math.random() * 0.24) * 100) / 100 },
+        status:       "pending",
+      };
+    }
+    const next = [...store.getInboxEmails(), newEmail];
+    store.saveInboxEmails(next);
+    setInboxEmails(next);
+  }
+
+  // ── Tool 2b: Generate unclassifiable inbox email ─────────────────────────
+  function handleGenerateUnclassifiableEmail() {
+    const sender = randomPick(RANDOM_SENDERS);
     const newEmail = {
       id:           `E_dev_${Date.now()}`,
-      sender:       sender.email,
-      senderName:   sender.name,
+      sender:       "noreply@sistema-desconhecido.co.ao",
+      senderName:   "Sistema Desconhecido",
       to:           "info@promaster.co",
-      subject:      subject.text,
-      preview:      subject.preview,
-      body:         `${subject.preview}\n\nEsta é uma mensagem de teste gerada automaticamente pelas ferramentas de desenvolvimento.\n\nCom os melhores cumprimentos,\n${sender.name}\n${sender.company}`,
+      subject:      `REF: ${randomInt(1000,9999)}-X / Assunto não identificável`,
+      preview:      "Na sequência da comunicação anterior, informamos que o processo referenciado foi actualizado no nosso sistema interno.",
+      body:         "Prezados,\n\nNa sequência da comunicação anterior, informamos que o processo referenciado foi actualizado no nosso sistema interno de gestão documental.\n\nPara mais informações consultar a plataforma.\n\nAtenciosamente,\nDepartamento de Sistemas",
       attachments:  [],
       received:     nowReceived(),
       isInternal:   false,
       isNewClient:  false,
-      aiSuggestion: { type: subject.type, category: subject.category, confidence: Math.round((0.75 + Math.random() * 0.24) * 100) / 100 },
+      aiSuggestion: { type: "Não Classificado", category: "Desconhecido", confidence: 0.15 },
       status:       "pending",
     };
     const next = [...store.getInboxEmails(), newEmail];
@@ -276,6 +323,14 @@ export function DevTools({
       archived:  false,
       carryover: false,
       excelLink: "Excel Modelo.xlsx",
+      originEmail: {
+        sender: `${cl.comprador.toLowerCase().replace(/ /g, ".")}@${cl.client.toLowerCase().replace(/[^a-z]/g, "").slice(0, 12)}.co.ao`,
+        senderName: cl.comprador,
+        subject: `Pedido de cotação — ${eq.brand} ${eq.model}`,
+        preview: `Bom dia, venho solicitar cotação para ${eq.brand} ${eq.model}.`,
+        body: `Bom dia,\n\nVenho por este meio solicitar cotação para ${eq.brand} ${eq.model}.\n\nEsta é uma mensagem gerada automaticamente pelas ferramentas de desenvolvimento.\n\nCom os melhores cumprimentos,\n${cl.comprador}\n${cl.client}`,
+        attachments: [],
+      },
       timeline: [
         { icon: "cpu",  color: "#c084fc", time: created.slice(0, 5), text: `Processo gerado via DEV tools — ${eq.brand} ${eq.model}` },
         { icon: "user", color: "#94a3b8", time: created.slice(0, 5), text: `Atribuído a ${byRole("cotacao")}` },
@@ -398,6 +453,9 @@ export function DevTools({
           {/* Tool 2 — Generate random inbox email */}
           <ToolButton label="Gerar email aleatório" icon="mail"  color="#a3e635" bg="#14330a" onClick={handleGenerateEmail} />
 
+          {/* Tool 2b — Generate unclassifiable inbox email */}
+          <ToolButton label="Gerar email não classificável" icon="alert" color="#fb923c" bg="#1c1005" onClick={handleGenerateUnclassifiableEmail} />
+
           {/* Tool 3 — Generate random processo */}
           <ToolButton label="Gerar processo aleatório" icon="plus" color="#38bdf8" bg="#0c2231" onClick={handleGenerateProcesso} />
 
@@ -425,6 +483,19 @@ export function DevTools({
               }} />
             </button>
           </div>
+
+          {/* Tool — Simulate SLA breach */}
+          <ToolButton label="Simular incumprimento SLA" icon="alert" color="#f87171" bg="#2d0a0a" onClick={() => {
+            const allTarefas = store.getTarefas();
+            const doneLabels = new Set(["Concluído", "Cancelado"].map(r => store.getLabelForSystemRole(r)).filter(Boolean));
+            const active = allTarefas.filter(t => !doneLabels.has(t.status));
+            if (active.length === 0) return;
+            const target = active[Math.floor(Math.random() * active.length)];
+            const updated = allTarefas.map(t => t.id === target.id ? { ...t, due: "01/04/2026" } : t);
+            store.saveTarefas(updated);
+            setTarefas(updated);
+            setThemeVersion(v => v + 1);
+          }} />
 
           <div style={{ borderTop: "1px solid #1e293b", margin: "2px 0" }} />
 

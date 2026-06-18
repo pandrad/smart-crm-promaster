@@ -50,6 +50,14 @@ export const PROCESSOS = [
     comprador: "Evedson Figueiredo", price: null, emails: 1,
     note: "", archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
+    originEmail: {
+      sender: "evedson.figueiredo@mauto.co.ao",
+      senderName: "Evedson Figueiredo",
+      subject: "Pedido de cotação — SMARTPOWER DC1065/B",
+      preview: "Bom dia, venho solicitar cotação para aquisição de 1 unidade SMARTPOWER DC1065/B…",
+      body: "Bom dia,\n\nVenho por este meio solicitar cotação para aquisição de 1 unidade SMARTPOWER DC1065/B destinada à nossa oficina de manutenção em Luanda.\n\nNecessitamos de:\n- Preço unitário (CIF Luanda)\n- Prazo de entrega\n- Condições de garantia e assistência técnica\n\nNossa referência interna: 35112019.\n\nAguardamos resposta brevemente.\n\nCom os melhores cumprimentos,\nEvedson Figueiredo\nResponsável de Compras\nMauto – Garagem Oliveira",
+      attachments: [],
+    },
     timeline: [
       { icon: "mail",  color: "#60a5fa", time: "02/05 08:05", text: "Email recebido de Evedson Figueiredo — pedido de cotação SMARTPOWER DC1065/B" },
       { icon: "cpu",   color: "#c084fc", time: "02/05 08:06", text: "IA classificou: Pedido de Cotação · Cliente: Mauto · Equipamento: SMARTPOWER DC1065/B" },
@@ -66,6 +74,14 @@ export const PROCESSOS = [
     comprador: "Elmo Costa", price: null, emails: 2,
     note: "", archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
+    originEmail: {
+      sender: "elmo.costa@smpuri.co.ao",
+      senderName: "Elmo Costa",
+      subject: "Cotação VOLVO EC750L — ref. RJ382/M20",
+      preview: "Bom dia, somos a Sociedade Mineira do Puri e necessitamos de cotação urgente para VOLVO EC750L…",
+      body: "Bom dia,\n\nA Sociedade Mineira do Puri, LDA necessita de cotação para aquisição urgente de 1 unidade VOLVO EC750L (VIN: VOE123456) para operações de mineração no Leste de Angola.\n\nReferência interna: RJ382/M20.\n\nSolicito proposta com:\n- Preço CIF Luanda\n- Disponibilidade imediata ou prazo de entrega\n- Condições de pagamento\n- Serviço de assistência pós-venda em Angola\n\nCom os melhores cumprimentos,\nElmo Costa\nDirector de Operações\nSociedade Mineira do Puri, LDA",
+      attachments: [],
+    },
     timeline: [
       { icon: "mail",  color: "#60a5fa", time: "03/05 10:22", text: "Email recebido de Elmo Costa — pedido de cotação VOLVO EC750L" },
       { icon: "cpu",   color: "#c084fc", time: "03/05 10:23", text: "IA classificou: Pedido de Cotação · Cliente: Soc. Mineira do Puri · Equipamento: VOLVO EC750L" },
@@ -84,6 +100,14 @@ export const PROCESSOS = [
     note: "Cliente aguarda resposta urgente",
     archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
+    originEmail: {
+      sender: "luisa.pinto@construtora-horizonte.co.ao",
+      senderName: "Luísa Pinto",
+      subject: "Pedido de cotação urgente — CATERPILLAR 320GC — ref. CH/2026/05",
+      preview: "Bom dia, necessitamos com urgência de cotação para 1 CATERPILLAR 320GC para obra no Bengo…",
+      body: "Bom dia,\n\nVenho por este meio solicitar cotação urgente para aquisição de 1 unidade CATERPILLAR 320GC (VIN: CAT320GC001) destinada a obra de terraplanagem no Bengo, com início previsto para breve.\n\nReferência interna: CH/2026/05.\n\nNecessitamos de:\n- Preço unitário CIF Luanda\n- Prazo de entrega\n- Condições de pagamento e financiamento\n- Garantia de fábrica e cobertura em Angola\n\nA urgência é máxima — a adjudicação da obra depende da confirmação deste equipamento.\n\nAguardamos resposta até ao final do dia.\n\nCom os melhores cumprimentos,\nLuísa Pinto\nDirectora Financeira\nConstrutora Horizonte SA",
+      attachments: [],
+    },
     // consulta checklist — only present when status === 5
     consulta: { pedidoFornecedor: false, pedidoTs: null, respostaFornecedor: false, respostaTs: null },
     timeline: [
@@ -103,6 +127,14 @@ export const PROCESSOS = [
     comprador: "Sérgio Maia", price: null, emails: 6,
     note: "", archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
+    originEmail: {
+      sender: "sergio.maia@vendap.co.ao",
+      senderName: "Sérgio Maia",
+      subject: "Cotação JCB JS220 — pedido de aquisição",
+      preview: "Boa tarde, a Vendap II pretende adquirir 1 unidade JCB JS220 e solicita proposta…",
+      body: "Boa tarde,\n\nA Vendap II pretende adquirir 1 unidade JCB JS220 para reforço da frota de construção civil.\n\nSolicito proposta com:\n- Preço unitário CIF Luanda\n- Prazo de entrega estimado\n- Condições de pagamento\n- Garantia e suporte técnico disponível\n\nNecessitamos de fechar esta aquisição com urgência para cumprir os prazos de obra.\n\nCom os melhores cumprimentos,\nSérgio Maia\nResponsável de Compras\nVendap II",
+      attachments: [],
+    },
     timeline: [
       { icon: "mail",  color: "#60a5fa", time: "06/05 11:00", text: "Email recebido de Sérgio Maia — pedido de cotação JCB JS220" },
       { icon: "cpu",   color: "#c084fc", time: "06/05 11:01", text: "IA classificou: Pedido de Cotação · Cliente: Vendap II · Equipamento: JCB JS220" },
@@ -120,6 +152,14 @@ export const PROCESSOS = [
     comprador: "Rui Barros", price: null, emails: 5,
     note: "", archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
+    originEmail: {
+      sender: "rui.barros@planasul.co.ao",
+      senderName: "Rui Barros",
+      subject: "URGENTE — Cotação VOLVO EC360BLC PRIME (VIN: VOE789012)",
+      preview: "Bom dia, necessitamos com urgência máxima de cotação para VOLVO EC360BLC PRIME — adjudicação iminente…",
+      body: "Bom dia,\n\nA Planasul Engenharia e Construções necessita com urgência máxima de cotação para 1 unidade VOLVO EC360BLC PRIME (VIN: VOE789012).\n\nA adjudicação da obra está iminente e a confirmação deste equipamento é condição para o contrato.\n\nNecessitamos de proposta com:\n- Preço final CIF Luanda\n- Disponibilidade imediata ou prazo máximo de 30 dias\n- Condições de pagamento (preferência 30/60 dias)\n- Garantia e assistência técnica VOLVO em Angola\n\nPor favor responder hoje — sem cotação não podemos avançar.\n\nCom os melhores cumprimentos,\nRui Barros\nDirector Geral\nPlanasul Engenharia e Construções",
+      attachments: [],
+    },
     timeline: [
       { icon: "mail",  color: "#60a5fa", time: "07/05 08:30", text: "Email recebido de Rui Barros — pedido urgente VOLVO EC360BLC PRIME" },
       { icon: "cpu",   color: "#c084fc", time: "07/05 08:31", text: "IA classificou: Pedido de Cotação · Urgência: Alta" },
@@ -138,6 +178,14 @@ export const PROCESSOS = [
     note: "A aguardar documentação do cliente",
     archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
+    originEmail: {
+      sender: "andelson.chaves@mencons.co.ao",
+      senderName: "Andelson Chaves",
+      subject: "Pedido de cotação VOLVO EC360BLC — ref. SMA0119/2026",
+      preview: "Bom dia, a Mencons Engenharia solicita cotação para VOLVO EC360BLC para projecto de construção civil…",
+      body: "Bom dia,\n\nA Mencons Engenharia e Construção Civil, no âmbito do projecto SMA0119/2026, solicita cotação para aquisição de 1 unidade VOLVO EC360BLC para actividades de construção civil em Luanda.\n\nSolicito proposta com:\n- Preço unitário CIF Luanda\n- Prazo de entrega\n- Condições de pagamento\n- Documentação técnica e garantia\n\nNote que necessitamos de documentação adicional do fornecedor para submeter ao cliente final — por favor incluir especificações técnicas completas.\n\nCom os melhores cumprimentos,\nAndelson Chaves\nGestor de Projecto\nMencons Engenharia e Construção Civil",
+      attachments: [],
+    },
     timeline: [
       { icon: "mail", color: "#60a5fa", time: "08/05 09:45", text: "Email recebido de Andelson Chaves — pedido de cotação VOLVO EC360BLC" },
       { icon: "cpu",  color: "#c084fc", time: "08/05 09:46", text: "IA classificou: Pedido de Cotação · Cliente: Mencons · Equipamento: VOLVO EC360BLC" },
@@ -156,6 +204,14 @@ export const PROCESSOS = [
     note: "A aguardar aprovação interna",
     archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
+    originEmail: {
+      sender: "rui.cardoso@betaocerto.co.ao",
+      senderName: "Rui Cardoso",
+      subject: "Cotação LIEBHERR LTM 1100 — ref. BC-291",
+      preview: "Boa tarde, a BetãoCerto Construções solicita cotação para grua LIEBHERR LTM 1100 para projecto de estruturas…",
+      body: "Boa tarde,\n\nA BetãoCerto Construções, no âmbito do projecto BC-291, solicita cotação para aluguer ou aquisição de 1 unidade LIEBHERR LTM 1100 para trabalhos de montagem de estruturas metálicas em Luanda.\n\nNecessitamos de:\n- Opção de aluguer (mínimo 3 meses) e opção de compra\n- Preço CIF ou entrega em obra\n- Capacidade de carga certificada para Angola\n- Operador incluído ou disponível\n\nA aprovação interna depende da viabilidade económica — solicitamos urgência na resposta.\n\nCom os melhores cumprimentos,\nRui Cardoso\nDirector Técnico\nBetãoCerto Construções",
+      attachments: [],
+    },
     timeline: [
       { icon: "mail", color: "#60a5fa", time: "10/05 16:00", text: "Email recebido de Rui Cardoso — LIEBHERR LTM 1100" },
       { icon: "cpu",  color: "#c084fc", time: "10/05 16:01", text: "IA classificou: Pedido de Cotação · Equipamento: LIEBHERR LTM 1100" },
@@ -174,6 +230,14 @@ export const PROCESSOS = [
     note: "Enviado — a aguardar PO",
     archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
+    originEmail: {
+      sender: "carlos.menezes@terramovida.pt",
+      senderName: "Carlos Menezes",
+      subject: "Pedido de cotação — VOLVO L90H — ref. TM-0088",
+      preview: "Bom dia, a TerraMovida Lda pretende adquirir 1 unidade VOLVO L90H (VIN: VOL90H2024)…",
+      body: "Bom dia,\n\nA TerraMovida Lda pretende adquirir 1 unidade VOLVO L90H (VIN: VOL90H2024) para operações logísticas na Zona Franca de Luanda.\n\nReferência interna: TM-0088.\n\nSolicito proposta completa com:\n- Preço final CIF Luanda\n- Condições de pagamento (preferência 60 dias)\n- Prazo de entrega\n- Garantia e suporte VOLVO Angola\n\nSomos clientes habituais da Promaster e esperamos condições comerciais competitivas.\n\nCom os melhores cumprimentos,\nCarlos Menezes\nDirector Financeiro\nTerraMovida Lda",
+      attachments: [],
+    },
     timeline: [
       { icon: "mail",  color: "#60a5fa", time: "11/05 10:00", text: "Email recebido de Carlos Menezes — VOLVO L90H" },
       { icon: "cpu",   color: "#c084fc", time: "11/05 10:01", text: "IA classificou: Pedido de Cotação · Equipamento: VOLVO L90H" },
@@ -193,6 +257,14 @@ export const PROCESSOS = [
     note: "Encomenda confirmada",
     archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
+    originEmail: {
+      sender: "teodosio.nzunda@amf.co.ao",
+      senderName: "Teodósio Nzunda",
+      subject: "Pedido de cotação — CAT Lubrificação — ref. E26091",
+      preview: "Bom dia, a AMF – Agentes de Formação solicita cotação para sistema de lubrificação CAT para projecto de Junho…",
+      body: "Bom dia,\n\nA AMF – Agentes de Formação, no âmbito do projecto E26091, solicita cotação para fornecimento de sistema de lubrificação CAT para equipamentos de construção em obra prevista para Junho 2026.\n\nNecessitamos de:\n- Lubrificantes e consumíveis CAT para 500h de operação\n- Filtros e kits de manutenção\n- Preço total CIF Luanda\n- Entrega até 15 de Junho de 2026 (data crítica)\n\nTemos obra programada e o fornecimento atempado é condição essencial.\n\nAguardamos proposta urgente.\n\nCom os melhores cumprimentos,\nTeodósio Nzunda\nDirector de Projecto\nAMF – Agentes de Formação",
+      attachments: [{ name: "Especificacoes_Lubrificacao_CAT_E26091.pdf" }],
+    },
     timeline: [
       { icon: "mail",  color: "#60a5fa", time: "12/05 09:12", text: "Email recebido de Teodósio Nzunda — pedido de cotação CAT – LUBRIFICAÇÃO" },
       { icon: "cpu",   color: "#c084fc", time: "12/05 09:13", text: "IA classificou: Pedido de Cotação · Cliente: AMF · Equipamento: CAT – LUBRIFICAÇÃO" },
@@ -211,6 +283,14 @@ export const PROCESSOS = [
     note: "Cliente cancelou — escolheu concorrente",
     archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
+    originEmail: {
+      sender: "manuel.faria@obrasnacionais.co.ao",
+      senderName: "Manuel Faria",
+      subject: "Pedido de cotação — JCB JS220 — ref. ON-2026-33",
+      preview: "Bom dia, as Obras Nacionais SARL solicitam cotação para JCB JS220 para projecto de saneamento…",
+      body: "Bom dia,\n\nAs Obras Nacionais SARL solicitam cotação para aquisição de 1 unidade JCB JS220 para projecto de saneamento básico em Malanje.\n\nReferência interna: ON-2026-33.\n\nSolicito proposta com:\n- Preço unitário CIF Luanda\n- Prazo de entrega\n- Condições de pagamento\n- Garantia e suporte técnico\n\nCom os melhores cumprimentos,\nManuel Faria\nResponsável de Aquisições\nObras Nacionais SARL",
+      attachments: [],
+    },
     timeline: [
       { icon: "mail",  color: "#60a5fa", time: "13/05 11:00", text: "Email recebido de Manuel Faria — JCB JS220" },
       { icon: "cpu",   color: "#c084fc", time: "13/05 11:01", text: "IA classificou: Pedido de Cotação · Equipamento: JCB JS220" },
@@ -231,6 +311,14 @@ export const PROCESSOS = [
     note: "Transitado de Abril — a aguardar cotação final",
     archived: false, carryover: true,
     excelLink: "Excel Modelo.xlsx",
+    originEmail: {
+      sender: "henrique.dias@gcs.co.ao",
+      senderName: "Henrique Dias",
+      subject: "Pedido de cotação KOMATSU PC490LC — ref. GCS-088",
+      preview: "Boa tarde, o Grupo Construções do Sul solicita cotação para KOMATSU PC490LC para projecto em curso…",
+      body: "Boa tarde,\n\nO Grupo Construções do Sul SARL, no âmbito do projecto GCS-088, solicita cotação para aquisição de 1 unidade KOMATSU PC490LC para obras de escavação no interior de Angola.\n\nNecessitamos de:\n- Preço unitário CIF Luanda\n- Prazo de entrega\n- Condições de pagamento\n- Suporte técnico Komatsu em Angola\n\nAgradecemos celeridade na resposta — o projecto tem prazos apertados.\n\nCom os melhores cumprimentos,\nHenrique Dias\nResponsável de Aquisições\nGrupo Construções do Sul SARL",
+      attachments: [],
+    },
     timeline: [
       { icon: "mail",  color: "#60a5fa", time: "15/04 10:00", text: "Email recebido de Henrique Dias — KOMATSU PC490LC" },
       { icon: "cpu",   color: "#c084fc", time: "15/04 10:01", text: "IA classificou: Pedido de Cotação · Equipamento: KOMATSU PC490LC" },
@@ -248,6 +336,14 @@ export const PROCESSOS = [
     note: "URGENTE — transitado de Abril, prazo ultrapassado",
     archived: false, carryover: true,
     excelLink: "Excel Modelo.xlsx",
+    originEmail: {
+      sender: "fernando.lopes@lusoangolapecas.co.ao",
+      senderName: "Fernando Lopes",
+      subject: "Cotação urgente VOLVO EC480E (VIN: VOE555888) — ref. LAP-2026-04",
+      preview: "Bom dia, a Luso-Angola Peças solicita cotação urgente para VOLVO EC480E — prazo crítico de obra…",
+      body: "Bom dia,\n\nA Luso-Angola Peças Lda necessita com urgência de cotação para aquisição de 1 unidade VOLVO EC480E (VIN: VOE555888) para projecto de construção com início imediato.\n\nReferência interna: LAP-2026-04.\n\nA urgência é crítica — temos obra a decorrer e o equipamento actual avariou. Precisamos de substituição imediata ou no prazo máximo de 15 dias.\n\nSolicito proposta com:\n- Disponibilidade imediata (prioritário) ou prazo de entrega\n- Preço CIF Luanda\n- Condições de pagamento urgente\n- Assistência técnica VOLVO disponível em Angola\n\nPor favor responder com a máxima urgência.\n\nCom os melhores cumprimentos,\nFernando Lopes\nDirector de Operações\nLuso-Angola Peças Lda",
+      attachments: [],
+    },
     consulta: { pedidoFornecedor: true, pedidoTs: "20/04 14:30", respostaFornecedor: false, respostaTs: null },
     timeline: [
       { icon: "mail",  color: "#60a5fa", time: "20/04 09:00", text: "Email recebido de Fernando Lopes — VOLVO EC480E" },
@@ -270,6 +366,14 @@ export const PROCESSOS = [
     note: "Processo arquivado — concluído em 2023",
     archived: true, carryover: false,
     excelLink: "Excel Modelo.xlsx",
+    originEmail: {
+      sender: "antonio.simoes@kwanza.co.ao",
+      senderName: "António Simões",
+      subject: "Pedido de cotação CAT D6T — ref. MK-2023-01",
+      preview: "Bom dia, a Metalúrgica do Kwanza solicita cotação para CAT D6T para projecto mineiro…",
+      body: "Bom dia,\n\nA Metalúrgica do Kwanza SARL solicita cotação para aquisição de 1 unidade CAT D6T para projecto mineiro no Vale do Kwanza.\n\nReferência interna: MK-2023-01.\n\nNecessitamos de proposta com preço CIF Luanda, prazo de entrega e condições de garantia.\n\nCom os melhores cumprimentos,\nAntónio Simões\nDirector de Produção\nMetalúrgica do Kwanza SARL",
+      attachments: [],
+    },
     timeline: [
       { icon: "mail",  color: "#60a5fa", time: "10/01 09:00", text: "Email recebido de António Simões — CAT D6T" },
       { icon: "check", color: "#4ade80", time: "20/01 11:00", text: "Encomenda confirmada — €385.000" },
@@ -286,6 +390,14 @@ export const PROCESSOS = [
     note: "Processo arquivado — cancelado em 2022",
     archived: true, carryover: false,
     excelLink: "Excel Modelo.xlsx",
+    originEmail: {
+      sender: "jose.ferreira@chornorte.co.ao",
+      senderName: "José Ferreira",
+      subject: "Cotação LIEBHERR LTM 1080 — ref. CHN-2022-44",
+      preview: "Bom dia, as Construções Horizonte Norte solicitam cotação para LIEBHERR LTM 1080 para projecto de norte…",
+      body: "Bom dia,\n\nAs Construções Horizonte Norte Lda solicitam cotação para aquisição ou aluguer de 1 unidade LIEBHERR LTM 1080 para projecto de construção na zona Norte de Angola.\n\nReferência interna: CHN-2022-44.\n\nNecessitamos de proposta detalhada com preço, prazo de entrega e condições de garantia.\n\nCom os melhores cumprimentos,\nJosé Ferreira\nResponsável de Compras\nConstruções Horizonte Norte Lda",
+      attachments: [],
+    },
     timeline: [
       { icon: "mail",  color: "#60a5fa", time: "05/12 08:00", text: "Email recebido de José Ferreira — LIEBHERR LTM 1080" },
       { icon: "x",     color: "#f87171", time: "15/12 17:00", text: "Processo cancelado pelo cliente" },

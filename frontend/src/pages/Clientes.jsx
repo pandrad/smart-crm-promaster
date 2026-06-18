@@ -102,21 +102,7 @@ export function Clientes({ processos, onSelectProcesso, currentUser }) {
   const isSupervisor = currentUser?.role === "supervisor";
   const canAssign    = isAdmin || isSupervisor;
 
-  // Eligible users for client responsibility: users with client-facing roles
-  // (Resp. Cotação, Resp. Comercial) — identified by matching role labels
-  const allUsers  = store.getUsers().filter(u => u.active !== false);
-  const allRoles  = store.getRoles();
-  const userRoles = store.getUserRoles();
-  const clientFacingRoleIds = allRoles
-    .filter(r => /cotação|comercial|abertura|fecho/i.test(r.label))
-    .map(r => r.id);
-  const eligibleUsers = allUsers.filter(u => {
-    const ids = userRoles[u.id] ?? [];
-    // include if they hold a client-facing role, or if no roles defined yet (show all active)
-    return clientFacingRoleIds.length === 0 || ids.some(id => clientFacingRoleIds.includes(id));
-  });
-  // Fallback: if no role-filtered users found, show all active users
-  const responsavelOptions = eligibleUsers.length > 0 ? eligibleUsers : allUsers;
+  const responsavelOptions = store.getUsers().filter(u => u.active !== false);
 
   function setClientResponsavel(clientName, userName) {
     const updated = { ...assignments, [clientName]: userName || null };

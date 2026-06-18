@@ -16,6 +16,71 @@ Demo login: `admin@promaster.co` / `admin123` · `supervisor@promaster.co` / `su
 
 ---
 
+## Recent Changes (June 2026 session)
+
+**Dashboard page** added as new default landing route (`/dashboard`) and first sidebar item. Reuses `StatsBar` (process overview, click-to-navigate to Processos with filter) and `SupervisorWidget` (admin/supervisor only). All users see a personal summary: active tasks, open processes, overdue, urgent. Sidebar order is now: Dashboard, Tarefas, Processos, Inbox, Clientes, Arquivo.
+
+**Clientes — Responsável dropdown** no longer filters by role. All active users from `store.getUsers()` are selectable regardless of assigned roles.
+
+**Email de Origem clickable** in process detail drawer (`DetailDrawer.jsx`). New `OriginEmailModal` shows sender, subject, full body read-only. `originEmail` field added to all mock process records in `data.js`.
+
+**Admin Panel — SLA tab renamed to Avisos.** Label-only change, no functional difference.
+
+**Inbox triage — Diversos removed.** "Marcar como Diversos" replaced by category creation flow, which has since been relocated to Tarefas (see below). Inbox triage actions are now: Confirmar como Processo, Confirmar como Tarefa, Associar a processo existente.
+
+**Associar a processo existente** now uses autocomplete sourced from real process IDs. Typing a non-existent number shows a validation warning requiring explicit confirmation before proceeding.
+
+**Pré-Entrada → Validação de Processo** conversion implemented. "Abrir Processo" button replaced with "Enviar para Validação" — converts the Pré-Entrada task into a Validação de Processo task assigned to Resp. Cotação (via mapeamento or "cotacao" role fallback). No process number generated until the validator approves via the existing Validar e Criar Processo flow.
+
+**Alterar Estado Manualmente** — new action for Admin/Supervisor on any task (including Concluído/Cancelado). Opens a picker with all statuses including System Role ones, mandatory reason field. Logs a distinct `⚠ Alteração manual` history entry. Deliberately separate from normal action buttons.
+
+**Reclassificar Tarefa** — new action for Admin/Supervisor on Não Classificado tasks in Tarefas. Two paths: (a) reclassify as existing task type, or (b) create a brand-new task type on the spot. Either path re-runs assignment routing and updates the task's type and owner.
+
+**Tarefas — three-section split (Por Fazer / Em Curso / Concluídas).** Task list now has three persistent, always-visible sections. **Por Fazer** = new or returned/reassigned tasks not yet actioned by the current owner. **Em Curso** = actioned by current owner, no ownership change, not yet done. **Concluídas** = System Role Concluído or Cancelado — fully excluded from all SLA/Avisos evaluation, only returnable to active via Alterar Estado Manualmente. Active tasks breaching their due date are visually flagged (red border/background, alert icon). Tasks that arrived via pass/escalation/devolvido show a `↩` indicator in the Por Fazer section.
+
+**Task ownership rule (finalised).** Every ownership-changing action (Passar, Escalar, Devolver, Enviar para Validação) resets the task to "Por Fazer" status so it appears in the new owner's Por Fazer section as fresh work. Actions that don't change ownership (Enviar Email, etc.) transition Por Fazer → Em Curso and stay with the same person. Retomar (supervisor taking an escalated task) goes directly to Em Curso since the supervisor is actively choosing to work on it.
+
+**Inbox — fully read-only, observation-only.** All manual triage buttons, modals, and handlers removed. Clicking an email row opens a read-only preview (sender, subject, body, attachments, AI suggestion badge). No assignment actions exist at the Inbox level. All categorisation happens exclusively in Tarefas.
+
+**Não Classificado auto-routing.** Emails resolving to Não Classificado (confidence < 0.6 or type === "Não Classificado") now always auto-route to a task assigned to Supervisor, regardless of the AI Simulation toggle state. The toggle only controls whether classified emails are auto-triaged.
+
+**AI Simulation toggle** no longer retroactively changes existing email classifications. Classification is determined once at email generation time and stored as `email.aiSuggestion`. Toggle only affects emails generated from that point forward.
+
+**Random email generator (DEV)** now produces ~15-20% unclassifiable emails (Não Classificado, confidence below 0.6, routed to Supervisor) alongside the ~80-85% confident classifications. The dedicated "Gerar email não classificável" button remains for deterministic testing. The dead `simulateAIClassification()` function was removed from `utils.js` along with its unused import in `api/client.js`.
+
+**DEV tools added:** "Gerar email não classificável" (always Não Classificado) and "Simular incumprimento SLA" (backdates a random active task's due date to trigger SLA breach visual).
+
+**Dashboard — SLA breach tile** added to the "As minhas tarefas" row, showing count of the user's own tasks currently breaching their due date.
+
+**Dashboard — task stat alignment.** Task stat calculations now use the same `doneLabels` and `porFazerLabel` logic as Tarefas.jsx, so the numbers always match exactly.
+
+**Dashboard — Actividade Recente split by role.** Standard users see activity filtered to tasks where they are owner or appear in history. Admin/Supervisor see two sections: "Actividade geral" (all system activity) and "As minhas" (same filtered view).
+
+**Processos — SLA column.** The "Prazo" column in the process table now shows the Avisos/SLA timing configured for that process's current status (e.g. "48 horas", "3 dias") instead of the raw deadline date. Shows "Sem SLA" when no timing is configured. Column header changed to "SLA".
+
+**Process detail — follow-up status restored.** FU field now always visible when process status ≥ 9 (Enviado+), with an editable dropdown for users with edit permission, even when no FU was previously set.
+
+**Process detail — editable fields.** Marca/Tipo, Modelo, and Sell Price are now inline-editable (click-to-edit with confirm/cancel) for admin, supervisor, or process owner/comm/compra.
+
+**Process detail — file attachment.** "Anexar ficheiro" button in Anexos section allows uploading files, logged in timeline with uploader name and timestamp.
+
+**Process detail — attachment supersede with confirmation.** "Remover" action on each attachment (including Modelo de Proposta) requires a confirmation prompt before proceeding. Superseded attachments are marked `superseded: true` and hidden from the active list but preserved in the attachments array and logged in the timeline — consistent with the no-deletion rule.
+
+**Process detail — originEmail on all creation paths.** `originEmail` now populated on processes created via Validar e Criar Processo (copied from the validation task) and via DEV tool "Gerar processo aleatório" (synthetic content), ensuring Email de Origem is always clickable.
+
+**Process number format** fixed to AAMMNNN with real current date (`new Date()`). Sequential counter resets per month prefix. Created/deadline dates on new processes are also dynamic.
+
+**Unassigned task visibility** — tasks with no owner (null/undefined/empty) now visible only to Admin/Supervisor. Standard users see only their own tasks.
+
+**Toast notification disabled** — `<Toast>` removed from Main.jsx render (import also removed). Toast.jsx file kept intact for potential reintroduction.
+
+### Known Open Issues (pending fix)
+
+- **System Behaviour field for task types:** planned to mirror System Role on task statuses, resolving inconsistent action-button availability across task types — not yet implemented, to be tackled in next session
+- **Email de Origem clickability intermittent:** programmatically-created processes (via Validar e Criar Processo) may lack `originEmail` field if the originating task had none
+
+---
+
 ## Steps to Close Stage 1
 
 1. Apply client feedback from second review session

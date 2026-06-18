@@ -1164,7 +1164,7 @@ const TABS = [
   { id: "processos",     label: "Processos",                 icon: "tag"      },
   { id: "tarefas",       label: "Tarefas",                   icon: "tasks"    },
   { id: "mapeamento",    label: "Mapeamento",                icon: "list"     },
-  { id: "sla",           label: "SLA",                       icon: "clock"    },
+  { id: "sla",           label: "Avisos",                    icon: "clock"    },
   { id: "branding",      label: "Marca",                     icon: "settings" },
   { id: "import",        label: "Importar",                  icon: "upload"   },
 ];

@@ -19,6 +19,37 @@ function InfoCell({ label, value }) {
   );
 }
 
+function EditableInfoCell({ label, value, canEdit, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [draft,   setDraft]   = useState(value || "");
+
+  if (!canEdit || !editing) {
+    return (
+      <div onClick={canEdit ? () => { setDraft(value || ""); setEditing(true); } : undefined} style={{ cursor: canEdit ? "pointer" : "default" }}>
+        <div style={LABEL}>{label} {canEdit && <Icon name="edit" size={9} color={THEME.textDim} style={{ marginLeft: 4 }} />}</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: THEME.text, marginTop: 2 }}>{value || "—"}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={LABEL}>{label}</div>
+      <div style={{ display: "flex", gap: 4, marginTop: 2 }}>
+        <input
+          autoFocus
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") { onSave(draft); setEditing(false); } if (e.key === "Escape") setEditing(false); }}
+          style={{ ...INPUT, fontSize: 12, padding: "4px 7px", flex: 1 }}
+        />
+        <button onClick={() => { onSave(draft); setEditing(false); }} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 5, padding: "3px 8px", fontSize: 11, cursor: "pointer" }}>✓</button>
+        <button onClick={() => setEditing(false)} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 5, padding: "3px 8px", fontSize: 11, color: THEME.textMuted, cursor: "pointer" }}>✕</button>
+      </div>
+    </div>
+  );
+}
+
 function TeamCard({ name, role, photo }) {
   return (
     <div style={{ flex: 1, background: THEME.sidebar, borderRadius: 8, padding: "8px 12px", display: "flex", gap: 8, alignItems: "center", minWidth: 130, border: `1px solid ${THEME.border}` }}>
@@ -108,6 +139,52 @@ function EmailModal({ p, onClose, onSent }) {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── Read-only origin email modal ──────────────────────────────────────────────
+function OriginEmailModal({ email, onClose }) {
+  const { isMobile } = useWindowSize();
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden", ...mobileModal(isMobile, 520) }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Email de Origem</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
+        </div>
+        <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "6px 12px", alignItems: "start" }}>
+            {[["De", email.senderName ? `${email.senderName} <${email.sender}>` : email.sender], ["Assunto", email.subject]].map(([lbl, val]) => (
+              <>
+                <div key={lbl + "-l"} style={{ ...LABEL, paddingTop: 3, whiteSpace: "nowrap" }}>{lbl}</div>
+                <div key={lbl + "-v"} style={{ fontSize: 13, color: THEME.text, wordBreak: "break-word" }}>{val}</div>
+              </>
+            ))}
+          </div>
+          <div style={{ borderTop: `1px solid ${THEME.border}`, paddingTop: 12 }}>
+            <div style={{ ...LABEL, marginBottom: 8 }}>Mensagem</div>
+            <div style={{ fontSize: 13, color: THEME.textMuted, lineHeight: 1.6, whiteSpace: "pre-wrap", background: THEME.sidebar, borderRadius: 8, padding: "12px 14px", border: `1px solid ${THEME.border}`, maxHeight: 320, overflowY: "auto" }}>
+              {email.body}
+            </div>
+          </div>
+          {email.attachments?.length > 0 && (
+            <div>
+              <div style={{ ...LABEL, marginBottom: 6 }}>Anexos</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {email.attachments.map((att, i) => (
+                  <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 5, background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 9999, padding: "2px 10px", fontSize: 11, color: THEME.textMuted }}>
+                    <Icon name="paperclip" size={10} color={THEME.textDim} />{typeof att === "string" ? att : att.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 18px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Fechar</button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -287,9 +364,12 @@ function ConsultaChecklist({ consulta, onChange }) {
 export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], currentUser = {} }) {
   const { isMobile } = useWindowSize();
   const [p,            setP]            = useState(initialP);
-  const [emailOpen,    setEmailOpen]    = useState(false);
-  const [statusOpen,   setStatusOpen]   = useState(false);
-  const [reassignOpen, setReassignOpen] = useState(false);
+  const [emailOpen,       setEmailOpen]       = useState(false);
+  const [originEmailOpen, setOriginEmailOpen] = useState(false);
+  const [statusOpen,      setStatusOpen]      = useState(false);
+  const [reassignOpen,    setReassignOpen]    = useState(false);
+  const attachRef = useRef(null);
+  const [confirmRemove, setConfirmRemove] = useState(null);
 
   function handleEmailSent({ to, subject, body, attachments }) {
     const entry = {
@@ -310,8 +390,15 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
   const isSupervisor = currentUser.role === "supervisor";
   const isOwned      = p.owner === currentUser.name || p.comm === currentUser.name || p.compra === currentUser.name;
   const canReassign  = isAdmin || isSupervisor || isOwned;
+  const canEdit      = isAdmin || isSupervisor || isOwned;
 
   function photoOf(name) { return users.find(u => u.name === name)?.photo; }
+
+  function updateField(field, value) {
+    const updated = { ...p, [field]: value };
+    setP(updated);
+    onUpdate?.(updated);
+  }
 
   function handleStatusSave(newStatus, newFu) {
     const mapeamento   = store.getMapeamento();
@@ -397,17 +484,28 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 16px" }}>
             <InfoCell label="Cliente"        value={p.client} />
             <InfoCell label="Ref. Cliente"   value={p.ref} />
-            <InfoCell label="Marca / Tipo"   value={p.brand} />
-            <InfoCell label="Modelo"         value={p.model} />
+            <EditableInfoCell label="Marca / Tipo"   value={p.brand}  canEdit={canEdit} onSave={v => updateField("brand", v)} />
+            <EditableInfoCell label="Modelo"         value={p.model}  canEdit={canEdit} onSave={v => updateField("model", v)} />
             <InfoCell label="Nº Série / VIN" value={p.vin} />
             <InfoCell label="Data Limite"    value={p.deadline} />
             <InfoCell label="Prioridade"     value={p.priority} />
-            <InfoCell label="Sell Price"     value={p.price ? "€" + p.price.toLocaleString("pt-PT") : null} />
-            {/* FU field only when status >= 9 — badge reads colour from store */}
-            {p.status >= 9 && p.fu && (
+            <EditableInfoCell label="Sell Price"     value={p.price ? "€" + p.price.toLocaleString("pt-PT") : ""}  canEdit={canEdit} onSave={v => { const n = parseFloat(v.replace(/[^\d.,]/g, "").replace(",", ".")); updateField("price", isNaN(n) ? null : n); }} />
+            {/* FU field when status >= 9 — editable dropdown */}
+            {p.status >= 9 && (
               <div>
                 <div style={{ fontSize: 10, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>Follow-up</div>
-                <div style={{ marginTop: 4 }}><FUBadge label={p.fu} /></div>
+                {canEdit ? (
+                  <select
+                    value={p.fu || ""}
+                    onChange={e => { const updated = { ...p, fu: e.target.value || undefined }; setP(updated); onUpdate?.(updated); }}
+                    style={{ marginTop: 4, fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 6, padding: "4px 8px", background: THEME.sidebar, color: THEME.text, outline: "none", cursor: "pointer" }}
+                  >
+                    <option value="">— Sem follow-up —</option>
+                    {store.getFUStatuses().map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
+                  </select>
+                ) : (
+                  <div style={{ marginTop: 4 }}>{p.fu ? <FUBadge label={p.fu} /> : <span style={{ fontSize: 12, color: THEME.textDim }}>—</span>}</div>
+                )}
               </div>
             )}
           </div>
@@ -450,10 +548,15 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
             <SectionLabel>Anexos</SectionLabel>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {/* Pinned 1 — Email de Origem */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 8 }}>
-                <Icon name="mail" size={13} color={THEME.textDim} />
+              <div
+                onClick={p.originEmail ? () => setOriginEmailOpen(true) : undefined}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 8, cursor: p.originEmail ? "pointer" : "default" }}
+                onMouseEnter={p.originEmail ? e => { e.currentTarget.style.background = THEME.sidebarHover; } : undefined}
+                onMouseLeave={p.originEmail ? e => { e.currentTarget.style.background = THEME.sidebar; } : undefined}
+              >
+                <Icon name="mail" size={13} color={p.originEmail ? THEME.accent : THEME.textDim} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: THEME.text }}>Email de Origem</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: p.originEmail ? THEME.accent : THEME.text }}>Email de Origem</div>
                   {p.originEmail && (
                     <div style={{ fontSize: 10, color: THEME.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {p.originEmail.senderName ?? p.originEmail.sender} — {p.originEmail.subject}
@@ -462,28 +565,96 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
                 </div>
                 <span style={{ fontSize: 10, color: THEME.textDim, background: THEME.card, borderRadius: 9999, padding: "2px 6px" }}>fixo</span>
               </div>
-              {/* Pinned 2 — Modelo de Proposta */}
-              <a
-                href="https://promasterlda.sharepoint.com/:x:/r/sites/Intranet/_layouts/15/guestaccess.aspx?e=DLVapo&share=IQCrlmqVEA1tQ5fRdQpoTnz1ATDQ8uLZXGdhQHDKqkEKpDE"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={e => e.stopPropagation()}
-                style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 8, textDecoration: "none", color: THEME.accent, fontSize: 12, fontWeight: 500 }}
-              >
-                <Icon name="paperclip" size={13} color={THEME.accent} />
-                <span style={{ flex: 1 }}>Modelo de Proposta.xlsx</span>
-                <span style={{ fontSize: 10, color: THEME.textDim, background: THEME.card, borderRadius: 9999, padding: "2px 6px" }}>fixo</span>
-              </a>
-              {/* Other attachments */}
-              {(!p.attachments || p.attachments.length === 0) && (
+              {/* Pinned 2 — Modelo de Proposta (supersedable) */}
+              {!p.modeloSuperseded && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 8 }}>
+                  <a
+                    href="https://promasterlda.sharepoint.com/:x:/r/sites/Intranet/_layouts/15/guestaccess.aspx?e=DLVapo&share=IQCrlmqVEA1tQ5fRdQpoTnz1ATDQ8uLZXGdhQHDKqkEKpDE"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, textDecoration: "none", color: THEME.accent, fontSize: 12, fontWeight: 500 }}
+                  >
+                    <Icon name="paperclip" size={13} color={THEME.accent} />
+                    <span style={{ flex: 1 }}>Modelo de Proposta.xlsx</span>
+                  </a>
+                  {canEdit && confirmRemove !== "modelo" && (
+                    <button onClick={() => setConfirmRemove("modelo")} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textDim, fontSize: 10, padding: "2px 4px" }} title="Remover">
+                      <Icon name="x" size={11} color={THEME.textDim} />
+                    </button>
+                  )}
+                  {confirmRemove === "modelo" && (
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <button onClick={() => {
+                        const ts = new Date().toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
+                        const entry = { icon: "x", color: THEME.textDim, time: ts, text: `Modelo de Proposta.xlsx substituído por ${currentUser.name || "—"}` };
+                        const updated = { ...p, modeloSuperseded: true, timeline: [...(p.timeline || []), entry] };
+                        setP(updated); onUpdate?.(updated); setConfirmRemove(null);
+                      }} style={{ background: THEME.danger, color: "white", border: "none", borderRadius: 5, padding: "2px 8px", fontSize: 10, cursor: "pointer" }}>Confirmar</button>
+                      <button onClick={() => setConfirmRemove(null)} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 5, padding: "2px 8px", fontSize: 10, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
+                    </div>
+                  )}
+                  <span style={{ fontSize: 10, color: THEME.textDim, background: THEME.card, borderRadius: 9999, padding: "2px 6px" }}>fixo</span>
+                </div>
+              )}
+              {/* Other attachments — only show non-superseded */}
+              {(p.attachments || []).filter(att => !att.superseded).length === 0 && p.modeloSuperseded && (
+                <div style={{ fontSize: 11, color: THEME.textDim, paddingLeft: 2 }}>Sem anexos activos</div>
+              )}
+              {(p.attachments || []).filter(att => !att.superseded).length === 0 && !p.modeloSuperseded && (!p.attachments || p.attachments.length === 0) && (
                 <div style={{ fontSize: 11, color: THEME.textDim, paddingLeft: 2 }}>Sem outros anexos</div>
               )}
-              {p.attachments?.map((att, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 8, fontSize: 12, color: THEME.textMuted }}>
-                  <Icon name="paperclip" size={13} color={THEME.textDim} />
-                  {typeof att === "string" ? att : att.name}
-                </div>
-              ))}
+              {p.attachments?.filter(att => !att.superseded).map((att, i) => {
+                const attKey = `att-${i}`;
+                return (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 8, fontSize: 12, color: THEME.textMuted }}>
+                    <Icon name="paperclip" size={13} color={THEME.textDim} />
+                    <span style={{ flex: 1 }}>{typeof att === "string" ? att : att.name}</span>
+                    {canEdit && confirmRemove !== attKey && (
+                      <button onClick={() => setConfirmRemove(attKey)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textDim, fontSize: 10, padding: "2px 4px" }} title="Remover">
+                        <Icon name="x" size={11} color={THEME.textDim} />
+                      </button>
+                    )}
+                    {confirmRemove === attKey && (
+                      <div style={{ display: "flex", gap: 4 }}>
+                        <button onClick={() => {
+                          const ts = new Date().toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
+                          const attName = typeof att === "string" ? att : att.name;
+                          const entry = { icon: "x", color: THEME.textDim, time: ts, text: `Ficheiro "${attName}" removido por ${currentUser.name || "—"}` };
+                          const nextAtts = p.attachments.map(a =>
+                            a === att ? { ...(typeof a === "string" ? { name: a } : a), superseded: true, supersededBy: currentUser.name, supersededAt: ts } : a
+                          );
+                          const updated = { ...p, attachments: nextAtts, timeline: [...(p.timeline || []), entry] };
+                          setP(updated); onUpdate?.(updated); setConfirmRemove(null);
+                        }} style={{ background: THEME.danger, color: "white", border: "none", borderRadius: 5, padding: "2px 8px", fontSize: 10, cursor: "pointer" }}>Confirmar</button>
+                        <button onClick={() => setConfirmRemove(null)} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 5, padding: "2px 8px", fontSize: 10, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {/* Upload quotation file */}
+              {canEdit && (
+                <>
+                  <button
+                    onClick={() => attachRef.current?.click()}
+                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", background: "none", border: `1px dashed ${THEME.border}`, borderRadius: 8, fontSize: 12, color: THEME.textMuted, cursor: "pointer" }}
+                  >
+                    <Icon name="upload" size={12} color={THEME.textDim} /> Anexar ficheiro
+                  </button>
+                  <input ref={attachRef} type="file" style={{ display: "none" }} onChange={e => {
+                    const f = e.target.files[0];
+                    if (!f) return;
+                    const ts = new Date().toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
+                    const newAtt = { name: f.name, uploadedBy: currentUser.name, uploadedAt: ts };
+                    const entry = { icon: "paperclip", color: THEME.textMuted, time: ts, text: `Ficheiro "${f.name}" anexado por ${currentUser.name || "—"}` };
+                    const updated = { ...p, attachments: [...(p.attachments || []), newAtt], timeline: [...(p.timeline || []), entry] };
+                    setP(updated);
+                    onUpdate?.(updated);
+                    e.target.value = "";
+                  }} />
+                </>
+              )}
             </div>
           </div>
 
@@ -524,9 +695,10 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
         </div>
       </div>
 
-      {emailOpen    && <EmailModal        p={p} onClose={() => setEmailOpen(false)} onSent={handleEmailSent} />}
-      {statusOpen   && <ChangeStatusModal p={p} onClose={() => setStatusOpen(false)} onSave={handleStatusSave} />}
-      {reassignOpen && <ReassignModal     p={p} users={users} onClose={() => setReassignOpen(false)} onSave={handleReassignSave} />}
+      {emailOpen       && <EmailModal        p={p} onClose={() => setEmailOpen(false)} onSent={handleEmailSent} />}
+      {originEmailOpen && p.originEmail && <OriginEmailModal email={p.originEmail} onClose={() => setOriginEmailOpen(false)} />}
+      {statusOpen      && <ChangeStatusModal p={p} onClose={() => setStatusOpen(false)} onSave={handleStatusSave} />}
+      {reassignOpen    && <ReassignModal     p={p} users={users} onClose={() => setReassignOpen(false)} onSave={handleReassignSave} />}
     </>
   );
 }

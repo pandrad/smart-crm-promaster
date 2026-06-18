@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { THEME } from "../theme.js";
 import { store } from "../store.js";
 import { useWindowSize } from "../utils.js";
@@ -357,15 +358,15 @@ function ConcluirModal({ onClose, onSave }) {
   );
 }
 
-// ── Abrir Processo modal (only for Pré-Entrada tasks) ─────────────────────────
-function AbrirProcessoModal({ task, onClose, onSave }) {
+// ── Enviar para Validação modal (Pré-Entrada → Validação de Processo) ────────
+function EnviarValidacaoModal({ task, onClose, onSave }) {
   const { isMobile } = useWindowSize();
   const email = task.originEmail;
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}>
       <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden", ...mobileModal(isMobile, 440) }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
-          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Abrir Processo</span>
+          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Enviar para Validação</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
         </div>
         <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -375,16 +376,16 @@ function AbrirProcessoModal({ task, onClose, onSave }) {
             </div>
             {email && <div style={{ fontSize: 11, color: THEME.textDim }}>{email.subject}</div>}
           </div>
-          <div style={{ fontSize: 13, color: THEME.textMuted, lineHeight: 1.5 }}>
-            Um número de processo será gerado automaticamente (formato 2605NNN) e o processo aparecerá na lista de Processos com estado <strong style={{ color: THEME.text }}>Entrada</strong>.
+          <div style={{ fontSize: 13, color: THEME.textMuted, lineHeight: 1.6 }}>
+            Esta tarefa será convertida em <strong style={{ color: THEME.text }}>Validação de Processo</strong> e enviada para o Resp. Cotação validar antes de abrir o processo. O número de processo só será gerado após aprovação.
           </div>
           <div style={{ fontSize: 12, color: THEME.textDim, background: THEME.sidebar, borderRadius: 7, padding: "8px 12px", border: `1px solid ${THEME.border}` }}>
-            A tarefa será marcada como Concluída e o processo ficará atribuído de acordo com as regras de atribuição configuradas.
+            O validador poderá aprovar (criando o processo), devolver com notas, ou cancelar.
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
             <button onClick={() => { onSave(); onClose(); }} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              Abrir Processo
+              Enviar para Validação
             </button>
           </div>
         </div>
@@ -484,6 +485,166 @@ function EscalarModal({ users, onClose, onSave }) {
   );
 }
 
+// ── Reclassificar modal (Não Classificado → existing or new type) ────────────
+const SYSTEM_TYPES_SET = new Set(["Validação de Processo", "Não Classificado", "Escalação", "Abertura de Processo"]);
+
+const CATEGORY_PRESET_COLORS = [
+  "#60a5fa","#4ade80","#fb923c","#fbbf24","#c084fc",
+  "#f87171","#38bdf8","#a78bfa","#34d399","#94a3b8",
+];
+const CATEGORY_BG_MAP = {
+  "#60a5fa":"#1e3a5f","#4ade80":"#052e16","#fb923c":"#1c1005","#fbbf24":"#1c1005",
+  "#c084fc":"#2e1065","#f87171":"#2d0a0a","#38bdf8":"#0c2231","#a78bfa":"#2e1065",
+  "#34d399":"#022c22","#94a3b8":"#1e293b",
+};
+
+function ReclassificarModal({ onClose, onSave }) {
+  const { isMobile } = useWindowSize();
+  const types = store.getTaskTypes().map(t => t.label).filter(l => !SYSTEM_TYPES_SET.has(l));
+  const [mode,     setMode]     = useState("existing"); // "existing" | "new"
+  const [selected, setSelected] = useState(types[0] ?? "");
+  const [newLabel, setNewLabel] = useState("");
+  const [newColor, setNewColor] = useState("#60a5fa");
+
+  function handleSave() {
+    if (mode === "existing" && selected) {
+      onSave({ mode: "existing", type: selected });
+      onClose();
+    } else if (mode === "new" && newLabel.trim()) {
+      const bg = CATEGORY_BG_MAP[newColor] || "#1e293b";
+      onSave({ mode: "new", label: newLabel.trim(), color: newColor, bg });
+      onClose();
+    }
+  }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden", ...mobileModal(isMobile, 440) }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Reclassificar Tarefa</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
+        </div>
+        <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Mode tabs */}
+          <div style={{ display: "flex", gap: 6 }}>
+            {[{ id: "existing", label: "Tipo existente" }, { id: "new", label: "Criar novo tipo" }].map(m => (
+              <button key={m.id} onClick={() => setMode(m.id)}
+                style={{ flex: 1, padding: "6px 10px", fontSize: 12, fontWeight: 600, borderRadius: 7, border: `1px solid ${mode === m.id ? THEME.accent : THEME.border}`, background: mode === m.id ? `${THEME.accent}22` : "transparent", color: mode === m.id ? THEME.accent : THEME.textMuted, cursor: "pointer" }}>
+                {m.label}
+              </button>
+            ))}
+          </div>
+
+          {mode === "existing" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 3, maxHeight: 220, overflowY: "auto" }}>
+              {types.map(t => {
+                const tc = getTypeColor(t);
+                return (
+                  <label key={t} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, background: selected === t ? `${tc.color}22` : "transparent", cursor: "pointer", border: selected === t ? `1px solid ${tc.color}55` : "1px solid transparent" }}>
+                    <input type="radio" name="reclass-type" checked={selected === t} onChange={() => setSelected(t)} style={{ accentColor: tc.color }} />
+                    <Tag bg={tc.bg} color={tc.color}>{t}</Tag>
+                  </label>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div>
+                <label style={{ fontSize: 10, fontWeight: 600, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>Nome da categoria <span style={{ color: THEME.danger }}>*</span></label>
+                <input style={INPUT} value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="ex: Pedido de Documentação" autoFocus />
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Cor</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {CATEGORY_PRESET_COLORS.map(c => (
+                    <button key={c} onClick={() => setNewColor(c)} style={{ width: 24, height: 24, borderRadius: 6, background: c, border: newColor === c ? "3px solid white" : "2px solid transparent", cursor: "pointer", padding: 0, outline: newColor === c ? `2px solid ${c}` : "none" }} />
+                  ))}
+                </div>
+                {newLabel.trim() && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+                    <span style={{ fontSize: 11, color: THEME.textDim }}>Pré-visualização:</span>
+                    <span style={{ display: "inline-flex", padding: "3px 10px", borderRadius: 9999, fontSize: 12, fontWeight: 600, background: CATEGORY_BG_MAP[newColor] || "#1e293b", color: newColor }}>{newLabel.trim()}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
+            <button
+              onClick={handleSave}
+              disabled={mode === "existing" ? !selected : !newLabel.trim()}
+              style={{ background: (mode === "existing" ? selected : newLabel.trim()) ? THEME.accent : THEME.border, color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: (mode === "existing" ? selected : newLabel.trim()) ? "pointer" : "default" }}
+            >
+              Reclassificar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Alterar Estado Manualmente modal (Admin/Supervisor only) ─────────────────
+function AlterarEstadoModal({ currentStatus, onClose, onSave }) {
+  const { isMobile } = useWindowSize();
+  const statuses = store.getTaskStatuses();
+  const [selected, setSelected] = useState(currentStatus);
+  const [reason,   setReason]   = useState("");
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden", ...mobileModal(isMobile, 440) }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Alterar Estado Manualmente</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
+        </div>
+        <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ background: "#1c1005", border: "1px solid #f59e0b44", borderRadius: 8, padding: "9px 13px", fontSize: 12, color: "#fbbf24", lineHeight: 1.5 }}>
+            <strong>Alteração manual de estado.</strong> Esta acção é excepcional e fica registada de forma distinta no histórico. Utilize os botões de acção normais sempre que possível.
+          </div>
+          <div>
+            <div style={{ ...LABEL, marginBottom: 8 }}>Novo estado</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              {statuses.map(s => (
+                <label key={s.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, background: selected === s.label ? `${s.color}22` : "transparent", cursor: "pointer", border: selected === s.label ? `1px solid ${s.color}55` : "1px solid transparent" }}>
+                  <input type="radio" name="manual-status" checked={selected === s.label} onChange={() => setSelected(s.label)} style={{ accentColor: s.color }} />
+                  <span style={{ width: 10, height: 10, borderRadius: 3, background: s.color, display: "inline-block", flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, fontWeight: selected === s.label ? 600 : 400, color: selected === s.label ? s.color : THEME.textMuted }}>{s.label}</span>
+                  {s.systemRole && s.systemRole !== "Nenhum" && (
+                    <span style={{ fontSize: 9, color: THEME.textDim, background: THEME.sidebar, borderRadius: 9999, padding: "1px 6px", marginLeft: "auto" }}>{s.systemRole}</span>
+                  )}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={{ fontSize: 10, fontWeight: 600, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>
+              Motivo da alteração <span style={{ color: THEME.danger }}>*</span>
+            </label>
+            <textarea
+              value={reason} onChange={e => setReason(e.target.value)}
+              rows={3} placeholder="Indique o motivo desta alteração manual de estado…"
+              style={{ ...INPUT_STYLE, resize: "vertical", fontFamily: "inherit", lineHeight: 1.5 }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
+            <button
+              onClick={() => { if (reason.trim() && selected !== currentStatus) { onSave(selected, reason.trim()); onClose(); } }}
+              disabled={!reason.trim() || selected === currentStatus}
+              style={{ background: reason.trim() && selected !== currentStatus ? "#b45309" : THEME.border, color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: reason.trim() && selected !== currentStatus ? "pointer" : "default" }}
+            >
+              Confirmar alteração
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── TaskDrawer ────────────────────────────────────────────────────────────────
 export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onUpdate, setProcessos, processos }) {
   const { isMobile } = useWindowSize();
@@ -499,11 +660,11 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   const isPrivileged = isAdmin || isSupervisor;
   const isOwner      = t.owner === currentUser?.name;
   const isDone       = t.status === sysStatus("Concluído") || t.status === sysStatus("Cancelado");
-  const isEscalated  = t.status === sysStatus("Escalado");
+  const isEscalated  = t.status === sysStatus("Escalado") || !!t.escalationNote;
   const isCancelPending = t.status === sysStatus("Cancelamento Pendente");
   const isPre        = t.type   === "Pré-Entrada";
   const isValidation = t.type   === "Validação de Processo";
-  const isDevolvido  = t.status === sysStatus("Devolvido");
+  const isDevolvido  = t.status === sysStatus("Devolvido") || t.devolvido === true;
   // For validation tasks: the validator is the one who can approve/return
   const isValidator  = isValidation && (t.validatorOwner === currentUser?.name || isPrivileged);
   // The triage author can resubmit after Devolvido
@@ -546,73 +707,54 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     );
   }
 
-  // Action: Abrir Processo (Pré-Entrada only)
-  function handleAbrirProcesso() {
-    // Generate next AAMMMNNN
-    const existing = (processos || []).map(p => p.id).filter(id => id.startsWith("2605"));
-    const max = existing.reduce((m, id) => Math.max(m, parseInt(id.slice(4)) || 0), 10);
-    const newId = `2605${String(max + 1).padStart(3, "0")}`;
+  // Action: Enviar para Validação (Pré-Entrada → Validação de Processo)
+  function handleEnviarValidacao() {
+    // Try mapeamento first, then fall back to "cotacao" role round-robin
+    let validatorOwner = store.assignForTaskType(
+      store.getTaskTypes().find(x => x.label === "Validação de Processo")?.id,
+      t.client || null
+    );
+    if (!validatorOwner) {
+      validatorOwner = store.assignRoundRobin("cotacao");
+    }
+    const resolved = validatorOwner || t.owner;
 
-    const email = t.originEmail;
-    const storeUsers = store.getUsers();
-    const ownerUser  = storeUsers.find(u => u.active !== false);
-
-    const newProcesso = {
-      id:        newId,
-      created:   "15/05/2026",
-      deadline:  "22/05/2026",
-      priority:  "Normal",
-      status:    1, // Entrada
-      client:    email?.senderName || t.client || "",
-      ref:       "",
-      brand:     "",
-      model:     "",
-      vin:       "",
-      owner:     ownerUser?.name || storeUsers[0]?.name || "",
-      comm:      storeUsers.find(u => u.active !== false)?.name || "",
-      compra:    storeUsers.find(u => u.active !== false)?.name || "",
-      comprador: email?.senderName || t.client || "",
-      price:     null,
-      emails:    1,
-      note:      `Aberto via tarefa ${t.id}`,
-      archived:  false,
-      carryover: false,
-      excelLink: "Excel Modelo.xlsx",
-      timeline: [
-        { icon: "mail",  color: "#60a5fa", time: "15/05 12:00", text: `Email original de ${email?.senderName || t.client}: ${email?.subject || ""}` },
-        { icon: "check", color: "#4ade80", time: "15/05 12:00", text: `Processo aberto por ${currentUser?.name} via tarefa ${t.id}` },
-      ],
-    };
-
-    if (setProcessos) setProcessos(prev => [...prev, newProcesso]);
-
-    const concluido = sysStatus("Concluído");
     update(
-      applyReatribui(concluido, { status: concluido, originProcesso: newId }),
-      { actor: currentUser?.name, action: "Processo aberto", note: `Processo ${newId} criado com estado Entrada` }
+      {
+        type:           "Validação de Processo",
+        status:         sysStatus("Por Fazer"),
+        triagedBy:      currentUser?.name,
+        validatorOwner: resolved,
+        owner:          resolved,
+        description:    `Este email aguarda validação para abertura de processo.\n\nCliente: ${t.client || "—"} · Origem: tarefa ${t.id} (Pré-Entrada)\nAssunto: ${t.originEmail?.subject || "—"}`,
+      },
+      { actor: currentUser?.name, action: "Enviada para validação", note: `Tarefa Pré-Entrada convertida em Validação de Processo. Enviada para ${resolved} validar.` }
     );
   }
 
-  // Action: Passar a outro utilizador
+  // Action: Passar a outro utilizador — resets to Por Fazer so it appears
+  // in the new assignee's Por Fazer section as fresh work on their plate.
   function handlePassar(targetName, note) {
     update(
-      { owner: targetName },
+      { owner: targetName, status: sysStatus("Por Fazer") },
       { actor: currentUser?.name, action: "Passada", note: `→ ${targetName}: ${note}` }
     );
   }
 
-  // Action: Escalar
+  // Action: Escalar — resets to Por Fazer so it appears in the escalation
+  // target's Por Fazer section as new work requiring their attention.
   function handleEscalar(targetName, note) {
     update(
-      { owner: targetName, status: sysStatus("Escalado"), escalationNote: note },
+      { owner: targetName, status: sysStatus("Por Fazer"), escalationNote: note },
       { actor: currentUser?.name, action: "Escalada", note: `→ ${targetName}: ${note}` }
     );
   }
 
-  // Action: Retomar (supervisor/admin on escalated task)
+  // Action: Retomar (supervisor/admin on escalated task) — goes to Em Curso
+  // because the supervisor is actively choosing to work on it, not receiving new work.
   function handleRetomar() {
     update(
-      { owner: currentUser?.name, status: sysStatus("Em Curso"), escalationNote: null },
+      { owner: currentUser?.name, status: sysStatus("Em Curso"), escalationNote: null, devolvido: false },
       { actor: currentUser?.name, action: "Retomada", note: "Supervisor assumiu a tarefa." }
     );
   }
@@ -621,15 +763,22 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
 
   // Action: Validar e Criar Processo (validator only)
   function handleValidar() {
-    const existing = (processos || []).map(p => p.id).filter(id => id.startsWith("2605"));
-    const max = existing.reduce((m, id) => Math.max(m, parseInt(id.slice(4)) || 0), 10);
-    const newId = `2605${String(max + 1).padStart(3, "0")}`;
+    const now = new Date();
+    const prefix = String(now.getFullYear()).slice(2) + String(now.getMonth() + 1).padStart(2, "0");
+    const existing = (processos || []).map(p => p.id).filter(id => id.startsWith(prefix));
+    const max = existing.reduce((m, id) => Math.max(m, parseInt(id.slice(4)) || 0), 0);
+    const newId = `${prefix}${String(max + 1).padStart(3, "0")}`;
     const email = t.originEmail;
     const storeUsers = store.getUsers().filter(u => u.active !== false);
 
+    const pad = n => String(n).padStart(2, "0");
+    const createdStr  = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()}`;
+    const dlDate = new Date(now); dlDate.setDate(dlDate.getDate() + 7);
+    const deadlineStr = `${pad(dlDate.getDate())}/${pad(dlDate.getMonth()+1)}/${dlDate.getFullYear()}`;
+
     const newProcesso = {
       id: newId,
-      created: "15/05/2026", deadline: "22/05/2026", priority: t.priority || "Normal",
+      created: createdStr, deadline: deadlineStr, priority: t.priority || "Normal",
       status: 1,
       client: t.client || email?.senderName || "",
       ref: "", brand: "", model: "", vin: "",
@@ -640,6 +789,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
       price: null, emails: 1,
       note: `Aberto após validação da tarefa ${t.id}`,
       archived: false, carryover: false, excelLink: "Excel Modelo.xlsx",
+      originEmail: email ? { sender: email.sender, senderName: email.senderName, subject: email.subject, preview: email.preview, body: email.body || "", attachments: email.attachments || [] } : null,
       timeline: [
         { icon: "mail",  color: "#60a5fa", time: "15/05 12:00", text: `Email original de ${email?.senderName || t.client}: ${email?.subject || ""}` },
         { icon: "check", color: "#4ade80", time: nowTs(),       text: `Processo validado e aberto por ${currentUser?.name} (tarefa ${t.id})` },
@@ -654,10 +804,11 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     );
   }
 
-  // Action: Devolver com Notas (validator only)
+  // Action: Devolver com Notas (validator only) — resets to Por Fazer for
+  // the triager since it's new work on their plate requiring attention.
   function handleDevolver(note) {
     update(
-      { status: sysStatus("Devolvido"), owner: t.triagedBy || t.owner },
+      { status: sysStatus("Por Fazer"), owner: t.triagedBy || t.owner, devolvido: true },
       { actor: currentUser?.name, action: "Devolvido", note }
     );
   }
@@ -665,7 +816,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   // Action: Resubmeter (triaged-by person after Devolvido)
   function handleResubmeter(note) {
     update(
-      { status: sysStatus("Por Fazer"), owner: t.validatorOwner || t.owner },
+      { status: sysStatus("Por Fazer"), owner: t.validatorOwner || t.owner, devolvido: false },
       { actor: currentUser?.name, action: "Resubmetido", note }
     );
   }
@@ -710,6 +861,36 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
       { actor: currentUser?.name, action: "Cancelamento Rejeitado", note }
     );
   }
+
+  // Action: Alterar Estado Manualmente (Admin/Supervisor override)
+  function handleAlterarEstado(newStatusLabel, reason) {
+    const oldStatus = t.status;
+    update(
+      applyReatribui(newStatusLabel, { status: newStatusLabel }),
+      { actor: currentUser?.name, action: "⚠ Alteração manual", note: `Estado alterado manualmente de "${oldStatus}" para "${newStatusLabel}" por ${currentUser?.name} — motivo: ${reason}` }
+    );
+  }
+
+  // Action: Reclassificar (Não Classificado → existing or new type)
+  function handleReclassificar(result) {
+    let newType;
+    if (result.mode === "new") {
+      const existing = store.getTaskTypes();
+      const newTypeObj = { id: Date.now(), label: result.label, color: result.color, bg: result.bg };
+      store.saveTaskTypes([...existing, newTypeObj]);
+      newType = result.label;
+    } else {
+      newType = result.type;
+    }
+    const tt = store.getTaskTypes().find(x => x.label === newType);
+    const newOwner = tt ? (store.assignForTaskType(tt.id, t.client || null) || t.owner) : t.owner;
+    update(
+      { type: newType, owner: newOwner },
+      { actor: currentUser?.name, action: "Reclassificado", note: `Tipo alterado de "Não Classificado" para "${newType}". Responsável: ${newOwner}.` }
+    );
+  }
+
+  const isNaoClassificado = t.type === "Não Classificado";
 
   const user = users.find(u => u.name === t.owner);
 
@@ -906,6 +1087,16 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
               </>
             )}
 
+            {/* ── Reclassificar — Não Classificado tasks, Admin/Supervisor only ── */}
+            {isNaoClassificado && isPrivileged && !isDone && (
+              <button
+                onClick={() => setModal("reclassificar")}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#2d0a0a", color: "#f87171", border: "1px solid #f8717144", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+              >
+                <Icon name="tag" size={14} color="#f87171" /> Reclassificar Tarefa
+              </button>
+            )}
+
             {/* ── Standard task actions (hidden for Validação de Processo) ── */}
             {!isValidation && (
               <>
@@ -913,10 +1104,10 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
                 {!isDone && (
                   isPre ? (
                     <button
-                      onClick={() => setModal("abrirProcesso")}
+                      onClick={() => setModal("enviarValidacao")}
                       style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
                     >
-                      <Icon name="plus" size={14} color="white" /> Abrir Processo
+                      <Icon name="plus" size={14} color="white" /> Enviar para Validação
                     </button>
                   ) : (
                     <button
@@ -970,6 +1161,16 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
               </button>
             )}
 
+            {/* ── Alterar Estado Manualmente — Admin/Supervisor override (any status) ── */}
+            {isPrivileged && (
+              <button
+                onClick={() => setModal("alterarEstado")}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#1c1005", color: "#fbbf24", border: "1px solid #f59e0b33", borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+              >
+                <Icon name="settings" size={13} color="#fbbf24" /> Alterar Estado Manualmente
+              </button>
+            )}
+
             {/* ── Cancelamento Pendente — supervisor approval/rejection ── */}
             {isCancelPending && isPrivileged && (
               <>
@@ -1016,16 +1217,30 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
       {modal === "cancelar"              && <CancelarTarefaModal       onClose={() => setModal(null)} onSave={handleCancelar} />}
       {modal === "rejeitarCancelamento"  && <RejeitarCancelamentoModal onClose={() => setModal(null)} onSave={handleRejeitarCancelamento} />}
       {modal === "concluir"              && <ConcluirModal             onClose={() => setModal(null)} onSave={handleConcluir} />}
-      {modal === "abrirProcesso"         && <AbrirProcessoModal        task={t} onClose={() => setModal(null)} onSave={handleAbrirProcesso} />}
+      {modal === "enviarValidacao"        && <EnviarValidacaoModal      task={t} onClose={() => setModal(null)} onSave={handleEnviarValidacao} />}
       {modal === "passar"                && <PassarModal               users={users} onClose={() => setModal(null)} onSave={handlePassar} />}
       {modal === "escalar"               && <EscalarModal              users={users} onClose={() => setModal(null)} onSave={handleEscalar} />}
+      {modal === "alterarEstado"         && <AlterarEstadoModal        currentStatus={t.status} onClose={() => setModal(null)} onSave={handleAlterarEstado} />}
+      {modal === "reclassificar"         && <ReclassificarModal        onClose={() => setModal(null)} onSave={handleReclassificar} />}
     </>
   );
+}
+
+// ── SLA breach check for active tasks ─────────────────────────────────────────
+function isSlaBreach(task) {
+  if (!task.due) return false;
+  try {
+    const [d, m, y] = task.due.split("/").map(Number);
+    const due = new Date(y, m - 1, d);
+    const now = new Date("2026-05-15T12:00:00");
+    return now > due;
+  } catch { return false; }
 }
 
 // ── Tarefas page ──────────────────────────────────────────────────────────────
 export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, currentUser, accent }) {
   const { isMobile } = useWindowSize();
+  const location = useLocation();
   const [search,         setSearch]         = useState("");
   const [typeFilter,     setTypeFilter]     = useState("Todos");
   const [statusFilter,   setStatusFilter]   = useState("Todos");
@@ -1036,12 +1251,19 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
   const isSupervisor = currentUser?.role === "supervisor";
   const isPrivileged = isAdmin || isSupervisor;
 
-  // Standard users see only their own tasks; admin/supervisor see all
-  const scope = isPrivileged ? tarefas : tarefas.filter(t => t.owner === currentUser?.name || t.owner === null);
+  // Standard users see only their own tasks; admin/supervisor see all (including unassigned)
+  const scope = isPrivileged ? tarefas : tarefas.filter(t => t.owner === currentUser?.name);
 
   const assignedUsers = [...new Set(tarefas.map(t => t.owner).filter(Boolean))].sort();
 
-  const rows = scope.filter(t => {
+  // Status grouping via System Roles
+  const doneLabels = new Set(
+    ["Concluído", "Cancelado"].map(r => store.getLabelForSystemRole(r)).filter(Boolean)
+  );
+  const porFazerLabel = store.getLabelForSystemRole("Por Fazer");
+
+  // Apply filters to full scope
+  const filtered = scope.filter(t => {
     if (typeFilter     !== "Todos" && t.type    !== typeFilter)     return false;
     if (statusFilter   !== "Todos" && t.status  !== statusFilter)   return false;
     if (assignedFilter !== "Todos" && t.owner   !== assignedFilter) return false;
@@ -1053,10 +1275,12 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
     return true;
   });
 
-  // Active count for subtitle — statuses with systemRole that indicate pending work
-  const activeSystemRoles = new Set(["Por Fazer","Em Curso","Escalado","Devolvido","Cancelamento Pendente"]
-    .map(r => store.getLabelForSystemRole(r)).filter(Boolean));
-  const activeCount = scope.filter(t => activeSystemRoles.has(t.status)).length;
+  // Three-way split: Por Fazer / Em Curso (actioned but not done) / Concluídas
+  const porFazerTasks = filtered.filter(t => t.status === porFazerLabel);
+  const emCursoTasks  = filtered.filter(t => t.status !== porFazerLabel && !doneLabels.has(t.status));
+  const doneTasks     = filtered.filter(t => doneLabels.has(t.status));
+
+  const activeCount = scope.filter(t => !doneLabels.has(t.status)).length;
 
   function handleUpdate(updated) {
     const next = tarefas.map(t => t.id === updated.id ? updated : t);
@@ -1066,6 +1290,86 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
   }
 
   const SEL = { fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "6px 10px", background: THEME.card, color: THEME.textMuted, outline: "none", cursor: "pointer" };
+
+  function TaskCard({ t: task }) {
+    const tc = getTypeColor(task.type);
+    const sc = getStatusColor(task.status);
+    const u  = users.find(usr => usr.name === task.owner);
+    const breach = !doneLabels.has(task.status) && isSlaBreach(task);
+    const wasRedirected = !!task.escalationNote || task.devolvido === true || task.history?.some(h => h.action === "Passada");
+    return (
+      <div key={task.id} onClick={() => setSelected(task)} style={{ background: THEME.card, borderRadius: 10, border: `1px solid ${breach ? THEME.danger + "66" : THEME.border}`, padding: "12px 14px", cursor: "pointer", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <Tag bg={tc.bg} color={tc.color}>{task.type}</Tag>
+            {wasRedirected && task.status === porFazerLabel && (
+              <span title="Redireccionada / Devolvida" style={{ fontSize: 10, color: "#fb923c", display: "inline-flex", alignItems: "center" }}>↩</span>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            {breach && <Icon name="alert" size={12} color={THEME.danger} />}
+            <Tag bg={sc.bg} color={sc.color}>{task.status}</Tag>
+          </div>
+        </div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: THEME.text }}>{task.client || "—"}</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Avatar name={task.owner || "?"} size={22} photo={u?.photo} />
+            <span style={{ fontSize: 12, color: THEME.textMuted }}>{task.owner ? task.owner.split(" ")[0] : "Sem resp."}</span>
+          </div>
+          <span style={{ fontSize: 11, color: breach ? THEME.danger : THEME.textDim, fontWeight: breach ? 700 : 400 }}>{task.due}{breach ? " ⚠" : ""}</span>
+        </div>
+      </div>
+    );
+  }
+
+  function TaskRow({ t: task }) {
+    const tc = getTypeColor(task.type);
+    const sc = getStatusColor(task.status);
+    const u  = users.find(usr => usr.name === task.owner);
+    const isBlocked   = task.status === "Bloqueado";
+    const isEscalatedRow = task.status === "Escalado" || !!task.escalationNote;
+    const breach = !doneLabels.has(task.status) && isSlaBreach(task);
+    const wasRedirected = !!task.escalationNote || task.devolvido === true || task.history?.some(h => h.action === "Passada");
+    const rowBg = breach ? `${THEME.danger}0c` : (isBlocked || isEscalatedRow ? `${THEME.danger}08` : THEME.bg);
+    return (
+      <tr
+        onClick={() => setSelected(task)}
+        style={{ borderBottom: `1px solid ${THEME.borderLight}`, cursor: "pointer", background: rowBg }}
+        onMouseEnter={e => { e.currentTarget.style.background = THEME.sidebarHover; }}
+        onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}
+      >
+        <td style={{ padding: "9px 12px", fontFamily: "monospace", fontSize: 11, color: THEME.textDim }}>
+          {task.id}
+          {wasRedirected && task.status === porFazerLabel && <span title="Redireccionada" style={{ color: "#fb923c", marginLeft: 4 }}>↩</span>}
+        </td>
+        <td style={{ padding: "9px 12px" }}><Tag bg={tc.bg} color={tc.color}>{task.type}</Tag></td>
+        <td style={{ padding: "9px 12px", fontSize: 12, fontWeight: 600, color: THEME.text, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.client || "—"}</td>
+        <td style={{ padding: "9px 12px", fontFamily: "monospace", fontSize: 11, color: THEME.textDim }}>{task.originProcesso || "—"}</td>
+        <td style={{ padding: "9px 12px" }}>
+          {task.owner ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Avatar name={task.owner} size={22} photo={u?.photo} />
+              <span style={{ fontSize: 11, color: THEME.textMuted }}>{task.owner.split(" ")[0]}</span>
+            </div>
+          ) : (
+            <span style={{ fontSize: 11, color: THEME.danger }}>Sem responsável</span>
+          )}
+        </td>
+        <td style={{ padding: "9px 12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Tag bg={sc.bg} color={sc.color}>{task.status}</Tag>
+            {isEscalatedRow && <Icon name="escalate" size={12} color="#e879f9" />}
+            {isBlocked      && <Icon name="alert"    size={12} color={THEME.danger} />}
+            {breach         && <Icon name="alert"    size={12} color={THEME.danger} />}
+          </div>
+        </td>
+        <td style={{ padding: "9px 12px", fontSize: 11, color: breach ? THEME.danger : THEME.textMuted, fontWeight: breach ? 700 : 400 }}>{task.due}{breach ? " ⚠" : ""}</td>
+      </tr>
+    );
+  }
+
+  const SECTION_LABEL = { fontSize: 10, fontWeight: 700, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.08em" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100%", background: THEME.bg }}>
@@ -1098,7 +1402,6 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
           {store.getTaskStatuses().map(s => <option key={s.label}>{s.label}</option>)}
         </select>
 
-        {/* "Ver por pessoa" — only for admin/supervisor */}
         {isPrivileged && (
           <select value={assignedFilter} onChange={e => setAssignedFilter(e.target.value)} style={SEL}>
             <option value="Todos">Todos os responsáveis</option>
@@ -1107,35 +1410,21 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
         )}
       </div>
 
-      {/* Mobile card list */}
+      {/* ── Section: Por Fazer ── */}
+      <div style={{ padding: isMobile ? "4px 14px" : "4px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "8px 0 8px" }}>
+          <span style={SECTION_LABEL}>Por Fazer</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: THEME.textDim, background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 10, padding: "1px 7px" }}>{porFazerTasks.length}</span>
+          <div style={{ flex: 1, height: 1, background: THEME.border }} />
+        </div>
+      </div>
       {isMobile ? (
-        <div style={{ padding: "0 14px 32px", display: "flex", flexDirection: "column", gap: 8 }}>
-          {rows.length === 0 && <p style={{ textAlign: "center", color: THEME.textDim, padding: "40px 0", fontSize: 13 }}>Nenhuma tarefa encontrada</p>}
-          {rows.map(t => {
-            const tc = getTypeColor(t.type);
-            const sc = getStatusColor(t.status);
-            const u  = users.find(usr => usr.name === t.owner);
-            return (
-              <div key={t.id} onClick={() => setSelected(t)} style={{ background: THEME.card, borderRadius: 10, border: `1px solid ${THEME.border}`, padding: "12px 14px", cursor: "pointer", display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                  <Tag bg={tc.bg} color={tc.color}>{t.type}</Tag>
-                  <Tag bg={sc.bg} color={sc.color}>{t.status}</Tag>
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: THEME.text }}>{t.client || "—"}</div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <Avatar name={t.owner || "?"} size={22} photo={u?.photo} />
-                    <span style={{ fontSize: 12, color: THEME.textMuted }}>{t.owner ? t.owner.split(" ")[0] : "Sem resp."}</span>
-                  </div>
-                  <span style={{ fontSize: 11, color: THEME.textDim }}>{t.due}</span>
-                </div>
-              </div>
-            );
-          })}
+        <div style={{ padding: "0 14px 8px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {porFazerTasks.length === 0 && <p style={{ textAlign: "center", color: THEME.textDim, padding: "16px 0", fontSize: 13 }}>Sem tarefas por fazer</p>}
+          {porFazerTasks.map(t => <TaskCard key={t.id} t={t} />)}
         </div>
       ) : (
-        /* Desktop table */
-        <div style={{ padding: "0 24px 32px" }}>
+        <div style={{ padding: "0 24px 8px" }}>
           <div style={{ background: THEME.card, borderRadius: 12, border: `1px solid ${THEME.border}`, overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
               <thead>
@@ -1145,50 +1434,71 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
                   ))}
                 </tr>
               </thead>
-              <tbody>
-                {rows.map(t => {
-                  const tc = getTypeColor(t.type);
-                  const sc = getStatusColor(t.status);
-                  const u  = users.find(usr => usr.name === t.owner);
-                  const isBlocked   = t.status === "Bloqueado";
-                  const isEscalated = t.status === "Escalado";
-                  return (
-                    <tr key={t.id}
-                      onClick={() => setSelected(t)}
-                      style={{ borderBottom: `1px solid ${THEME.borderLight}`, cursor: "pointer", background: isBlocked || isEscalated ? `${THEME.danger}08` : THEME.bg }}
-                      onMouseEnter={e => { e.currentTarget.style.background = THEME.sidebarHover; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = isBlocked || isEscalated ? `${THEME.danger}08` : THEME.bg; }}
-                    >
-                      <td style={{ padding: "9px 12px", fontFamily: "monospace", fontSize: 11, color: THEME.textDim }}>{t.id}</td>
-                      <td style={{ padding: "9px 12px" }}><Tag bg={tc.bg} color={tc.color}>{t.type}</Tag></td>
-                      <td style={{ padding: "9px 12px", fontSize: 12, fontWeight: 600, color: THEME.text, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.client || "—"}</td>
-                      <td style={{ padding: "9px 12px", fontFamily: "monospace", fontSize: 11, color: THEME.textDim }}>{t.originProcesso || "—"}</td>
-                      <td style={{ padding: "9px 12px" }}>
-                        {t.owner ? (
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <Avatar name={t.owner} size={22} photo={u?.photo} />
-                            <span style={{ fontSize: 11, color: THEME.textMuted }}>{t.owner.split(" ")[0]}</span>
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: 11, color: THEME.danger }}>Sem responsável</span>
-                        )}
-                      </td>
-                      <td style={{ padding: "9px 12px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <Tag bg={sc.bg} color={sc.color}>{t.status}</Tag>
-                          {isEscalated && <Icon name="escalate" size={12} color="#e879f9" />}
-                          {isBlocked   && <Icon name="alert"    size={12} color={THEME.danger} />}
-                        </div>
-                      </td>
-                      <td style={{ padding: "9px 12px", fontSize: 11, color: THEME.textMuted }}>{t.due}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
+              <tbody>{porFazerTasks.map(t => <TaskRow key={t.id} t={t} />)}</tbody>
             </table>
-            {rows.length === 0 && (
-              <p style={{ textAlign: "center", color: THEME.textDim, padding: "40px 0", fontSize: 13 }}>Nenhuma tarefa encontrada</p>
-            )}
+            {porFazerTasks.length === 0 && <p style={{ textAlign: "center", color: THEME.textDim, padding: "16px 0", fontSize: 13 }}>Sem tarefas por fazer</p>}
+          </div>
+        </div>
+      )}
+
+      {/* ── Section: Em Curso ── */}
+      <div style={{ padding: isMobile ? "4px 14px" : "4px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "8px 0 8px" }}>
+          <span style={SECTION_LABEL}>Em Curso</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: THEME.textDim, background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 10, padding: "1px 7px" }}>{emCursoTasks.length}</span>
+          <div style={{ flex: 1, height: 1, background: THEME.border }} />
+        </div>
+      </div>
+      {isMobile ? (
+        <div style={{ padding: "0 14px 8px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {emCursoTasks.length === 0 && <p style={{ textAlign: "center", color: THEME.textDim, padding: "16px 0", fontSize: 13 }}>Sem tarefas em curso</p>}
+          {emCursoTasks.map(t => <TaskCard key={t.id} t={t} />)}
+        </div>
+      ) : (
+        <div style={{ padding: "0 24px 8px" }}>
+          <div style={{ background: THEME.card, borderRadius: 12, border: `1px solid ${THEME.border}`, overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
+              <thead>
+                <tr style={{ background: THEME.sidebar, borderBottom: `1px solid ${THEME.border}` }}>
+                  {["Nº", "Tipo", "Cliente", "Processo", "Responsável", "Estado", "Prazo"].map(h => (
+                    <th key={h} style={{ padding: "9px 12px", fontSize: 10, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "left", whiteSpace: "nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>{emCursoTasks.map(t => <TaskRow key={t.id} t={t} />)}</tbody>
+            </table>
+            {emCursoTasks.length === 0 && <p style={{ textAlign: "center", color: THEME.textDim, padding: "16px 0", fontSize: 13 }}>Sem tarefas em curso</p>}
+          </div>
+        </div>
+      )}
+
+      {/* ── Section: Concluídas ── */}
+      <div style={{ padding: isMobile ? "4px 14px" : "4px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "8px 0 8px" }}>
+          <span style={SECTION_LABEL}>Concluídas</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: THEME.textDim, background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 10, padding: "1px 7px" }}>{doneTasks.length}</span>
+          <div style={{ flex: 1, height: 1, background: THEME.border }} />
+        </div>
+      </div>
+      {isMobile ? (
+        <div style={{ padding: "0 14px 32px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {doneTasks.length === 0 && <p style={{ textAlign: "center", color: THEME.textDim, padding: "16px 0", fontSize: 13 }}>Sem tarefas concluídas</p>}
+          {doneTasks.map(t => <TaskCard key={t.id} t={t} />)}
+        </div>
+      ) : (
+        <div style={{ padding: "0 24px 32px" }}>
+          <div style={{ background: THEME.card, borderRadius: 12, border: `1px solid ${THEME.border}`, overflowX: "auto", opacity: 0.7 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
+              <thead>
+                <tr style={{ background: THEME.sidebar, borderBottom: `1px solid ${THEME.border}` }}>
+                  {["Nº", "Tipo", "Cliente", "Processo", "Responsável", "Estado", "Prazo"].map(h => (
+                    <th key={h} style={{ padding: "9px 12px", fontSize: 10, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "left", whiteSpace: "nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>{doneTasks.map(t => <TaskRow key={t.id} t={t} />)}</tbody>
+            </table>
+            {doneTasks.length === 0 && <p style={{ textAlign: "center", color: THEME.textDim, padding: "16px 0", fontSize: 13 }}>Sem tarefas concluídas</p>}
           </div>
         </div>
       )}

@@ -1,40 +1,26 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { THEME } from "../theme.js";
 import { store } from "../store.js";
 import { daysLeft } from "../utils.js";
-import { StatsBar } from "../components/StatsBar.jsx";
 import { Toolbar } from "../components/Toolbar.jsx";
 import { TableView } from "../components/TableView.jsx";
 import { KanbanView } from "../components/KanbanView.jsx";
-import { SupervisorWidget } from "../components/SupervisorWidget.jsx";
 import { Icon } from "../icons.jsx";
 
-export function Processos({ processos, setProcessos, tarefas, users, currentUser, accent, onSelectProcesso, onOpenTask }) {
+export function Processos({ processos, setProcessos, tarefas, users, currentUser, accent, onSelectProcesso }) {
+  const location = useLocation();
   const [view,         setView]         = useState("table");
   const [search,       setSearch]       = useState("");
   const [ownerFilter,  setOwnerFilter]  = useState("Todos");
   const [commFilter,   setCommFilter]   = useState("Todos");
-  const [statusFilter, setStatusFilter] = useState(null);   // null = Todos
+  const [statusFilter, setStatusFilter] = useState(location.state?.statusFilter ?? null);
   const [myTab,        setMyTab]        = useState(false);
   const [sortState,    setSortState]    = useState(() => store.getSortPrefs(currentUser?.email));
   const [colFilters,   setColFilters]   = useState({});    // { colKey: Set<value> }
 
-  const isAdmin      = currentUser?.role === "admin";
-  const isSupervisor = currentUser?.role === "supervisor";
-
   // Visible (non-archived) processes only on this page
   const active = processos.filter(p => !p.archived);
-
-  // "Meus processos" slice — used by StatsBar in that mode
-  const myProcessos = active.filter(p => {
-    const n = currentUser?.name ?? "";
-    return p.owner === n || p.comm === n || p.compra === n;
-  });
-
-  function handleStatClick(filterId) {
-    setStatusFilter(filterId);
-    if (filterId !== null) { setOwnerFilter("Todos"); setCommFilter("Todos"); setSearch(""); }
-  }
 
   // Apply all filters
   let rows = active.filter(p => {
@@ -117,23 +103,6 @@ export function Processos({ processos, setProcessos, tarefas, users, currentUser
           </div>
         </div>
       </div>
-
-      {/* Supervisor widget */}
-      {(isAdmin || isSupervisor) && (
-        <div style={{ padding: "16px 24px 0" }}>
-          <SupervisorWidget processos={active} tarefas={tarefas} onOpenTask={onOpenTask} />
-        </div>
-      )}
-
-      {/* Stats bar */}
-      <StatsBar
-        processos={active}
-        myProcessos={myProcessos}
-        myTab={myTab}
-        activeFilter={statusFilter}
-        onStatClick={handleStatClick}
-        accent={accentColor}
-      />
 
       {/* Meus/Todos tabs */}
       <div style={{ padding: "12px 24px 0", display: "flex", gap: 6 }}>

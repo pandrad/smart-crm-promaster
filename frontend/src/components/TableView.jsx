@@ -205,7 +205,7 @@ export function TableView({ rows, onSelect, users = [], currentUser = {}, sortSt
             <tr style={{ background: theadBg, borderBottom: `1px solid ${THEME.border}` }}>
               {isVisible("id")        && <TH colKey="id"        label="Nº"               {...thProps} />}
               {isVisible("created")   && <TH colKey="created"   label="Criado"           {...thProps} />}
-              {isVisible("deadline")  && <TH colKey={null}       label="Prazo"            {...thProps} />}
+              {isVisible("deadline")  && <TH colKey={null}       label="SLA"              {...thProps} />}
               {isVisible("priority")  && <TH colKey="priority"  label="P"                {...thProps} />}
               {isVisible("status")    && <TH colKey={null}       label="Estado"           {...thProps} />}
               {isVisible("fu")        && <TH colKey={null}       label="Follow Up"        {...thProps} />}
@@ -235,7 +235,12 @@ export function TableView({ rows, onSelect, users = [], currentUser = {}, sortSt
                   <td style={{ padding: "9px 10px", fontSize: 11, color: THEME.textDim }}>{p.created}</td>
                 )}
                 {isVisible("deadline") && (
-                  <td style={{ padding: "9px 10px" }}><UrgencyTag deadline={p.deadline} /></td>
+                  <td style={{ padding: "9px 10px" }}>{(() => {
+                    const sla = store.getSLASettings();
+                    const entry = sla.processoStatus?.[p.status];
+                    if (!entry || !entry.value) return <span style={{ fontSize: 11, color: THEME.textDim }}>Sem SLA</span>;
+                    return <span style={{ fontSize: 11, color: THEME.textMuted }}>{entry.value} {entry.unit}</span>;
+                  })()}</td>
                 )}
                 {isVisible("priority") && (
                   <td style={{ padding: "9px 10px" }} onClick={e => canChangePriority && e.stopPropagation()}>

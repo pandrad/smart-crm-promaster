@@ -90,16 +90,21 @@ export function Sidebar({ currentUser, processosBadge, tarefasBadge, inboxBadge,
 
         <NavSection label="Principal" />
         <NavItem
-          icon="list" label="Processos"
-          path="/processos" active={path === "/processos" || path === "/"}
-          badge={processosBadge}
-          onClick={() => navigate("/processos")}
+          icon="bar" label="Dashboard"
+          path="/dashboard" active={path === "/dashboard" || path === "/"}
+          onClick={() => navigate("/dashboard")}
         />
         <NavItem
           icon="tasks" label="Tarefas"
           path="/tarefas" active={path === "/tarefas"}
           badge={tarefasBadge}
           onClick={() => navigate("/tarefas")}
+        />
+        <NavItem
+          icon="list" label="Processos"
+          path="/processos" active={path === "/processos"}
+          badge={processosBadge}
+          onClick={() => navigate("/processos")}
         />
         {(isAdmin || isSupervisor) && (
           <NavItem

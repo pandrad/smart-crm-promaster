@@ -7,129 +7,21 @@ import { getTypeColor } from "./Tarefas.jsx";
 import { Tag } from "../components/Primitives.jsx";
 import { Icon } from "../icons.jsx";
 
-// System-only types not shown in the manual triage picker
-const SYSTEM_TYPES = new Set(["Validação de Processo", "Não Classificado", "Escalação", "Abertura de Processo"]);
-// Derived at call-time from store so admin additions are reflected immediately
-function getInboxTaskTypes() {
-  return store.getTaskTypes().map(t => t.label).filter(l => !SYSTEM_TYPES.has(l));
-}
-
 const LABEL = { fontSize: 10, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 };
-const INPUT = { width: "100%", padding: "7px 10px", fontSize: 13, border: `1px solid ${THEME.border}`, borderRadius: 7, outline: "none", boxSizing: "border-box", background: THEME.sidebar, color: THEME.text };
 
-// ── New client modal ──────────────────────────────────────────────────────────
-function NewClientModal({ senderName, senderEmail, onClose, onSave }) {
-  const [name,  setName]  = useState(senderName);
-  const [email, setEmail] = useState(senderEmail);
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ background: THEME.card, borderRadius: 14, width: 380, maxWidth: "95vw", border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.6)", overflow: "hidden" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
-          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Criar ficha de cliente</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
-        </div>
-        <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-          <div>
-            <label style={{ ...LABEL, display: "block", marginBottom: 4 }}>Nome do cliente</label>
-            <input style={INPUT} value={name} onChange={e => setName(e.target.value)} placeholder="Nome da empresa" />
-          </div>
-          <div>
-            <label style={{ ...LABEL, display: "block", marginBottom: 4 }}>Email de contacto</label>
-            <input style={INPUT} value={email} onChange={e => setEmail(e.target.value)} placeholder="email@empresa.co.ao" />
-          </div>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
-            <button onClick={() => { onSave({ name, email }); onClose(); }} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Criar cliente</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Task type selector modal ──────────────────────────────────────────────────
-function TaskTypeModal({ onClose, onSave }) {
-  const types = getInboxTaskTypes();
-  const [type, setType] = useState(types[0] ?? "Diversos");
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ background: THEME.card, borderRadius: 14, width: 340, maxWidth: "95vw", border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.6)", overflow: "hidden" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
-          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Tipo de tarefa</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
-        </div>
-        <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 5 }}>
-          {types.map(t => (
-            <label key={t} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, background: type === t ? `${THEME.accent}22` : "transparent", cursor: "pointer", border: type === t ? `1px solid ${THEME.accent}55` : "1px solid transparent" }}>
-              <input type="radio" name="task-type" checked={type === t} onChange={() => setType(t)} style={{ accentColor: THEME.accent }} />
-              <span style={{ fontSize: 13, color: type === t ? THEME.text : THEME.textMuted }}>{t}</span>
-            </label>
-          ))}
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
-            <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
-            <button onClick={() => { onSave(type); onClose(); }} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Confirmar</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Associate to process modal ────────────────────────────────────────────────
-function AssociateModal({ processos, onClose, onSave }) {
-  const [processId, setProcessId] = useState("");
-  const [error,     setError]     = useState("");
-
-  function handleSave() {
-    const found = processos.find(p => p.id === processId.trim());
-    if (!found) { setError(`Processo "${processId}" não encontrado.`); return; }
-    onSave(processId.trim());
-    onClose();
-  }
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ background: THEME.card, borderRadius: 14, width: 380, maxWidth: "95vw", border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.6)", overflow: "hidden" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
-          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Associar a processo</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
-        </div>
-        <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
-          <div>
-            <label style={{ ...LABEL, display: "block", marginBottom: 4 }}>Número do processo</label>
-            <input style={INPUT} value={processId} onChange={e => { setProcessId(e.target.value); setError(""); }} placeholder="ex: 2605003" />
-          </div>
-          {error && <div style={{ fontSize: 12, color: THEME.danger }}>{error}</div>}
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
-            <button onClick={handleSave} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Associar</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Email preview panel ───────────────────────────────────────────────────────
-// Full right-side drawer showing the email body + all triage actions.
-// This is the primary interaction surface — action buttons only appear here.
-function EmailPreviewPanel({ email, processos, tarefas, currentUser, onClose, onAction, clientCreated, onCreateClient }) {
+// ── Email preview panel — read-only view ─────────────────────────────────────
+function EmailPreviewPanel({ email, onClose }) {
   const { isMobile } = useWindowSize();
-  const [modal, setModal] = useState(null); // "tarefa" | "associate" | "newClient"
 
   const aiSuggestion = getAISuggestion(email);
   const aiC = aiSuggestion ? getTypeColor(aiSuggestion.type) : null;
-  const showNewClientBanner = email.isNewClient && !clientCreated.has(email.id);
 
-  // Format body text: replace \n with <br> equivalent by splitting
   const bodyParagraphs = (email.body || email.preview || "").split("\n");
 
   return (
     <>
-      {/* Backdrop — z-index 48 so it sits below the panel (z-49) but above the inbox list */}
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 48 }} />
 
-      {/* Panel */}
       <div style={isMobile
         ? { position: "fixed", bottom: 0, left: 0, right: 0, height: "92dvh", background: THEME.bg, zIndex: 49, display: "flex", flexDirection: "column", boxShadow: "0 -4px 40px rgba(0,0,0,0.5)", borderRadius: "16px 16px 0 0", borderTop: `1px solid ${THEME.border}` }
         : { position: "fixed", top: 0, right: 0, height: "100vh", width: 540, maxWidth: "96vw", background: THEME.bg, zIndex: 49, display: "flex", flexDirection: "column", boxShadow: "-4px 0 40px rgba(0,0,0,0.5)", borderLeft: `1px solid ${THEME.border}` }
@@ -151,42 +43,19 @@ function EmailPreviewPanel({ email, processos, tarefas, currentUser, onClose, on
           </div>
         </div>
 
-        {/* Scrollable body */}
+        {/* Scrollable body — read-only, no action buttons */}
         <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
 
-          {/* New client banner */}
-          {showNewClientBanner && (
-            <div style={{ background: THEME.warningBg, border: `1px solid ${THEME.warning}44`, borderRadius: 8, padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
-              <Icon name="alert" size={14} color={THEME.warning} />
-              <span style={{ flex: 1, fontSize: 12, color: THEME.warning }}>Cliente não reconhecido — criar ficha de cliente?</span>
-              <button
-                onClick={() => setModal("newClient")}
-                style={{ background: THEME.warning, color: "white", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
-              >
-                Criar Cliente
-              </button>
-              <button
-                onClick={() => onCreateClient(email.id, null)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textDim, padding: 2 }}
-              >
-                <Icon name="x" size={13} />
-              </button>
-            </div>
-          )}
-
-          {/* AI suggestion */}
+          {/* AI suggestion (informational only) */}
           {aiSuggestion && aiC && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, padding: "8px 12px", background: THEME.sidebar, borderRadius: 8, border: `1px solid ${aiSuggestion.simulated ? "#7c3aed44" : THEME.border}` }}>
-              <Icon name="cpu" size={13} color={aiSuggestion.simulated ? "#c084fc" : THEME.textDim} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, padding: "8px 12px", background: THEME.sidebar, borderRadius: 8, border: `1px solid ${THEME.border}` }}>
+              <Icon name="cpu" size={13} color={THEME.textDim} />
               <span style={{ fontSize: 12, color: THEME.textDim }}>IA sugere:</span>
               <Tag bg={aiC.bg} color={aiC.color}>{aiSuggestion.type}</Tag>
               {aiSuggestion.category && aiSuggestion.category !== aiSuggestion.type && (
                 <span style={{ fontSize: 12, color: THEME.textDim }}>— {aiSuggestion.category}</span>
               )}
               <span style={{ fontSize: 11, color: THEME.textDim, marginLeft: "auto" }}>{Math.round(aiSuggestion.confidence * 100)}% confiança</span>
-              {aiSuggestion.simulated && (
-                <span style={{ fontSize: 9, fontWeight: 700, color: "#c084fc", background: "#2e1065", borderRadius: 4, padding: "1px 5px", letterSpacing: "0.05em" }}>SIM</span>
-              )}
             </div>
           )}
 
@@ -206,7 +75,7 @@ function EmailPreviewPanel({ email, processos, tarefas, currentUser, onClose, on
 
           {/* Attachments */}
           {email.attachments && email.attachments.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
+            <div>
               <div style={{ ...LABEL, marginBottom: 8 }}>Anexos</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {email.attachments.map((att, i) => (
@@ -218,87 +87,8 @@ function EmailPreviewPanel({ email, processos, tarefas, currentUser, onClose, on
               </div>
             </div>
           )}
-
-          {/* Triage action buttons */}
-          <div style={{ borderTop: `1px solid ${THEME.border}`, paddingTop: 16 }}>
-            <div style={{ ...LABEL, marginBottom: 10 }}>Triagem</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-
-              {/* Confirmar como Processo → creates Validação de Processo task */}
-              <button
-                onClick={() => onAction("preEntrada", email.id)}
-                style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", fontSize: 13, fontWeight: 600, background: "#0c1a2e", color: "#93c5fd", border: "1px solid #60a5fa44", borderRadius: 9, cursor: "pointer", textAlign: "left" }}
-              >
-                <Icon name="plus" size={14} color="#93c5fd" />
-                <div>
-                  <div>Confirmar como Processo</div>
-                  <div style={{ fontSize: 11, fontWeight: 400, color: "#60a5fa", marginTop: 1 }}>Cria tarefa de validação · Resp. Cotação valida antes de abrir</div>
-                </div>
-              </button>
-
-              {/* Confirmar como Tarefa */}
-              <button
-                onClick={() => setModal("tarefa")}
-                style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", fontSize: 13, fontWeight: 600, background: THEME.warningBg, color: THEME.warning, border: `1px solid ${THEME.warning}44`, borderRadius: 9, cursor: "pointer", textAlign: "left" }}
-              >
-                <Icon name="tasks" size={14} color={THEME.warning} />
-                <div>
-                  <div>Confirmar como Tarefa</div>
-                  <div style={{ fontSize: 11, fontWeight: 400, color: THEME.textDim, marginTop: 1 }}>Seleccionar tipo de tarefa</div>
-                </div>
-              </button>
-
-              {/* Associar a processo existente */}
-              <button
-                onClick={() => setModal("associate")}
-                style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", fontSize: 13, fontWeight: 600, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 9, cursor: "pointer", textAlign: "left" }}
-              >
-                <Icon name="paperclip" size={14} color={THEME.textMuted} />
-                <div>
-                  <div>Associar a processo existente</div>
-                  <div style={{ fontSize: 11, fontWeight: 400, color: THEME.textDim, marginTop: 1 }}>Introduzir número do processo</div>
-                </div>
-              </button>
-
-              {/* Marcar como Diversos */}
-              <button
-                onClick={() => onAction("diversos", email.id)}
-                style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", fontSize: 13, fontWeight: 600, background: THEME.sidebar, color: THEME.textDim, border: `1px solid ${THEME.border}`, borderRadius: 9, cursor: "pointer", textAlign: "left" }}
-              >
-                <Icon name="x" size={14} color={THEME.textDim} />
-                <div>
-                  <div>Marcar como Diversos</div>
-                  <div style={{ fontSize: 11, fontWeight: 400, color: THEME.textDim, marginTop: 1 }}>Remove da fila de triagem</div>
-                </div>
-              </button>
-
-            </div>
-          </div>
         </div>
       </div>
-
-      {/* Sub-modals rendered above the panel */}
-      {modal === "newClient" && (
-        <NewClientModal
-          senderName={email.senderName}
-          senderEmail={email.sender}
-          onClose={() => setModal(null)}
-          onSave={client => { onCreateClient(email.id, client); setModal(null); }}
-        />
-      )}
-      {modal === "tarefa" && (
-        <TaskTypeModal
-          onClose={() => setModal(null)}
-          onSave={type => { onAction("tarefa", email.id, type); setModal(null); }}
-        />
-      )}
-      {modal === "associate" && (
-        <AssociateModal
-          processos={processos}
-          onClose={() => setModal(null)}
-          onSave={pid => { onAction("associate", email.id, pid); setModal(null); }}
-        />
-      )}
     </>
   );
 }
@@ -322,11 +112,8 @@ function SectionDivider({ label, count }) {
 
 // ── Inbox page ────────────────────────────────────────────────────────────────
 export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, tarefas, setTarefas, currentUser, accent }) {
-  const [selectedEmail, setSelectedEmail] = useState(null);  // email object | null
-  const [clientCreated, setClientCreated] = useState(new Set()); // email ids whose new-client banner was dismissed
+  const [selectedEmail, setSelectedEmail] = useState(null);
 
-  // Track which email IDs have already been auto-processed in this session
-  // to prevent double-processing when inboxEmails reference changes.
   const autoProcessedRef = useRef(new Set());
 
   function syncEmails(next) {
@@ -340,20 +127,12 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
       .replace(",", "");
   }
 
-  // Resolve default owner for a task type via mapeamento.
-  // Passes the email's senderName so client assignments take priority over round-robin.
-  function ownerForType(type, clientName) {
-    const tt = store.getTaskTypes().find(t => t.label === type);
-    if (!tt) return null;
-    return store.assignForTaskType(tt.id, clientName);
-  }
-
   // ── AI auto-triage ────────────────────────────────────────────────────────
-  // Runs whenever inboxEmails changes. For each pending email not yet processed,
-  // calls getAISuggestion. If confidence >= 0.6 and type is not Não Classificado,
-  // creates a task and marks the email as auto-triaged.
+  // All emails with an aiSuggestion are auto-routed to tasks.
+  // Classified emails (confidence >= 0.6) only process when AI sim is ON.
+  // Não Classificado emails ALWAYS auto-route to Supervisor regardless of toggle.
   useEffect(() => {
-    if (!getAISimulationEnabled()) return;
+    const simOn = getAISimulationEnabled();
 
     const pendingEmails = inboxEmails.filter(
       e => !e.isInternal && e.status === "pending" && !autoProcessedRef.current.has(e.id)
@@ -365,22 +144,29 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
     const newTasks = [];
 
     for (const email of pendingEmails) {
-      autoProcessedRef.current.add(email.id);
       const suggestion = getAISuggestion(email);
-      if (!suggestion) continue;
-      if (suggestion.confidence < 0.6 || suggestion.type === "Não Classificado") continue;
+      if (!suggestion) { autoProcessedRef.current.add(email.id); continue; }
+
+      const isUnclassified = suggestion.confidence < 0.6 || suggestion.type === "Não Classificado";
+
+      if (!isUnclassified && !simOn) { continue; }
+
+      autoProcessedRef.current.add(email.id);
+      const taskType = isUnclassified ? "Não Classificado" : suggestion.type;
 
       const taskTypes  = store.getTaskTypes();
-      const taskTypeObj = taskTypes.find(t => t.label === suggestion.type);
+      const taskTypeObj = taskTypes.find(t => t.label === taskType);
       if (!taskTypeObj) continue;
 
-      const owner = store.assignForTaskType(taskTypeObj.id, email.senderName);
+      const owner = isUnclassified
+        ? (store.getUsers().find(u => u.role === "supervisor" && u.active !== false)?.name ?? "Supervisor")
+        : store.assignForTaskType(taskTypeObj.id, email.senderName);
       const seq   = String((tarefas.length + newTasks.length + 1)).padStart(3, "0");
       const taskId = `T${seq}`;
 
       newTasks.push({
         id:            taskId,
-        type:          suggestion.type,
+        type:          taskType,
         status:        "Por Fazer",
         owner,
         client:        email.senderName,
@@ -393,19 +179,21 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
           attachments: email.attachments || [],
         },
         originProcesso: null,
-        description:   `[IA] Email de ${email.senderName}: ${email.subject}`,
+        description:   isUnclassified
+          ? `Email não classificado pela IA — remetente e assunto não correspondem a nenhuma categoria conhecida. Atribuído ao Supervisor para triagem manual.`
+          : `[IA] Email de ${email.senderName}: ${email.subject}`,
         escalationNote: null,
         priority:      "Normal",
         created:       "15/05/2026",
         due:           "17/05/2026",
         history: [
-          { actor: "IA (Simulado)", action: "Criada automaticamente", note: `${suggestion.type} · ${Math.round(suggestion.confidence * 100)}% confiança`, ts: nowTs() },
+          { actor: isUnclassified ? "Sistema" : "IA (Simulado)", action: isUnclassified ? "Não Classificado" : "Criada automaticamente", note: `${taskType} · ${Math.round(suggestion.confidence * 100)}% confiança`, ts: nowTs() },
         ],
       });
 
       updatedEmails = updatedEmails.map(e =>
         e.id === email.id
-          ? { ...e, status: "auto-triaged", autoTaskType: suggestion.type, autoOwner: owner, autoTaskId: taskId, autoConfidence: suggestion.confidence }
+          ? { ...e, status: "auto-triaged", autoTaskType: taskType, autoOwner: owner, autoTaskId: taskId, autoConfidence: suggestion.confidence }
           : e
       );
       emailsChanged = true;
@@ -420,125 +208,7 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inboxEmails]);
 
-  function markEmailProcessed(id, patch = {}) {
-    const next = inboxEmails.map(e => e.id === id ? { ...e, status: "processed", ...patch } : e);
-    syncEmails(next);
-    setSelectedEmail(prev => prev?.id === id ? null : prev);
-  }
-
-  // ── Triage actions ────────────────────────────────────────────────────────
-
-  function handlePreEntrada(emailId) {
-    const email = inboxEmails.find(e => e.id === emailId);
-    if (!email) return;
-
-    const validatorOwner = ownerForType("Validação de Processo", email.senderName);
-    const seq = String(tarefas.length + 1).padStart(3, "0");
-    const taskId = `T${seq}`;
-
-    const newTarefa = {
-      id:              taskId,
-      type:            "Validação de Processo",
-      status:          "Por Fazer",
-      owner:           validatorOwner,
-      triagedBy:       currentUser?.name || "Sistema",
-      validatorOwner:  validatorOwner,
-      client:          email.senderName,
-      originEmail: {
-        sender:        email.sender,
-        senderName:    email.senderName,
-        subject:       email.subject,
-        preview:       email.preview,
-        body:          email.body || "",
-        attachments:   email.attachments || [],
-      },
-      originProcesso:  null,
-      description: (() => { const ai = getAISuggestion(email); return `Este email aguarda validação para abertura de processo.\n\nCliente: ${email.senderName} · Remetente: ${email.sender}\nAssunto: ${email.subject}${ai ? `\nSugestão IA${ai.simulated ? " (SIM)" : ""}: ${ai.type} · ${ai.category} (${Math.round(ai.confidence * 100)}%)` : ""}`; })(),
-      escalationNote:  null,
-      priority:        "Normal",
-      created:         "15/05/2026",
-      due:             "17/05/2026",
-      history: [
-        {
-          actor:  currentUser?.name || "Sistema",
-          action: "Criada via triagem",
-          note:   `Email de ${email.senderName} confirmado para abertura de processo. Enviado para validação.`,
-          ts:     nowTs(),
-        },
-      ],
-    };
-
-    const nextTarefas = [...tarefas, newTarefa];
-    setTarefas(nextTarefas);
-    store.saveTarefas(nextTarefas);
-    const next = inboxEmails.map(e => e.id === emailId
-      ? { ...e, status: "triaged", triagedTaskId: taskId }
-      : e
-    );
-    syncEmails(next);
-    setSelectedEmail(null);
-  }
-
-  function handleConfirmTarefa(emailId, type) {
-    const email = inboxEmails.find(e => e.id === emailId);
-    if (!email) return;
-
-    const owner = ownerForType(type, email.senderName);
-    const seq   = String(tarefas.length + 1).padStart(3, "0");
-
-    const newTarefa = {
-      id:            `T${seq}`,
-      type,
-      status:        "Por Fazer",
-      owner,
-      client:        email.senderName,
-      originEmail: {
-        sender:      email.sender,
-        senderName:  email.senderName,
-        subject:     email.subject,
-        preview:     email.preview,
-        body:        email.body || "",
-        attachments: email.attachments || [],
-      },
-      originProcesso: null,
-      description:   `Email de ${email.senderName}: ${email.subject}`,
-      escalationNote: null,
-      priority:      "Normal",
-      created:       "15/05/2026",
-      due:           "17/05/2026",
-      history: [
-        { actor: currentUser?.name || "Sistema", action: "Criada via Inbox", note: `${type} — ${email.subject}`, ts: nowTs() },
-      ],
-    };
-
-    const nextTarefas = [...tarefas, newTarefa];
-    setTarefas(nextTarefas);
-    store.saveTarefas(nextTarefas);
-    markEmailProcessed(emailId);
-  }
-
-  function handleAssociate(emailId, processId) {
-    markEmailProcessed(emailId, { associatedTo: processId });
-  }
-
-  function handleDiversos(emailId) {
-    const next = inboxEmails.map(e => e.id === emailId ? { ...e, status: "diversos" } : e);
-    syncEmails(next);
-    setSelectedEmail(prev => prev?.id === emailId ? null : prev);
-  }
-
-  function handleAction(type, emailId, extra) {
-    if (type === "preEntrada") handlePreEntrada(emailId);
-    if (type === "tarefa")     handleConfirmTarefa(emailId, extra);
-    if (type === "associate")  handleAssociate(emailId, extra);
-    if (type === "diversos")   handleDiversos(emailId);
-  }
-
-  function handleCreateClient(emailId, client) {
-    setClientCreated(prev => new Set([...prev, emailId]));
-  }
-
-  // Split: auto-triaged (AI simulation was ON when email arrived) vs pending manual
+  // Split: auto-triaged vs pending (shown read-only)
   const autoTriaged = inboxEmails.filter(e => !e.isInternal && e.status === "auto-triaged");
   const pending     = inboxEmails.filter(e => !e.isInternal && e.status === "pending");
 
@@ -660,8 +330,8 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
               onMouseEnter={e => { if (!isSelected) e.currentTarget.style.borderColor = THEME.accent + "44"; }}
               onMouseLeave={e => { if (!isSelected) e.currentTarget.style.borderColor = THEME.border; }}
             >
-              {/* New client indicator */}
-              {email.isNewClient && !clientCreated.has(email.id) && (
+              {/* New client indicator (informational only) */}
+              {email.isNewClient && (
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
                   <span style={{ fontSize: 10, fontWeight: 700, color: THEME.warning, background: THEME.warningBg, borderRadius: 4, padding: "1px 7px" }}>
                     CLIENTE NÃO RECONHECIDO
@@ -709,17 +379,11 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
         })}
       </div>
 
-      {/* Email preview panel — only for pending emails */}
+      {/* Email preview panel — read-only */}
       {selectedEmail && (
         <EmailPreviewPanel
           email={selectedEmail}
-          processos={processos}
-          tarefas={tarefas}
-          currentUser={currentUser}
           onClose={() => setSelectedEmail(null)}
-          onAction={handleAction}
-          clientCreated={clientCreated}
-          onCreateClient={handleCreateClient}
         />
       )}
     </div>
