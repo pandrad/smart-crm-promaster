@@ -384,7 +384,7 @@ function AtribuicaoTab({ onSwitchTab }) {
 
 // ── Shared: Status/Type list with drag-to-reorder ─────────────────────────────
 
-function StatusModal({ item, extraFields, onClose, onSave }) {
+function StatusModal({ item, extraFields, lockedFields, onClose, onSave }) {
   const [form, setForm] = useState(
     item
       ? { label: item.label, color: item.color, bg: item.bg ?? "#f1f5f9", ...extraFields?.reduce((acc, f) => ({ ...acc, [f.key]: item[f.key] ?? f.default }), {}) }
@@ -400,13 +400,16 @@ function StatusModal({ item, extraFields, onClose, onSave }) {
           <input style={INPUT} value={form.label} onChange={e => set("label", e.target.value)} placeholder="Nome" />
         </FieldRow>
         <ColorSwatch label="Cor" value={form.color} onChange={pickColor} />
-        {extraFields?.map(f => (
-          <FieldRow key={f.key} label={f.label} hint={f.hint}>
-            <select style={SELECT} value={form[f.key]} onChange={e => set(f.key, e.target.value)}>
-              {f.options.map(o => <option key={o} value={o}>{o}</option>)}
-            </select>
-          </FieldRow>
-        ))}
+        {extraFields?.map(f => {
+          const isLocked = lockedFields?.includes(f.key);
+          return (
+            <FieldRow key={f.key} label={f.label} hint={isLocked ? "Este campo não pode ser alterado em estados protegidos pelo sistema." : f.hint}>
+              <select style={{ ...SELECT, opacity: isLocked ? 0.5 : 1, cursor: isLocked ? "not-allowed" : undefined }} disabled={isLocked} value={form[f.key]} onChange={e => set(f.key, e.target.value)}>
+                {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </FieldRow>
+          );
+        })}
         <div>
           <div style={{ fontSize: 11, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Pré-visualização</div>
           <span style={{ display: "inline-flex", padding: "3px 10px", borderRadius: 9999, fontSize: 12, fontWeight: 600, background: form.bg, color: form.color }}>
@@ -419,7 +422,7 @@ function StatusModal({ item, extraFields, onClose, onSave }) {
   );
 }
 
-function StatusList({ title, getItems, saveItems, dotShape, extraFields, canDelete }) {
+function StatusList({ title, getItems, saveItems, dotShape, extraFields, canDelete, isProtected }) {
   const [list,    setList]    = useState(() => getItems());
   const [editing, setEditing] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
@@ -491,7 +494,9 @@ function StatusList({ title, getItems, saveItems, dotShape, extraFields, canDele
         </div>
       )}
       <div style={{ background: THEME.card, borderRadius: 12, border: `1px solid ${THEME.border}`, overflow: "hidden" }}>
-        {list.map((s, i) => (
+        {list.map((s, i) => {
+          const prot = isProtected?.(s);
+          return (
           <div key={s.id} draggable onDragStart={() => onDragStart(i)} onDragOver={e => onDragOver(e, i)}
             style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: i < list.length - 1 ? `1px solid ${THEME.borderLight}` : "none", cursor: "grab" }}>
             <Icon name="chevron" size={12} color="#cbd5e1" style={{ transform: "rotate(90deg)", flexShrink: 0 }} />
@@ -500,19 +505,31 @@ function StatusList({ title, getItems, saveItems, dotShape, extraFields, canDele
             {s.systemRole && s.systemRole !== "Nenhum" && (
               <span style={{ fontSize: 10, color: THEME.textDim, background: THEME.sidebar, borderRadius: 9999, padding: "2px 8px", flexShrink: 0 }}>{s.systemRole}</span>
             )}
+            {prot && (
+              <span title="Estado protegido pelo sistema — não pode ser eliminado" style={{ display: "inline-flex", alignItems: "center", color: THEME.textDim, flexShrink: 0 }}>
+                <Icon name="settings" size={12} color={THEME.textDim} />
+              </span>
+            )}
             <span style={{ display: "inline-flex", padding: "2px 8px", borderRadius: 9999, fontSize: 11, fontWeight: 600, background: s.bg, color: s.color }}>Amostra</span>
             <button onClick={() => setEditing(s)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}>
               <Icon name="edit" size={13} />
             </button>
-            <button onClick={() => tryDelete(s)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.danger, padding: 4 }}>
-              <Icon name="x" size={13} />
-            </button>
+            {prot ? (
+              <span title="Estado protegido — não pode ser eliminado" style={{ padding: 4, color: THEME.border, cursor: "not-allowed" }}>
+                <Icon name="x" size={13} color={THEME.border} />
+              </span>
+            ) : (
+              <button onClick={() => tryDelete(s)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.danger, padding: 4 }}>
+                <Icon name="x" size={13} />
+              </button>
+            )}
           </div>
-        ))}
+          );
+        })}
         {list.length === 0 && <p style={{ textAlign: "center", color: THEME.textDim, padding: "24px 0", fontSize: 13 }}>Nenhum item</p>}
       </div>
       <p style={{ fontSize: 11, color: THEME.textMuted, marginTop: 6, marginBottom: 0 }}>Arraste para reordenar</p>
-      {editing !== null && <StatusModal item={editing === "new" ? null : editing} extraFields={extraFields} onClose={() => setEditing(null)} onSave={save} />}
+      {editing !== null && <StatusModal item={editing === "new" ? null : editing} extraFields={extraFields} lockedFields={editing !== "new" && isProtected?.(editing) ? extraFields?.map(f => f.key) : undefined} onClose={() => setEditing(null)} onSave={save} />}
     </div>
   );
 }
@@ -559,6 +576,7 @@ function TarefasTab() {
         </p>
         <StatusList title="" getItems={store.getTaskStatuses} saveItems={store.saveTaskStatuses} dotShape="circle"
           canDelete={canDeleteTaskStatus}
+          isProtected={item => item.systemRole && item.systemRole !== "Nenhum"}
           extraFields={[{
             key: "systemRole",
             label: "Função de sistema",
@@ -784,50 +802,7 @@ function MapeamentoTab({ onSwitchTab }) {
         </div>
       </div>
 
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Por Tipo de Tarefa</div>
-        <p style={{ fontSize: 12, color: THEME.textDim, marginTop: 0, marginBottom: 12 }}>Quem recebe a tarefa quando este tipo é criado. O toggle <strong style={{ color: THEME.text }}>Reatribui</strong> controla se a criação de uma tarefa deste tipo desencadeia uma nova atribuição.</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {types.map(item => {
-            const reatribui    = (mapping.taskTypeReatribui ?? {})[item.id] ?? false;
-            const selectedRole = mapping.taskType?.[item.id] ?? "";
-            return (
-              <div key={item.id} style={{ background: THEME.sidebar, borderRadius: 9, border: `1px solid ${THEME.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ width: 10, height: 10, borderRadius: 3, background: item.color, flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: 600, color: THEME.text, flex: 1 }}>{item.label}</span>
-                {reatribui && <WarnIcon roleId={selectedRole} />}
-                {reatribui && (
-                  <select
-                    value={selectedRole}
-                    onChange={e => setMap("taskType", item.id, e.target.value)}
-                    style={{ fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "6px 10px", background: THEME.bg, color: THEME.text, outline: "none", minWidth: 160 }}
-                  >
-                    {roleOptions.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
-                  </select>
-                )}
-                <button
-                  onClick={() => {
-                    saveScroll();
-                    setMapping(prev => {
-                      const current = prev.taskTypeReatribui ?? {};
-                      const updated = { ...prev, taskTypeReatribui: { ...current, [item.id]: !current[item.id] } };
-                      store.saveMapeamento(updated);
-                      return updated;
-                    });
-                  }}
-                  title={reatribui ? "Reatribuição activa — clique para desactivar" : "Reatribuição inactiva — clique para activar"}
-                  style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}
-                >
-                  <div style={{ width: 32, height: 18, borderRadius: 9, background: reatribui ? THEME.accent : THEME.border, position: "relative", transition: "background 0.15s" }}>
-                    <div style={{ position: "absolute", top: 2, left: reatribui ? 16 : 2, width: 14, height: 14, borderRadius: "50%", background: "white", transition: "left 0.15s" }} />
-                  </div>
-                  <span style={{ fontSize: 11, color: reatribui ? THEME.text : THEME.textDim, minWidth: 58 }}>Reatribui</span>
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <Section title="Por Tipo de Tarefa" hint="Quem recebe a tarefa quando este tipo é criado." items={types} section="taskType" keyField="id" />
 
       <div style={{ marginBottom: 28 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: THEME.text, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Por Estado de Tarefa</div>

@@ -216,56 +216,43 @@ export function DevTools({
   }
 
   // ── Tool 2: Generate random inbox email ──────────────────────────────────
-  // ~15-20% of the time produces an unclassifiable email (low confidence,
-  // Não Classificado) using the same shape as the dedicated unclassifiable
-  // generator. The rest of the time picks a confident classified subject.
   function handleGenerateEmail() {
     const sender = randomPick(RANDOM_SENDERS);
-    const isUnclassifiable = Math.random() < 0.18;
+    const subject = randomPick(RANDOM_SUBJECTS);
 
-    let newEmail;
-    if (isUnclassifiable) {
-      newEmail = {
-        id:           `E_dev_${Date.now()}`,
-        sender:       "noreply@sistema-desconhecido.co.ao",
-        senderName:   "Sistema Desconhecido",
-        to:           "info@promaster.co",
-        subject:      `REF: ${randomInt(1000,9999)}-X / Assunto não identificável`,
-        preview:      "Na sequência da comunicação anterior, informamos que o processo referenciado foi actualizado no nosso sistema interno.",
-        body:         "Prezados,\n\nNa sequência da comunicação anterior, informamos que o processo referenciado foi actualizado no nosso sistema interno de gestão documental.\n\nPara mais informações consultar a plataforma.\n\nAtenciosamente,\nDepartamento de Sistemas",
-        attachments:  [],
-        received:     nowReceived(),
-        isInternal:   false,
-        isNewClient:  false,
-        aiSuggestion: { type: "Não Classificado", category: "Desconhecido", confidence: Math.round((0.10 + Math.random() * 0.45) * 100) / 100 },
-        status:       "pending",
-      };
+    let aiSuggestion;
+    if (aiSimOn && Math.random() < 0.78) {
+      const types = store.getTaskTypes();
+      const picked = types.length > 0 ? randomPick(types) : null;
+      aiSuggestion = picked
+        ? { type: picked.label, category: picked.label, confidence: Math.round((0.75 + Math.random() * 0.24) * 100) / 100 }
+        : { type: null, category: null, confidence: 0 };
     } else {
-      const subject = randomPick(RANDOM_SUBJECTS);
-      newEmail = {
-        id:           `E_dev_${Date.now()}`,
-        sender:       sender.email,
-        senderName:   sender.name,
-        to:           "info@promaster.co",
-        subject:      subject.text,
-        preview:      subject.preview,
-        body:         `${subject.preview}\n\nEsta é uma mensagem de teste gerada automaticamente pelas ferramentas de desenvolvimento.\n\nCom os melhores cumprimentos,\n${sender.name}\n${sender.company}`,
-        attachments:  [],
-        received:     nowReceived(),
-        isInternal:   false,
-        isNewClient:  false,
-        aiSuggestion: { type: subject.type, category: subject.category, confidence: Math.round((0.75 + Math.random() * 0.24) * 100) / 100 },
-        status:       "pending",
-      };
+      aiSuggestion = { type: null, category: null, confidence: 0 };
     }
+
+    const newEmail = {
+      id:           `E_dev_${Date.now()}`,
+      sender:       sender.email,
+      senderName:   sender.name,
+      to:           "info@promaster.co",
+      subject:      subject.text,
+      preview:      subject.preview,
+      body:         `${subject.preview}\n\nEsta é uma mensagem de teste gerada automaticamente pelas ferramentas de desenvolvimento.\n\nCom os melhores cumprimentos,\n${sender.name}\n${sender.company}`,
+      attachments:  [],
+      received:     nowReceived(),
+      isInternal:   false,
+      isNewClient:  false,
+      aiSuggestion,
+      status:       "pending",
+    };
     const next = [...store.getInboxEmails(), newEmail];
     store.saveInboxEmails(next);
     setInboxEmails(next);
   }
 
-  // ── Tool 2b: Generate unclassifiable inbox email ─────────────────────────
+  // ── Tool 2b: Generate unclassifiable inbox email (always null/0) ────────
   function handleGenerateUnclassifiableEmail() {
-    const sender = randomPick(RANDOM_SENDERS);
     const newEmail = {
       id:           `E_dev_${Date.now()}`,
       sender:       "noreply@sistema-desconhecido.co.ao",
@@ -278,7 +265,7 @@ export function DevTools({
       received:     nowReceived(),
       isInternal:   false,
       isNewClient:  false,
-      aiSuggestion: { type: "Não Classificado", category: "Desconhecido", confidence: 0.15 },
+      aiSuggestion: { type: null, category: null, confidence: 0 },
       status:       "pending",
     };
     const next = [...store.getInboxEmails(), newEmail];

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { THEME } from "../theme.js";
 import { store } from "../store.js";
@@ -43,6 +44,8 @@ export function Dashboard({ processos, tarefas, users, currentUser, accent, onOp
   const isAdmin      = currentUser?.role === "admin";
   const isSupervisor = currentUser?.role === "supervisor";
   const isPrivileged = isAdmin || isSupervisor;
+
+  const [showAllProcesses, setShowAllProcesses] = useState(isPrivileged);
 
   const userName = currentUser?.name ?? "";
 
@@ -144,8 +147,19 @@ export function Dashboard({ processos, tarefas, users, currentUser, accent, onOp
 
         {/* ── Process overview (StatsBar) ── */}
         <div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
-            Visão geral de processos
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+              Visão geral de processos
+            </div>
+            {!isPrivileged && (
+              <button
+                onClick={() => setShowAllProcesses(v => !v)}
+                style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "3px 10px", fontSize: 11, color: showAllProcesses ? accentColor : THEME.textMuted, cursor: "pointer" }}
+              >
+                <Icon name="layers" size={11} color={showAllProcesses ? accentColor : THEME.textDim} />
+                {showAllProcesses ? "Ver meus" : "Ver todos"}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -153,7 +167,7 @@ export function Dashboard({ processos, tarefas, users, currentUser, accent, onOp
       <StatsBar
         processos={active}
         myProcessos={myProcessos}
-        myTab={false}
+        myTab={!showAllProcesses}
         activeFilter={null}
         onStatClick={handleStatClick}
         accent={accentColor}

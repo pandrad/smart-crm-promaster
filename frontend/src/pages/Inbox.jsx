@@ -9,13 +9,9 @@ import { Icon } from "../icons.jsx";
 
 const LABEL = { fontSize: 10, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 };
 
-// ── Email preview panel — read-only view ─────────────────────────────────────
+// ── Email preview panel — read-only view (sender, subject, body, attachments only) ──
 function EmailPreviewPanel({ email, onClose }) {
   const { isMobile } = useWindowSize();
-
-  const aiSuggestion = getAISuggestion(email);
-  const aiC = aiSuggestion ? getTypeColor(aiSuggestion.type) : null;
-
   const bodyParagraphs = (email.body || email.preview || "").split("\n");
 
   return (
@@ -43,21 +39,8 @@ function EmailPreviewPanel({ email, onClose }) {
           </div>
         </div>
 
-        {/* Scrollable body — read-only, no action buttons */}
+        {/* Scrollable body */}
         <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
-
-          {/* AI suggestion (informational only) */}
-          {aiSuggestion && aiC && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, padding: "8px 12px", background: THEME.sidebar, borderRadius: 8, border: `1px solid ${THEME.border}` }}>
-              <Icon name="cpu" size={13} color={THEME.textDim} />
-              <span style={{ fontSize: 12, color: THEME.textDim }}>IA sugere:</span>
-              <Tag bg={aiC.bg} color={aiC.color}>{aiSuggestion.type}</Tag>
-              {aiSuggestion.category && aiSuggestion.category !== aiSuggestion.type && (
-                <span style={{ fontSize: 12, color: THEME.textDim }}>— {aiSuggestion.category}</span>
-              )}
-              <span style={{ fontSize: 11, color: THEME.textDim, marginLeft: "auto" }}>{Math.round(aiSuggestion.confidence * 100)}% confiança</span>
-            </div>
-          )}
 
           {/* Subject */}
           <div style={{ fontSize: 16, fontWeight: 700, color: THEME.text, marginBottom: 16, lineHeight: 1.3 }}>
@@ -110,16 +93,21 @@ function SectionDivider({ label, count }) {
   );
 }
 
+// ── Resolve the Supervisor user name from crm_user_roles ─────────────────────
+function getSupervisorName() {
+  const userRoles = store.getUserRoles();
+  const users = store.getUsers().filter(u => u.active !== false);
+  for (const u of users) {
+    const roleIds = userRoles[u.id] ?? [];
+    if (roleIds.includes("supervisor")) return u.name;
+  }
+  return users.find(u => u.role === "supervisor")?.name ?? "Supervisor";
+}
+
 // ── Inbox page ────────────────────────────────────────────────────────────────
 export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, tarefas, setTarefas, currentUser, accent }) {
   const [selectedEmail, setSelectedEmail] = useState(null);
-
-  const autoProcessedRef = useRef(new Set());
-
-  function syncEmails(next) {
-    setInboxEmails(next);
-    store.saveInboxEmails(next);
-  }
+  const processedRef = useRef(new Set());
 
   function nowTs() {
     return new Date("2026-05-15T12:00:00")
@@ -127,92 +115,132 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
       .replace(",", "");
   }
 
-  // ── AI auto-triage ────────────────────────────────────────────────────────
-  // All emails with an aiSuggestion are auto-routed to tasks.
-  // Classified emails (confidence >= 0.6) only process when AI sim is ON.
-  // Não Classificado emails ALWAYS auto-route to Supervisor regardless of toggle.
+  // ── Single triage pass — runs whenever inboxEmails change ─────────────────
   useEffect(() => {
     const simOn = getAISimulationEnabled();
 
-    const pendingEmails = inboxEmails.filter(
-      e => !e.isInternal && e.status === "pending" && !autoProcessedRef.current.has(e.id)
+    const unprocessed = inboxEmails.filter(
+      e => !e.isInternal && e.status === "pending" && !processedRef.current.has(e.id)
     );
-    if (pendingEmails.length === 0) return;
+    if (unprocessed.length === 0) return;
 
-    let emailsChanged = false;
+    let changed = false;
     let updatedEmails = [...inboxEmails];
     const newTasks = [];
 
-    for (const email of pendingEmails) {
-      const suggestion = getAISuggestion(email);
-      if (!suggestion) { autoProcessedRef.current.add(email.id); continue; }
+    for (const email of unprocessed) {
+      processedRef.current.add(email.id);
 
-      const isUnclassified = suggestion.confidence < 0.6 || suggestion.type === "Não Classificado";
+      let outcome; // "A" (auto-triaged) or "B" (requires-attention)
+      let taskType = null;
+      let taskTypeObj = null;
+      let owner = null;
 
-      if (!isUnclassified && !simOn) { continue; }
+      if (!simOn) {
+        // AI Simulation OFF → everything to Supervisor, no classification
+        outcome = "B";
+        owner = getSupervisorName();
+      } else {
+        const suggestion = getAISuggestion(email);
+        const taskTypes = store.getTaskTypes();
 
-      autoProcessedRef.current.add(email.id);
-      const taskType = isUnclassified ? "Não Classificado" : suggestion.type;
+        if (
+          suggestion &&
+          suggestion.confidence >= 0.6 &&
+          suggestion.type !== null &&
+          (taskTypeObj = taskTypes.find(t => t.label === suggestion.type))
+        ) {
+          // OUTCOME A — confident, valid type
+          outcome = "A";
+          taskType = suggestion.type;
+          owner = store.assignForTaskType(taskTypeObj.id, email.senderName) || getSupervisorName();
+        } else {
+          // OUTCOME B — no suggestion, low confidence, null type, or type not in store
+          outcome = "B";
+          owner = getSupervisorName();
+        }
+      }
 
-      const taskTypes  = store.getTaskTypes();
-      const taskTypeObj = taskTypes.find(t => t.label === taskType);
+      // Resolve the "Não Classificado" task type for B outcomes
+      if (outcome === "B") {
+        const taskTypes = store.getTaskTypes();
+        taskTypeObj = taskTypes.find(t => t.label === "Não Classificado");
+        taskType = taskTypeObj ? "Não Classificado" : (taskTypes[0]?.label ?? "Tarefa");
+        if (!taskTypeObj) taskTypeObj = taskTypes[0] ?? null;
+      }
+
       if (!taskTypeObj) continue;
 
-      const owner = isUnclassified
-        ? (store.getUsers().find(u => u.role === "supervisor" && u.active !== false)?.name ?? "Supervisor")
-        : store.assignForTaskType(taskTypeObj.id, email.senderName);
-      const seq   = String((tarefas.length + newTasks.length + 1)).padStart(3, "0");
+      const porFazerLabel = store.getLabelForSystemRole("Por Fazer") ?? "Por Fazer";
+      const seq = String((tarefas.length + newTasks.length + 1)).padStart(3, "0");
       const taskId = `T${seq}`;
 
       newTasks.push({
-        id:            taskId,
-        type:          taskType,
-        status:        "Por Fazer",
+        id:             taskId,
+        type:           taskType,
+        status:         porFazerLabel,
         owner,
-        client:        email.senderName,
+        client:         email.senderName,
         originEmail: {
-          sender:      email.sender,
-          senderName:  email.senderName,
-          subject:     email.subject,
-          preview:     email.preview,
-          body:        email.body || "",
-          attachments: email.attachments || [],
+          sender:       email.sender,
+          senderName:   email.senderName,
+          subject:      email.subject,
+          preview:      email.preview,
+          body:         email.body || "",
+          attachments:  email.attachments || [],
         },
         originProcesso: null,
-        description:   isUnclassified
-          ? `Email não classificado pela IA — remetente e assunto não correspondem a nenhuma categoria conhecida. Atribuído ao Supervisor para triagem manual.`
-          : `[IA] Email de ${email.senderName}: ${email.subject}`,
+        description:    outcome === "A"
+          ? `[IA] Email de ${email.senderName}: ${email.subject}`
+          : `Email requer triagem manual — atribuído ao Supervisor.`,
         escalationNote: null,
-        priority:      "Normal",
-        created:       "15/05/2026",
-        due:           "17/05/2026",
+        priority:       "Normal",
+        created:        "15/05/2026",
+        due:            "17/05/2026",
         history: [
-          { actor: isUnclassified ? "Sistema" : "IA (Simulado)", action: isUnclassified ? "Não Classificado" : "Criada automaticamente", note: `${taskType} · ${Math.round(suggestion.confidence * 100)}% confiança`, ts: nowTs() },
+          {
+            actor: outcome === "A" ? "IA (Simulado)" : "Sistema",
+            action: outcome === "A" ? "Criada automaticamente" : "Requer triagem",
+            note: outcome === "A"
+              ? `${taskType} · ${Math.round((getAISuggestion(email)?.confidence ?? 0) * 100)}% confiança`
+              : "Sem classificação — atribuído ao Supervisor para triagem manual.",
+            ts: nowTs(),
+          },
         ],
       });
 
-      updatedEmails = updatedEmails.map(e =>
-        e.id === email.id
-          ? { ...e, status: "auto-triaged", autoTaskType: taskType, autoOwner: owner, autoTaskId: taskId, autoConfidence: suggestion.confidence }
-          : e
-      );
-      emailsChanged = true;
+      if (outcome === "A") {
+        updatedEmails = updatedEmails.map(e =>
+          e.id === email.id
+            ? { ...e, status: "auto-triaged", autoTaskType: taskType, autoOwner: owner, autoTaskId: taskId, autoConfidence: getAISuggestion(email)?.confidence ?? 0 }
+            : e
+        );
+      } else {
+        updatedEmails = updatedEmails.map(e =>
+          e.id === email.id
+            ? { ...e, status: "requires-attention", autoOwner: owner, autoTaskId: taskId }
+            : e
+        );
+      }
+      changed = true;
     }
 
-    if (emailsChanged) {
+    if (changed) {
       const nextTarefas = [...tarefas, ...newTasks];
       setTarefas(nextTarefas);
       store.saveTarefas(nextTarefas);
-      syncEmails(updatedEmails);
+      setInboxEmails(updatedEmails);
+      store.saveInboxEmails(updatedEmails);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inboxEmails]);
 
-  // Split: auto-triaged vs pending (shown read-only)
-  const autoTriaged = inboxEmails.filter(e => !e.isInternal && e.status === "auto-triaged");
-  const pending     = inboxEmails.filter(e => !e.isInternal && e.status === "pending");
+  // ── Section splits ─────────────────────────────────────────────────────────
+  const simOn = getAISimulationEnabled();
+  const autoTriaged    = inboxEmails.filter(e => !e.isInternal && e.status === "auto-triaged");
+  const requiresAttn   = inboxEmails.filter(e => !e.isInternal && (e.status === "requires-attention" || (!simOn && e.status === "pending")));
 
-  const totalVisible = autoTriaged.length + pending.length;
+  const totalVisible = autoTriaged.length + requiresAttn.length;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100%", background: THEME.bg }}>
@@ -221,13 +249,13 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
       <div style={{ padding: "20px 24px 16px" }}>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: THEME.text }}>Inbox</h1>
         <div style={{ fontSize: 12, color: THEME.textDim, marginTop: 2 }}>
-          {pending.length > 0
-            ? `${pending.length} ${pending.length === 1 ? "email pendente" : "emails pendentes"} de triagem manual`
+          {requiresAttn.length > 0
+            ? `${requiresAttn.length} ${requiresAttn.length === 1 ? "email requer" : "emails requerem"} atenção manual`
             : totalVisible > 0
             ? "Todos os emails foram processados automaticamente"
             : "Inbox vazia"
           }
-          {autoTriaged.length > 0 && pending.length > 0 && ` · ${autoTriaged.length} processados automaticamente`}
+          {autoTriaged.length > 0 && requiresAttn.length > 0 && ` · ${autoTriaged.length} processados automaticamente`}
         </div>
       </div>
 
@@ -241,8 +269,8 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
           </div>
         )}
 
-        {/* ── Section 1: Processados automaticamente ── */}
-        {autoTriaged.length > 0 && (
+        {/* ── Section 1: Processados automaticamente (only when AI Simulation ON) ── */}
+        {simOn && autoTriaged.length > 0 && (
           <>
             <SectionDivider label="Processados automaticamente" count={autoTriaged.length} />
             {autoTriaged.map(email => {
@@ -250,21 +278,20 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
               return (
                 <div
                   key={email.id}
+                  onClick={() => setSelectedEmail(email)}
                   style={{
                     background: THEME.card,
                     border: `1px solid ${THEME.border}`,
                     borderRadius: 10,
                     padding: "12px 16px",
                     opacity: 0.65,
+                    cursor: "pointer",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                    {/* Email icon */}
                     <div style={{ width: 34, height: 34, borderRadius: "50%", background: THEME.sidebar, border: `1px solid ${THEME.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
                       <Icon name="cpu" size={14} color="#c084fc" />
                     </div>
-
-                    {/* Email info */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
                         <span style={{ fontSize: 13, fontWeight: 600, color: THEME.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -275,17 +302,10 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
                       <div style={{ fontSize: 12, color: THEME.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 4 }}>
                         {email.subject}
                       </div>
-                      {/* Task type + owner */}
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                        {aiC && (
-                          <Tag bg={aiC.bg} color={aiC.color}>{email.autoTaskType}</Tag>
-                        )}
-                        <span style={{ fontSize: 9, fontWeight: 700, color: "#c084fc", background: "#2e1065", borderRadius: 3, padding: "1px 5px", letterSpacing: "0.05em" }}>SIM</span>
+                        {aiC && <Tag bg={aiC.bg} color={aiC.color}>{email.autoTaskType}</Tag>}
                         {email.autoOwner && (
                           <span style={{ fontSize: 11, color: THEME.textDim }}>→ {email.autoOwner}</span>
-                        )}
-                        {email.autoConfidence && (
-                          <span style={{ fontSize: 10, color: THEME.textDim }}>{Math.round(email.autoConfidence * 100)}% confiança</span>
                         )}
                       </div>
                     </div>
@@ -296,87 +316,63 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
           </>
         )}
 
-        {/* ── Section 2: Requerem atenção manual ── */}
-        {(pending.length > 0 || (autoTriaged.length > 0 && pending.length === 0)) && (
-          <SectionDivider
-            label="Requerem atenção manual"
-            count={pending.length > 0 ? pending.length : undefined}
-          />
-        )}
+        {/* ── Section 2: Requerem atenção manual (always visible) ── */}
+        <SectionDivider
+          label="Requerem atenção manual"
+          count={requiresAttn.length > 0 ? requiresAttn.length : undefined}
+        />
 
-        {pending.length === 0 && autoTriaged.length > 0 && (
+        {requiresAttn.length === 0 && (
           <div style={{ textAlign: "center", padding: "20px 0", color: THEME.textDim, fontSize: 13 }}>
             Sem emails a aguardar triagem manual
           </div>
         )}
 
-        {pending.map(email => {
-          const aiSug  = getAISuggestion(email);
-          const aiC    = aiSug ? getTypeColor(aiSug.type) : null;
-          const isSelected = selectedEmail?.id === email.id;
+        {requiresAttn.map(email => (
+          <div
+            key={email.id}
+            onClick={() => setSelectedEmail(email)}
+            style={{
+              background: THEME.card,
+              border: `1px solid ${THEME.border}`,
+              borderRadius: 10,
+              padding: "13px 16px",
+              cursor: "pointer",
+              transition: "all 0.1s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = THEME.accent + "44"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = THEME.border; }}
+          >
+            {email.isNewClient && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: THEME.warning, background: THEME.warningBg, borderRadius: 4, padding: "1px 7px" }}>
+                  CLIENTE NÃO RECONHECIDO
+                </span>
+              </div>
+            )}
 
-          return (
-            <div
-              key={email.id}
-              onClick={() => setSelectedEmail(email)}
-              style={{
-                background: isSelected ? THEME.cardHover : THEME.card,
-                border: `1px solid ${isSelected ? THEME.accent + "66" : THEME.border}`,
-                borderRadius: 10,
-                padding: "13px 16px",
-                cursor: "pointer",
-                transition: "all 0.1s",
-              }}
-              onMouseEnter={e => { if (!isSelected) e.currentTarget.style.borderColor = THEME.accent + "44"; }}
-              onMouseLeave={e => { if (!isSelected) e.currentTarget.style.borderColor = THEME.border; }}
-            >
-              {/* New client indicator (informational only) */}
-              {email.isNewClient && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: THEME.warning, background: THEME.warningBg, borderRadius: 4, padding: "1px 7px" }}>
-                    CLIENTE NÃO RECONHECIDO
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: THEME.sidebar, border: `1px solid ${THEME.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                <Icon name="mail" size={15} color={THEME.textMuted} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: THEME.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {email.senderName}
                   </span>
+                  <span style={{ fontSize: 11, color: THEME.textDim, flexShrink: 0 }}>{email.received}</span>
                 </div>
-              )}
-
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                {/* Email icon */}
-                <div style={{ width: 36, height: 36, borderRadius: "50%", background: THEME.sidebar, border: `1px solid ${THEME.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-                  <Icon name="mail" size={15} color={THEME.textMuted} />
+                <div style={{ fontSize: 12, fontWeight: 600, color: THEME.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 3 }}>
+                  {email.subject}
                 </div>
-
-                {/* Email info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: THEME.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {email.senderName}
-                    </span>
-                    <span style={{ fontSize: 11, color: THEME.textDim, flexShrink: 0 }}>{email.received}</span>
-                  </div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: THEME.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 3 }}>
-                    {email.subject}
-                  </div>
-                  <div style={{ fontSize: 11, color: THEME.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {email.preview}
-                  </div>
-                </div>
-
-                {/* Right: AI suggestion badge + chevron */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  {aiC && aiSug && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <Tag bg={aiC.bg} color={aiC.color}>{aiSug.type}</Tag>
-                      {aiSug.simulated && (
-                        <span style={{ fontSize: 8, fontWeight: 700, color: "#c084fc", background: "#2e1065", borderRadius: 3, padding: "1px 4px", letterSpacing: "0.05em" }}>SIM</span>
-                      )}
-                    </div>
-                  )}
-                  <Icon name="chevron" size={14} color={THEME.textDim} />
+                <div style={{ fontSize: 11, color: THEME.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {email.preview}
                 </div>
               </div>
+              <Icon name="chevron" size={14} color={THEME.textDim} style={{ flexShrink: 0 }} />
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
 
       {/* Email preview panel — read-only */}

@@ -88,18 +88,6 @@ export async function getPriorities() {
 
 // ── AI Classification ─────────────────────────────────────────────────────────
 
-/**
- * getAISuggestion(email)
- *
- * Returns the stored AI classification for an email.
- * Classification is determined once at email generation time and stored as
- * email.aiSuggestion. Toggling AI Simulation on/off only affects emails
- * generated from that point forward — it never changes existing classifications.
- *
- * Shape of returned object:
- *   { type: string, category: string, confidence: number, simulated?: boolean }
- *   or null if no classification was stored on this email.
- */
 export function getAISuggestion(email) {
   return email.aiSuggestion ?? null;
 }

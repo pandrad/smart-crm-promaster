@@ -198,8 +198,6 @@ function ChangeStatusModal({ p, onClose, onSave }) {
   const [status, setStatus] = useState(p.status);
   const [fu,     setFu]     = useState(p.fu ?? "");
 
-  const showFU = status >= 9;
-
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}>
       <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", ...mobileModal(isMobile, 420) }}>
@@ -221,11 +219,15 @@ function ChangeStatusModal({ p, onClose, onSave }) {
               ))}
             </div>
           </div>
-          {/* FU picker — only shown when target status >= 9 */}
-          {showFU && (
+          {/* FU picker — always visible */}
+          {fuList.length > 0 && (
             <div>
               <div style={{ ...LABEL, marginBottom: 8 }}>Follow-up</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                <button onClick={() => setFu("")}
+                  style={{ padding: "4px 12px", borderRadius: 9999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: !fu ? `2px solid ${THEME.textMuted}` : `2px solid ${THEME.border}`, background: !fu ? `${THEME.textMuted}22` : "transparent", color: THEME.textMuted }}>
+                  — Nenhum —
+                </button>
                 {fuList.map(s => (
                   <button key={s.id ?? s.label} onClick={() => setFu(s.label)}
                     style={{ padding: "4px 12px", borderRadius: 9999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: fu === s.label ? `2px solid ${s.color}` : `2px solid ${THEME.border}`, background: fu === s.label ? s.bg : "transparent", color: s.color }}>
@@ -237,7 +239,7 @@ function ChangeStatusModal({ p, onClose, onSave }) {
           )}
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
-            <button onClick={() => { onSave(status, showFU ? fu : undefined); onClose(); }} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Guardar</button>
+            <button onClick={() => { onSave(status, fu || undefined); onClose(); }} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Guardar</button>
           </div>
         </div>
       </div>
@@ -395,9 +397,20 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
   function photoOf(name) { return users.find(u => u.name === name)?.photo; }
 
   function updateField(field, value) {
-    const updated = { ...p, [field]: value };
+    const fieldLabels = { brand: "Marca / Tipo", model: "Modelo", price: "Sell Price" };
+    const label = fieldLabels[field] || field;
+    const oldVal = p[field] ?? "—";
+    const displayNew = field === "price" && value ? `€${value}` : (value || "—");
+    const displayOld = field === "price" && oldVal && oldVal !== "—" ? `€${oldVal}` : (oldVal || "—");
+    const ts = nowTs();
+    const entry = { icon: "edit", color: THEME.textMuted, time: ts, text: `${label} alterado de "${displayOld}" para "${displayNew}" por ${currentUser.name || "—"}` };
+    const updated = { ...p, [field]: value, timeline: [...(p.timeline || []), entry] };
     setP(updated);
     onUpdate?.(updated);
+  }
+
+  function nowTs() {
+    return new Date().toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
   }
 
   function handleStatusSave(newStatus, newFu) {
@@ -405,19 +418,34 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
     const reatribuiMap = mapeamento.processoStatusReatribui ?? {};
     let patch = { status: newStatus, ...(newFu !== undefined ? { fu: newFu } : {}) };
 
-    // When Reatribui is ON for this process status, run the Mapeamento lookup
-    // and reassign the Resp. Cotação (owner) to the mapped role's next user.
     if (reatribuiMap[newStatus]) {
       const newOwner = store.assignForProcessStatus(newStatus, p.client || null);
       if (newOwner) patch = { ...patch, owner: newOwner };
     }
 
-    const updated = { ...p, ...patch };
+    const oldStage = stages.find(s => s.id === p.status);
+    const newStage = stages.find(s => s.id === newStatus);
+    const ts = nowTs();
+    const entries = [];
+    entries.push({ icon: "tag", color: newStage?.color || THEME.textMuted, time: ts, text: `Estado alterado de "${oldStage?.label || p.status}" para "${newStage?.label || newStatus}" por ${currentUser.name || "—"}` });
+    if (patch.owner && patch.owner !== p.owner) {
+      entries.push({ icon: "user", color: THEME.textMuted, time: ts, text: `Reatribuído a ${patch.owner} (via mapeamento de estado)` });
+    }
+    if (newFu !== undefined && newFu !== p.fu) {
+      entries.push({ icon: "check", color: "#38bdf8", time: ts, text: `Follow-up alterado para "${newFu || "—"}" por ${currentUser.name || "—"}` });
+    }
+
+    const updated = { ...p, ...patch, timeline: [...(p.timeline || []), ...entries] };
     setP(updated); onUpdate?.(updated);
   }
 
   function handleReassignSave({ owner, comm, compra }) {
-    const updated = { ...p, owner, comm, compra };
+    const ts = nowTs();
+    const entries = [];
+    if (owner !== p.owner) entries.push({ icon: "user", color: THEME.textMuted, time: ts, text: `Resp. Cotação alterado de ${p.owner} para ${owner} por ${currentUser.name || "—"}` });
+    if (comm !== p.comm) entries.push({ icon: "user", color: THEME.textMuted, time: ts, text: `Resp. Comercial alterado de ${p.comm} para ${comm} por ${currentUser.name || "—"}` });
+    if (compra !== p.compra) entries.push({ icon: "user", color: THEME.textMuted, time: ts, text: `Resp. Compra alterado de ${p.compra} para ${compra} por ${currentUser.name || "—"}` });
+    const updated = { ...p, owner, comm, compra, timeline: [...(p.timeline || []), ...entries] };
     setP(updated); onUpdate?.(updated);
   }
 
@@ -490,23 +518,8 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
             <InfoCell label="Data Limite"    value={p.deadline} />
             <InfoCell label="Prioridade"     value={p.priority} />
             <EditableInfoCell label="Sell Price"     value={p.price ? "€" + p.price.toLocaleString("pt-PT") : ""}  canEdit={canEdit} onSave={v => { const n = parseFloat(v.replace(/[^\d.,]/g, "").replace(",", ".")); updateField("price", isNaN(n) ? null : n); }} />
-            {/* FU field when status >= 9 — editable dropdown */}
             {p.status >= 9 && (
-              <div>
-                <div style={{ fontSize: 10, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>Follow-up</div>
-                {canEdit ? (
-                  <select
-                    value={p.fu || ""}
-                    onChange={e => { const updated = { ...p, fu: e.target.value || undefined }; setP(updated); onUpdate?.(updated); }}
-                    style={{ marginTop: 4, fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 6, padding: "4px 8px", background: THEME.sidebar, color: THEME.text, outline: "none", cursor: "pointer" }}
-                  >
-                    <option value="">— Sem follow-up —</option>
-                    {store.getFUStatuses().map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
-                  </select>
-                ) : (
-                  <div style={{ marginTop: 4 }}>{p.fu ? <FUBadge label={p.fu} /> : <span style={{ fontSize: 12, color: THEME.textDim }}>—</span>}</div>
-                )}
-              </div>
+              <InfoCell label="Follow-up" value={p.fu || "—"} />
             )}
           </div>
 

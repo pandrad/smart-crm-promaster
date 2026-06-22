@@ -26,10 +26,6 @@ Demo login: `admin@promaster.co` / `admin123` · `supervisor@promaster.co` / `su
 
 **Admin Panel — SLA tab renamed to Avisos.** Label-only change, no functional difference.
 
-**Inbox triage — Diversos removed.** "Marcar como Diversos" replaced by category creation flow, which has since been relocated to Tarefas (see below). Inbox triage actions are now: Confirmar como Processo, Confirmar como Tarefa, Associar a processo existente.
-
-**Associar a processo existente** now uses autocomplete sourced from real process IDs. Typing a non-existent number shows a validation warning requiring explicit confirmation before proceeding.
-
 **Pré-Entrada → Validação de Processo** conversion implemented. "Abrir Processo" button replaced with "Enviar para Validação" — converts the Pré-Entrada task into a Validação de Processo task assigned to Resp. Cotação (via mapeamento or "cotacao" role fallback). No process number generated until the validator approves via the existing Validar e Criar Processo flow.
 
 **Alterar Estado Manualmente** — new action for Admin/Supervisor on any task (including Concluído/Cancelado). Opens a picker with all statuses including System Role ones, mandatory reason field. Logs a distinct `⚠ Alteração manual` history entry. Deliberately separate from normal action buttons.
@@ -40,23 +36,19 @@ Demo login: `admin@promaster.co` / `admin123` · `supervisor@promaster.co` / `su
 
 **Task ownership rule (finalised).** Every ownership-changing action (Passar, Escalar, Devolver, Enviar para Validação) resets the task to "Por Fazer" status so it appears in the new owner's Por Fazer section as fresh work. Actions that don't change ownership (Enviar Email, etc.) transition Por Fazer → Em Curso and stay with the same person. Retomar (supervisor taking an escalated task) goes directly to Em Curso since the supervisor is actively choosing to work on it.
 
-**Inbox — fully read-only, observation-only.** All manual triage buttons, modals, and handlers removed. Clicking an email row opens a read-only preview (sender, subject, body, attachments, AI suggestion badge). No assignment actions exist at the Inbox level. All categorisation happens exclusively in Tarefas.
-
-**Não Classificado auto-routing.** Emails resolving to Não Classificado (confidence < 0.6 or type === "Não Classificado") now always auto-route to a task assigned to Supervisor, regardless of the AI Simulation toggle state. The toggle only controls whether classified emails are auto-triaged.
-
-**AI Simulation toggle** no longer retroactively changes existing email classifications. Classification is determined once at email generation time and stored as `email.aiSuggestion`. Toggle only affects emails generated from that point forward.
-
-**Random email generator (DEV)** now produces ~15-20% unclassifiable emails (Não Classificado, confidence below 0.6, routed to Supervisor) alongside the ~80-85% confident classifications. The dedicated "Gerar email não classificável" button remains for deterministic testing. The dead `simulateAIClassification()` function was removed from `utils.js` along with its unused import in `api/client.js`.
-
-**DEV tools added:** "Gerar email não classificável" (always Não Classificado) and "Simular incumprimento SLA" (backdates a random active task's due date to trigger SLA breach visual).
-
 **Dashboard — SLA breach tile** added to the "As minhas tarefas" row, showing count of the user's own tasks currently breaching their due date.
 
 **Dashboard — task stat alignment.** Task stat calculations now use the same `doneLabels` and `porFazerLabel` logic as Tarefas.jsx, so the numbers always match exactly.
 
 **Dashboard — Actividade Recente split by role.** Standard users see activity filtered to tasks where they are owner or appear in history. Admin/Supervisor see two sections: "Actividade geral" (all system activity) and "As minhas" (same filtered view).
 
-**Processos — SLA column.** The "Prazo" column in the process table now shows the Avisos/SLA timing configured for that process's current status (e.g. "48 horas", "3 dias") instead of the raw deadline date. Shows "Sem SLA" when no timing is configured. Column header changed to "SLA".
+**Dashboard — process stats scoped by role.** Standard users see "Visão geral de processos" filtered to their own processes by default, with a "Ver todos" / "Ver meus" toggle. Admin/Supervisor see all processes by default.
+
+**Processos — Meus Processos default.** Tab order swapped: "Meus processos" is first and pre-selected on load. "Todos os processos" is second.
+
+**Processos — Data Limite column.** The column previously labelled "SLA" is now "Data Limite" and shows the calculated due date (process creation date + Avisos duration configured for that status). Shows "Sem SLA definido" when no timing is configured.
+
+**Process detail — SLA/Avisos section.** New section in the detail drawer showing the configured timing for the current status with an "Editar SLA" button (always visible when user has edit permission). SLA changes are logged in the process timeline.
 
 **Process detail — follow-up status restored.** FU field now always visible when process status ≥ 9 (Enviado+), with an editable dropdown for users with edit permission, even when no FU was previously set.
 
@@ -66,6 +58,8 @@ Demo login: `admin@promaster.co` / `admin123` · `supervisor@promaster.co` / `su
 
 **Process detail — attachment supersede with confirmation.** "Remover" action on each attachment (including Modelo de Proposta) requires a confirmation prompt before proceeding. Superseded attachments are marked `superseded: true` and hidden from the active list but preserved in the attachments array and logged in the timeline — consistent with the no-deletion rule.
 
+**Process detail — full activity timeline logging.** Every status change, reassignment (owner/comm/compra), field edit (Marca/Tipo, Modelo, Sell Price), and attachment add/remove is logged with timestamp, actor name, and description. Mirrors the task history pattern.
+
 **Process detail — originEmail on all creation paths.** `originEmail` now populated on processes created via Validar e Criar Processo (copied from the validation task) and via DEV tool "Gerar processo aleatório" (synthetic content), ensuring Email de Origem is always clickable.
 
 **Process number format** fixed to AAMMNNN with real current date (`new Date()`). Sequential counter resets per month prefix. Created/deadline dates on new processes are also dynamic.
@@ -73,6 +67,29 @@ Demo login: `admin@promaster.co` / `admin123` · `supervisor@promaster.co` / `su
 **Unassigned task visibility** — tasks with no owner (null/undefined/empty) now visible only to Admin/Supervisor. Standard users see only their own tasks.
 
 **Toast notification disabled** — `<Toast>` removed from Main.jsx render (import also removed). Toast.jsx file kept intact for potential reintroduction.
+
+**Admin Panel — system task status protection.** Task statuses with a System Role other than "Nenhum" show a lock icon, cannot be deleted (delete button disabled), and have the System Role dropdown locked when editing. Label and colour remain editable.
+
+**Admin Panel — Mapeamento: Reatribui toggle removed from Por Tipo de Tarefa.** Task type rows in Mapeamento now show only the role dropdown. The Reatribui toggle remains on process status and task status sections.
+
+**Process assignment notification cards.** When a process is assigned to a user, a dismissable notification card appears at the top of their Por Fazer section in Tarefas. Cards show process number, client, brand/model, assignment reason, and have "Ver Processo" (navigates + dismisses) and "Dispensar" (dismisses only) actions. Cards are ephemeral — not task records, don't affect counts or stats. Two mock cards seeded in `MOCK_PROCESS_NOTIFICATIONS`. Store methods: `getProcessNotifications()`, `saveProcessNotifications()`, `dismissProcessNotification()`.
+
+### Email Classification & Routing (rewritten — 19 June 2026)
+
+The classification/routing flow was fully rewritten to eliminate accumulated patches. The architecture is now:
+
+**Data flow:** Classification is determined once at email generation time in DevTools and stored as `email.aiSuggestion`. The `getAISuggestion(email)` function in `api/client.js` is a pure passthrough: `return email.aiSuggestion ?? null`. No heuristics, no simulation toggle check.
+
+**DevTools email generation:** When AI Simulation is ON, ~78% of generated emails get a confident classification (type randomly selected from current `store.getTaskTypes()`, confidence 0.75–0.99). ~22% get `{ type: null, confidence: 0 }`. When OFF, all emails get `{ type: null, confidence: 0 }`. The "Gerar email não classificável" button always generates `{ type: null, confidence: 0 }` regardless of toggle.
+
+**Inbox triage (single useEffect in Inbox.jsx):** Three paths:
+- **AI Sim OFF:** Every pending email → task assigned to Supervisor (resolved via `crm_user_roles` "supervisor" role), email status `"requires-attention"`, appears in Requerem atenção manual section.
+- **AI Sim ON, OUTCOME A:** `getAISuggestion()` returns non-null, confidence ≥ 0.6, type not null, type exists in `store.getTaskTypes()` → task created with that type via `store.assignForTaskType()`, email status `"auto-triaged"`, appears in Processados automaticamente section.
+- **AI Sim ON, OUTCOME B:** All other cases → task type "Não Classificado", assigned to Supervisor, email status `"requires-attention"`, appears in Requerem atenção manual section.
+
+**Inbox rendering:** Two sections always present. Section 1 ("Processados automaticamente") only visible when AI Sim ON, shows type badge + assigned person name, muted read-only style. Section 2 ("Requerem atenção manual") always visible, shows no badge/label on any email. Both sections are read-only. Preview panel shows only sender, subject, body, attachments. Zero action buttons anywhere in Inbox — all routing/categorisation happens in Tarefas.
+
+**Email status values:** `"pending"` → `"auto-triaged"` | `"requires-attention"`. Task status uses `store.getLabelForSystemRole("Por Fazer")` — never hardcoded.
 
 ### Known Open Issues (pending fix)
 
@@ -99,11 +116,12 @@ Demo login: `admin@promaster.co` / `admin123` · `supervisor@promaster.co` / `su
 frontend/src/
 ├── api/client.js        — fetch stubs; swap for real fetch() in Stage 5
 ├── mock/data.js         — all mock content: PROCESSOS, TAREFAS, INBOX_EMAILS,
-│                          MOCK_CREDENTIALS, MOCK_TOAST, MOCK_IMPORT_PREVIEW
+│                          MOCK_CREDENTIALS, MOCK_TOAST, MOCK_IMPORT_PREVIEW,
+│                          MOCK_PROCESS_NOTIFICATIONS
 ├── data.js              — seed arrays only; consumed by store.js alone
 ├── store.js             — all admin-configurable runtime state (localStorage)
 ├── theme.js             — dark/light theme system
-├── utils.js             — daysLeft(), useWindowSize(), simulateAIClassification()
+├── utils.js             — daysLeft(), useWindowSize()
 ├── icons.jsx            — inline SVG icons
 ├── pages/               — Login, Main, Processos, Tarefas, Inbox, Clientes, Arquivo
 └── components/          — Sidebar, StatsBar, Toolbar, TableView, KanbanView,
@@ -122,10 +140,10 @@ frontend/src/
 | `Main.jsx` | Layout shell — sidebar, routing, shared state, global modals |
 | `Processos.jsx` | Dashboard — stats bar, filters, table/kanban |
 | `Tarefas.jsx` | Task management — full workflow, validation, history timeline |
-| `Inbox.jsx` | Email triage — 4 manual actions + AI auto-triage when simulation ON; two-section layout (auto-triaged / manual) |
+| `Inbox.jsx` | Email observation — read-only two-section layout (Processados automaticamente / Requerem atenção manual); all routing happens in Tarefas |
 | `Clientes.jsx` | Client list — table + detail drawer + Responsável column |
 | `AdminPanel.jsx` | 9 tabs: Utilizadores, Funções, Atribuição, Processos, Tarefas, Mapeamento, SLA, Marca, Importar |
-| `DetailDrawer.jsx` | Process detail — number, Comprador, Consulta checklist, Excel link, FU conditional |
+| `DetailDrawer.jsx` | Process detail — number, Comprador, Consulta checklist, Excel link, FU, SLA edit, full activity timeline |
 | `DevTools.jsx` | 7 DEV-only tools — **delete before Stage 1 closure** |
 
 ---
@@ -138,7 +156,7 @@ Tabs in order:
 3. Atribuição de Utilizadores — assign users to roles (one user → many roles; one role → many users, round-robin)
 4. Processos — Estados de Processo + Estados de Follow-up
 5. Tarefas — Tipos de Tarefa + Estados de Tarefa (with System Role field)
-6. Mapeamento de Responsabilidades — por estado de processo / por tipo de tarefa / por estado de tarefa (each with Reatribui toggle)
+6. Mapeamento de Responsabilidades — por estado de processo (with Reatribui toggle) / por tipo de tarefa (role dropdown only) / por estado de tarefa (with Reatribui toggle)
 7. SLA — timings per process status, task type, task status
 8. Marca — branding
 9. Importar — CSV/Excel bulk import
@@ -153,7 +171,7 @@ When a trigger fires (process status change, task created, email triaged):
 3. Find users with that role in `crm_user_roles`
 4. Assign round-robin via `crm_rr_counters`
 
-**Reatribui toggle:** each process status, task type, and task status has a `reassigns` boolean stored in `crm_mapeamento` under `processoStatusReatribui`, `taskTypeReatribui`, and `taskStatusReatribui` respectively. When OFF, the role dropdown is hidden and no reassignment occurs. When ON, the dropdown is visible and a new owner is resolved on trigger.
+**Reatribui toggle:** each process status and task status has a `reassigns` boolean stored in `crm_mapeamento` under `processoStatusReatribui` and `taskStatusReatribui` respectively. When OFF, the role dropdown is hidden and no reassignment occurs. When ON, the dropdown is visible and a new owner is resolved on trigger. Task types in Mapeamento show only the role dropdown — no Reatribui toggle.
 
 **System roles:** 7 fixed task status behaviours (Escalado, Devolvido, Cancelamento Pendente, Cancelado, Concluído, Em Curso, Por Fazer). Admin can rename/recolour but cannot delete. Action buttons set status via `sysStatus()` dynamic lookup — never hardcoded strings.
 
@@ -171,9 +189,7 @@ When a trigger fires (process status change, task created, email triaged):
 | 6 | Limpar dados admin | Clear admin config (keeps current user) |
 | 7 | Repor todos os dados mock | Full reset to baseline |
 
-AI simulation toggle in DEV panel: when ON, `simulateAIClassification()` runs automatically on every pending inbox email. Emails with confidence ≥ 0.6 and a recognised type are auto-triaged: a task is created via `store.assignForTaskType()` (client assignment checked first, then Mapeamento round-robin), and the email moves to the **Processados automaticamente** section. Emails below the threshold stay in **Requerem atenção manual**. When OFF, no auto-processing occurs and all emails stay pending. **`simulateAIClassification()` is DEV ONLY — do not use in backend.**
-
-**Inbox two-section layout:** `auto-triaged` emails show in a muted read-only section (no action buttons) with task type tag, SIM badge, assigned person, and confidence. `pending` emails show in the manual section with the four action buttons in the preview panel as before. Email status field values: `pending` → `auto-triaged` | `triaged` | `processed` | `diversos`.
+AI simulation toggle in DEV panel: controls whether generated emails receive AI classification. When ON, ~78% of generated emails get a confident type (from current `store.getTaskTypes()`), ~22% get `type: null`. When OFF, all generated emails get `type: null`. The Inbox triage useEffect then processes each email according to the three-path logic documented in "Email Classification & Routing" above.
 
 ---
 

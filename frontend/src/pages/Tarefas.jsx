@@ -1418,6 +1418,7 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
           <div style={{ flex: 1, height: 1, background: THEME.border }} />
         </div>
       </div>
+
       {isMobile ? (
         <div style={{ padding: "0 14px 8px", display: "flex", flexDirection: "column", gap: 8 }}>
           {porFazerTasks.length === 0 && <p style={{ textAlign: "center", color: THEME.textDim, padding: "16px 0", fontSize: 13 }}>Sem tarefas por fazer</p>}

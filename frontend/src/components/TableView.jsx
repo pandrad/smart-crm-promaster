@@ -205,7 +205,7 @@ export function TableView({ rows, onSelect, users = [], currentUser = {}, sortSt
             <tr style={{ background: theadBg, borderBottom: `1px solid ${THEME.border}` }}>
               {isVisible("id")        && <TH colKey="id"        label="Nº"               {...thProps} />}
               {isVisible("created")   && <TH colKey="created"   label="Criado"           {...thProps} />}
-              {isVisible("deadline")  && <TH colKey={null}       label="SLA"              {...thProps} />}
+              {isVisible("deadline")  && <TH colKey={null}       label="Data Limite"      {...thProps} />}
               {isVisible("priority")  && <TH colKey="priority"  label="P"                {...thProps} />}
               {isVisible("status")    && <TH colKey={null}       label="Estado"           {...thProps} />}
               {isVisible("fu")        && <TH colKey={null}       label="Follow Up"        {...thProps} />}
@@ -238,8 +238,17 @@ export function TableView({ rows, onSelect, users = [], currentUser = {}, sortSt
                   <td style={{ padding: "9px 10px" }}>{(() => {
                     const sla = store.getSLASettings();
                     const entry = sla.processoStatus?.[p.status];
-                    if (!entry || !entry.value) return <span style={{ fontSize: 11, color: THEME.textDim }}>Sem SLA</span>;
-                    return <span style={{ fontSize: 11, color: THEME.textMuted }}>{entry.value} {entry.unit}</span>;
+                    if (!entry || !entry.value) return <span style={{ fontSize: 11, color: THEME.textDim }}>Sem SLA definido</span>;
+                    try {
+                      const [d, m, y] = p.created.split("/").map(Number);
+                      const base = new Date(y, m - 1, d);
+                      const ms = entry.unit === "dias" ? entry.value * 86400000 : entry.value * 3600000;
+                      const due = new Date(base.getTime() + ms);
+                      const pad = n => String(n).padStart(2, "0");
+                      return <span style={{ fontSize: 11, color: THEME.textMuted }}>{pad(due.getDate())}/{pad(due.getMonth()+1)}/{due.getFullYear()}</span>;
+                    } catch {
+                      return <span style={{ fontSize: 11, color: THEME.textDim }}>Sem SLA definido</span>;
+                    }
                   })()}</td>
                 )}
                 {isVisible("priority") && (
