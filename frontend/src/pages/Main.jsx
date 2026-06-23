@@ -384,8 +384,8 @@ export function Main() {
         />
       )}
 
-      {/* DEV ONLY — remove DevTools import and this block before production */}
-      {import.meta.env.DEV && (
+      {/* DEV tools visible in dev mode OR when VITE_SHOW_DEV_TOOLS=true — remove env var before real production deployment */}
+      {(import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_TOOLS === 'true') && (
         <DevTools
           currentUser={currentUser}
           onSwitchUser={handleSwitchUser}
