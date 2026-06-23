@@ -37,6 +37,7 @@ function BottomNav({ currentUser, processosBadge, tarefasBadge, inboxBadge, acce
     { icon: "list",     label: "Processos",    route: "/processos", badge: processosBadge, show: true,          action: () => navigate("/processos") },
     { icon: "inbox",    label: "Inbox",        route: "/inbox",     badge: inboxBadge,     show: isPrivileged,  action: () => navigate("/inbox") },
     { icon: "users",    label: "Clientes",     route: "/clientes",  badge: null,           show: true,          action: () => navigate("/clientes") },
+    { icon: "archive",  label: "Arquivo",      route: "/arquivo",   badge: null,           show: true,          action: () => navigate("/arquivo") },
     { icon: "settings", label: "Admin",        route: null,         badge: null,           show: isPrivileged,  action: onOpenAdmin },
   ].filter(i => i.show);
 

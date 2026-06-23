@@ -164,7 +164,7 @@ function UserSwitcher({ currentUser, onSwitchUser }) {
         <Icon name={open ? "chevron-up" : "chevron-down"} size={11} color="#60a5fa" />
       </button>
       {open && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 3, maxHeight: 180, overflowY: "auto" }}>
           {users.map(u => {
             const isActive = u.email === currentUser?.email;
             const ids      = userRoles[u.id] ?? [];

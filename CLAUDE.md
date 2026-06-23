@@ -208,6 +208,20 @@ Reviewer prompt: `docs/reviewer-prompt.md`
 
 ---
 
+## Deployment
+
+**Live prototype:** https://smart-crm-promaster.vercel.app
+
+Frontend only — backend not yet deployed (Stage 4). Every push to the `main` branch on GitHub automatically triggers a new Vercel deployment within ~30 seconds.
+
+The DEV tools panel is visible on the deployed version because the environment variable `VITE_SHOW_DEV_TOOLS=true` is set in Vercel project settings. **⚠ This variable must be deleted from Vercel before real production deployment in Stage 7** — leaving it in place would expose DEV tools to real users.
+
+**Login credentials for the prototype:**
+- `admin@promaster.co.ao` / `promaster26` — Admin (maps to Luís Quelhas Valente)
+- All other users: their real Promaster email (e.g. `joao.morais@promaster.co.ao`, `adelina.rodrigues@promaster.co.ao`) with password `promaster26`
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -217,7 +231,7 @@ Reviewer prompt: `docs/reviewer-prompt.md`
 | Database | PostgreSQL via Supabase |
 | Email | Microsoft Graph API (webhook on info@promaster.co) |
 | AI | Claude API — `claude-sonnet-4-20250514` |
-| Hosting | Railway (frontend + backend) + Supabase |
+| Hosting | Vercel (frontend) + Supabase (Stage 5+) |
 
 ---
 
