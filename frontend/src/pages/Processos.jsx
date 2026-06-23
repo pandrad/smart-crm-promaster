@@ -32,11 +32,11 @@ export function Processos({ processos, setProcessos, tarefas, users, currentUser
     if (commFilter  !== "Todos" && p.comm  !== commFilter)  return false;
 
     if      (statusFilter === null)      { /* no status filter */ }
-    else if (statusFilter === "open")    { if (p.status >= 7)   return false; }
-    else if (statusFilter === "overdue") { if (!(daysLeft(p.deadline) < 0 && p.status < 7)) return false; }
-    else if (statusFilter === "urgent")  { const d = daysLeft(p.deadline); if (!(d >= 0 && d <= 2 && p.status < 7)) return false; }
-    else if (statusFilter === "won")     { if (p.status !== 10) return false; }  // Ganhos = Encomenda (id 10)
-    else if (statusFilter === "carry")   { if (!p.carryover || p.status >= 7) return false; }
+    else if (statusFilter === "open")    { if (p.status >= 8)   return false; }
+    else if (statusFilter === "overdue") { if (!(daysLeft(p.deadline) < 0 && p.status < 8)) return false; }
+    else if (statusFilter === "urgent")  { const d = daysLeft(p.deadline); if (!(d >= 0 && d <= 2 && p.status < 8)) return false; }
+    else if (statusFilter === "won")     { if (p.status !== 12) return false; }  // Ganhos = Adjudicado (id 12)
+    else if (statusFilter === "carry")   { if (!p.carryover || p.status >= 8) return false; }
     else                                 { if (p.status !== Number(statusFilter)) return false; }
 
     // General search across all key fields
@@ -93,7 +93,7 @@ export function Processos({ processos, setProcessos, tarefas, users, currentUser
         <div>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: THEME.text }}>Processos</h1>
           <div style={{ fontSize: 12, color: THEME.textDim, marginTop: 2 }}>
-            Maio 2026 · {active.filter(p => p.status < 7).length} em aberto
+            Maio 2026 · {active.filter(p => p.status < 8).length} em aberto
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

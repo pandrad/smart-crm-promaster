@@ -245,7 +245,9 @@ export function TableView({ rows, onSelect, users = [], currentUser = {}, sortSt
                       const ms = entry.unit === "dias" ? entry.value * 86400000 : entry.value * 3600000;
                       const due = new Date(base.getTime() + ms);
                       const pad = n => String(n).padStart(2, "0");
-                      return <span style={{ fontSize: 11, color: THEME.textMuted }}>{pad(due.getDate())}/{pad(due.getMonth()+1)}/{due.getFullYear()}</span>;
+                      const breached = due < new Date();
+                      const dateStr = `${pad(due.getDate())}/${pad(due.getMonth()+1)}/${due.getFullYear()}`;
+                      return <span style={{ fontSize: 11, fontWeight: breached ? 700 : 400, color: breached ? THEME.danger : THEME.textMuted }}>{breached ? "⚠ " : ""}{dateStr}</span>;
                     } catch {
                       return <span style={{ fontSize: 11, color: THEME.textDim }}>Sem SLA definido</span>;
                     }

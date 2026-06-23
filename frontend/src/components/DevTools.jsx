@@ -37,6 +37,18 @@ const RANDOM_SUBJECTS = [
   { text: "Registo de nova empresa — pedido de cotação", type: "Cliente Novo",  category: "Cliente Novo",        preview: "Somos uma empresa nova no sector e gostaríamos de estabelecer relação comercial com a Promaster. Pedimos cotação inicial." },
 ];
 
+const TYPED_EMAIL_TEMPLATES = {
+  "Pré-Entrada":           { subject: "Pedido de cotação — VOLVO EC360BLC",             body: "Bom dia,\n\nVenho por este meio solicitar cotação para aquisição de 1 unidade VOLVO EC360BLC para obra de construção civil.\n\nNecessitamos de preço CIF Luanda, prazo de entrega e condições de pagamento.\n\nAguardamos proposta com urgência." },
+  "Abertura de Processo":  { subject: "Abertura de processo — equipamento CAT 336 GC",  body: "Bom dia,\n\nSolicitamos a abertura de processo para aquisição de 1 unidade CAT 336 GC.\n\nToda a documentação necessária segue em anexo. Por favor confirmar recepção e indicar prazo de abertura." },
+  "Contas Correntes":      { subject: "Conta corrente — facturas pendentes Q2 2026",    body: "Bom dia,\n\nVenho solicitar esclarecimento sobre o estado das facturas pendentes do Q2 2026.\n\nSegundo os nossos registos, existem 3 facturas por liquidar num total de €58.200.\n\nSolicito envio de extracto actualizado." },
+  "Status de Encomenda":   { subject: "Status da encomenda — confirmação de prazo",      body: "Bom dia,\n\nNecessito de confirmação urgente sobre o prazo de entrega da encomenda em curso.\n\nA obra está programada e o fornecimento atempado é crítico para o cronograma.\n\nAguardo resposta." },
+  "Desconto":              { subject: "Pedido de desconto — volume anual significativo", body: "Bom dia,\n\nApós análise do nosso volume de compras anual com a Promaster, gostaríamos de negociar um desconto adicional sobre a proposta em curso.\n\nO nosso histórico de pagamento é exemplar e temos mais aquisições previstas." },
+  "Cliente Novo":          { subject: "Novo cliente — pedido de registo e cotação",      body: "Bom dia,\n\nSomos uma empresa recentemente constituída no sector de construção civil e gostaríamos de estabelecer relação comercial com a Promaster.\n\nSolicitamos registo como cliente e envio de catálogo de equipamentos disponíveis." },
+  "Follow-Up":             { subject: "Seguimento — proposta pendente há 3 semanas",     body: "Bom dia,\n\nJá passaram 3 semanas desde o nosso pedido de cotação inicial e ainda não recebemos proposta.\n\nO prazo de adjudicação da obra está a fechar. Por favor confirmar se a proposta está em preparação." },
+  "Escalação":             { subject: "Urgente — decisão de direcção necessária",        body: "Bom dia,\n\nEste assunto requer decisão urgente da direcção. O prazo de resposta ao cliente expira amanhã e a autoridade de aprovação está acima do nível actual.\n\nSolicito escalação imediata." },
+  "Análise Técnica":       { subject: "Pedido de análise técnica — compatibilidade",     body: "Bom dia,\n\nSolicitamos análise técnica de compatibilidade para o equipamento proposto.\n\nPrecisamos confirmar que as especificações técnicas são adequadas para as condições de operação no terreno.\n\nAguardamos parecer técnico." },
+};
+
 // ── Random processo data ──────────────────────────────────────────────────────
 
 const RANDOM_CLIENTS = [
@@ -206,6 +218,7 @@ export function DevTools({
   const { isMobile } = useWindowSize();
   const [collapsed, setCollapsed] = useState(false);
   const [aiSimOn, setAiSimOn] = useState(() => getAISimulationEnabled());
+  const [typedEmailType, setTypedEmailType] = useState("");
 
   function toggleAISim() {
     const next = !aiSimOn;
@@ -273,6 +286,39 @@ export function DevTools({
     setInboxEmails(next);
   }
 
+  // ── Tool 2c: Generate typed inbox email (specific task type) ──────────
+  function handleGenerateTypedEmail(typeLabel) {
+    if (!typeLabel) return;
+    const sender = randomPick(RANDOM_SENDERS);
+    const template = TYPED_EMAIL_TEMPLATES[typeLabel] || {
+      subject: `${typeLabel} — pedido via ${sender.company}`,
+      body: `Bom dia,\n\nEste email refere-se a: ${typeLabel}.\n\nSolicitamos atenção a este assunto com a maior brevidade.\n\nCom os melhores cumprimentos,\n${sender.name}\n${sender.company}`,
+    };
+
+    const aiSuggestion = aiSimOn
+      ? { type: typeLabel, category: typeLabel, confidence: Math.round((0.85 + Math.random() * 0.14) * 100) / 100 }
+      : { type: null, category: null, confidence: 0 };
+
+    const newEmail = {
+      id:           `E_dev_${Date.now()}`,
+      sender:       sender.email,
+      senderName:   sender.name,
+      to:           "info@promaster.co",
+      subject:      template.subject,
+      preview:      template.body.split("\n").find(l => l.trim()) || template.subject,
+      body:         `${template.body}\n\nCom os melhores cumprimentos,\n${sender.name}\n${sender.company}`,
+      attachments:  [],
+      received:     nowReceived(),
+      isInternal:   false,
+      isNewClient:  false,
+      aiSuggestion,
+      status:       "pending",
+    };
+    const next = [...store.getInboxEmails(), newEmail];
+    store.saveInboxEmails(next);
+    setInboxEmails(next);
+  }
+
   // ── Tool 3: Generate random processo ─────────────────────────────────────
   function handleGenerateProcesso() {
     const cl   = randomPick(RANDOM_CLIENTS);
@@ -287,7 +333,7 @@ export function DevTools({
 
     const created  = todayDDMMYYYY();
     const deadline = deadlineDDMMYYYY(randomInt(3, 10));
-    const status   = randomInt(1, 4); // Entrada → Proposta
+    const status   = randomInt(1, 7); // Pré-Entrada → Para Fechar
 
     const newProcesso = {
       id:        newId,
@@ -443,6 +489,25 @@ export function DevTools({
           {/* Tool 2b — Generate unclassifiable inbox email */}
           <ToolButton label="Gerar email não classificável" icon="alert" color="#fb923c" bg="#1c1005" onClick={handleGenerateUnclassifiableEmail} />
 
+          {/* Tool 2c — Generate typed email */}
+          <div style={{ display: "flex", gap: 3 }}>
+            <select
+              value={typedEmailType}
+              onChange={e => setTypedEmailType(e.target.value)}
+              style={{ flex: 1, fontSize: 10, padding: "5px 6px", background: "#0f172a", color: "#94a3b8", border: "1px solid #1e293b", borderRadius: 5, outline: "none" }}
+            >
+              <option value="">Tipo de tarefa…</option>
+              {store.getTaskTypes().map(t => <option key={t.id} value={t.label}>{t.label}</option>)}
+            </select>
+            <button
+              onClick={() => { handleGenerateTypedEmail(typedEmailType); }}
+              disabled={!typedEmailType}
+              style={{ ...BTN_BASE, width: "auto", padding: "5px 10px", background: typedEmailType ? "#14330a" : "#0f172a", color: typedEmailType ? "#a3e635" : "#475569", fontSize: 10, opacity: typedEmailType ? 1 : 0.5 }}
+            >
+              Gerar
+            </button>
+          </div>
+
           {/* Tool 3 — Generate random processo */}
           <ToolButton label="Gerar processo aleatório" icon="plus" color="#38bdf8" bg="#0c2231" onClick={handleGenerateProcesso} />
 
@@ -471,16 +536,34 @@ export function DevTools({
             </button>
           </div>
 
-          {/* Tool — Simulate SLA breach */}
+          {/* Tool — Simulate SLA breach (tasks + processes) */}
           <ToolButton label="Simular incumprimento SLA" icon="alert" color="#f87171" bg="#2d0a0a" onClick={() => {
             const allTarefas = store.getTarefas();
             const doneLabels = new Set(["Concluído", "Cancelado"].map(r => store.getLabelForSystemRole(r)).filter(Boolean));
-            const active = allTarefas.filter(t => !doneLabels.has(t.status));
-            if (active.length === 0) return;
-            const target = active[Math.floor(Math.random() * active.length)];
-            const updated = allTarefas.map(t => t.id === target.id ? { ...t, due: "01/04/2026" } : t);
-            store.saveTarefas(updated);
-            setTarefas(updated);
+            const activeTasks = allTarefas.filter(t => !doneLabels.has(t.status));
+            if (activeTasks.length > 0) {
+              const target = activeTasks[Math.floor(Math.random() * activeTasks.length)];
+              const updated = allTarefas.map(t => t.id === target.id ? { ...t, due: "01/04/2026" } : t);
+              store.saveTarefas(updated);
+              setTarefas(updated);
+            }
+            const sla = store.getSLASettings();
+            if (!sla.processoStatus) sla.processoStatus = {};
+            for (const s of store.getStages()) {
+              if (!sla.processoStatus[s.id]) sla.processoStatus[s.id] = { value: 7, unit: "dias" };
+            }
+            store.saveSLASettings(sla);
+            const activeProcs = processos.filter(p => !p.archived && p.status < 8);
+            const picks = new Set();
+            const copy = [...activeProcs];
+            for (let i = 0; i < 2 && copy.length > 0; i++) {
+              const idx = Math.floor(Math.random() * copy.length);
+              picks.add(copy.splice(idx, 1)[0].id);
+            }
+            setProcessos(prev => picks.size > 0
+              ? prev.map(p => picks.has(p.id) ? { ...p, created: "01/01/2025", deadline: "08/01/2025" } : p)
+              : [...prev]
+            );
             setThemeVersion(v => v + 1);
           }} />
 

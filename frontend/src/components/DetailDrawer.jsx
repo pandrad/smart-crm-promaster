@@ -294,7 +294,7 @@ function ReassignModal({ p, users, onClose, onSave }) {
   );
 }
 
-// ── Consulta checklist — only when status === 5 ───────────────────────────────
+// ── Consulta checklist — only when status === 6 ───────────────────────────────
 function ConsultaChecklist({ consulta, onChange }) {
   const sla = store.getSLASettings();
   const SLA_PEDIDO   = sla.tasks["Em Curso"]  ?? 48;
@@ -523,8 +523,8 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
             )}
           </div>
 
-          {/* ── Consulta checklist — only when status === 5 ── */}
-          {p.status === 5 && p.consulta && (
+          {/* ── Consulta checklist — only when status === 6 ── */}
+          {p.status === 6 && p.consulta && (
             <ConsultaChecklist consulta={p.consulta} onChange={handleConsultaChange} />
           )}
 

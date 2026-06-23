@@ -15,27 +15,29 @@ const DEFAULT_PRIORITIES = [
 
 // Roles — label only; id is a string slug
 const DEFAULT_ROLES = [
-  { id: "pre-entrada",  label: "Resp. Pré-Entrada" },
-  { id: "cotacao",      label: "Resp. Cotação"      },
-  { id: "abertura",     label: "Resp. Abertura"     },
-  { id: "fecho",        label: "Resp. Fecho"        },
-  { id: "supervisor",   label: "Supervisor"         },
-  { id: "admin",        label: "Admin"              },
+  { id: "resp-pre-entrada",  label: "Resp. Pré-Entrada"              },
+  { id: "resp-cotacao",      label: "Resp. Cotação"                   },
+  { id: "resp-fps",          label: "Resp. FPs"                       },
+  { id: "resp-abertura",     label: "Resp. Abertura"                  },
+  { id: "resp-fecho",        label: "Resp. Fecho"                     },
+  { id: "resp-tecnico",      label: "Resp. Técnico"                   },
+  { id: "resp-contas",       label: "Resp. Contas a Receber e a Pagar"},
+  { id: "resp-comercial",    label: "Resp. Comercial"                 },
+  { id: "supervisor",        label: "Supervisor"                      },
+  { id: "admin",              label: "Administrador"                   },
 ];
 
 // Task types — label + colour; no system behaviour
 const DEFAULT_TASK_TYPES = [
   { id: 1,  label: "Pré-Entrada",           color: "#60a5fa", bg: "#1e3a5f" },
-  { id: 2,  label: "Abertura de Processo",  color: "#4ade80", bg: "#0a2015" },
-  { id: 3,  label: "Contas Correntes",      color: "#fb923c", bg: "#1c1005" },
-  { id: 4,  label: "Status de Encomenda",   color: "#4ade80", bg: "#052e16" },
+  { id: 2,  label: "Abertura de Processo",   color: "#4ade80", bg: "#0a2015" },
+  { id: 3,  label: "Contas Correntes",       color: "#fb923c", bg: "#1c1005" },
+  { id: 4,  label: "Status de Encomenda",    color: "#4ade80", bg: "#052e16" },
   { id: 5,  label: "Desconto",              color: "#fbbf24", bg: "#1c1005" },
   { id: 6,  label: "Cliente Novo",          color: "#c084fc", bg: "#2e1065" },
-  { id: 7,  label: "Não Classificado",      color: "#f87171", bg: "#2d0a0a" },
-  { id: 8,  label: "Diversos",              color: "#94a3b8", bg: "#1e293b" },
-  { id: 9,  label: "Validação de Processo", color: "#93c5fd", bg: "#0c1a2e" },
-  { id: 10, label: "Follow-up",             color: "#38bdf8", bg: "#0c2231" },
-  { id: 11, label: "Escalação",             color: "#f87171", bg: "#2d0a0a" },
+  { id: 7,  label: "Follow-Up",             color: "#38bdf8", bg: "#0c2231" },
+  { id: 8,  label: "Escalação",             color: "#f87171", bg: "#2d0a0a" },
+  { id: 9,  label: "Análise Técnica",       color: "#7c3aed", bg: "#2e1065" },
 ];
 
 // SYSTEM_ROLES — fixed list of system behaviours a task status can carry.
@@ -70,16 +72,40 @@ const DEFAULT_TASK_STATUSES = [
 // Defaults ON only for "Para Fechar" (id 6) and "Fechado" (id 7) since those
 // explicitly hand off to a new person; all other statuses default OFF.
 const DEFAULT_MAPEAMENTO = {
-  processoStatus:          {},
-  taskType:                {},
-  taskStatus:              {},
-  taskStatusReatribui:     { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true },
-  processoStatusReatribui: { 6: true, 7: true },
+  processoStatus: {
+    2: "resp-cotacao", 3: "resp-tecnico", 4: "resp-abertura", 5: "resp-cotacao",
+    6: "resp-cotacao", 7: "resp-cotacao", 8: "resp-fecho", 9: "resp-fps",
+    10: "resp-cotacao", 11: "resp-cotacao", 12: "supervisor", 13: "supervisor",
+  },
+  taskType: {
+    1: "resp-pre-entrada", 2: "resp-abertura", 3: "resp-contas", 4: "resp-cotacao",
+    5: "resp-cotacao", 6: "supervisor", 9: "resp-tecnico",
+  },
+  taskStatus: {
+    4: "supervisor", 6: "supervisor",
+  },
+  taskStatusReatribui:     { 3: true, 4: true, 6: true },
+  processoStatusReatribui: { 2: true, 3: true, 4: true, 5: true, 6: true, 7: true, 8: true, 9: true, 10: true, 11: true, 12: true, 13: true },
   taskTypeReatribui:       {},
 };
 
 // User-role assignments — maps userId → array of roleIds
-const DEFAULT_USER_ROLES = {};
+const DEFAULT_USER_ROLES = {
+  1:  ["resp-pre-entrada", "resp-cotacao"],                                    // Adelina Rodrigues
+  // 2: Alexandra Lima — no roles
+  3:  ["resp-abertura", "resp-fps"],                                           // Augusto Gouveia
+  4:  ["resp-abertura", "resp-fps"],                                           // Braulio Lourenço
+  5:  ["resp-abertura", "resp-fps"],                                           // Erânio Cassanga
+  6:  ["resp-pre-entrada", "resp-cotacao", "resp-fecho"],                      // Francisco Leitão
+  7:  ["resp-abertura", "resp-fps"],                                           // Gabriel Dala
+  8:  ["resp-abertura", "resp-fps"],                                           // João Chiquica
+  9:  ["supervisor", "resp-fecho", "resp-tecnico", "resp-comercial"],          // João Morais
+  10: ["resp-contas"],                                                         // Joaquim César
+  11: ["admin"],                                                       // Luís Quelhas Valente
+  12: ["resp-abertura"],                                                       // Lukeny Campos
+  13: ["admin"],                                                       // Susete Ferreira
+  14: ["resp-pre-entrada", "resp-cotacao"],                                    // Tiago Pinto
+};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

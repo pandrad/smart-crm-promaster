@@ -78,9 +78,9 @@ export function Login() {
         <div style={{ marginTop: 16, background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 10, padding: "10px 14px", fontSize: 11, color: THEME.textMuted }}>
           <strong style={{ color: THEME.text }}>Demo:</strong>
           <div style={{ marginTop: 4, display: "flex", flexDirection: "column", gap: 2 }}>
-            <span>admin@promaster.co / admin123 <span style={{ color: THEME.textDim }}>(Admin)</span></span>
-            <span>supervisor@promaster.co / super123 <span style={{ color: THEME.textDim }}>(Supervisor)</span></span>
-            <span>adelina@promaster.co / pass123 <span style={{ color: THEME.textDim }}>(Standard)</span></span>
+            <span>luis.valente@promaster.co.ao / admin123 <span style={{ color: THEME.textDim }}>(Admin)</span></span>
+            <span>joao.morais@promaster.co.ao / pass123 <span style={{ color: THEME.textDim }}>(Supervisor)</span></span>
+            <span>adelina.rodrigues@promaster.co.ao / pass123 <span style={{ color: THEME.textDim }}>(Standard)</span></span>
           </div>
         </div>
       </div>

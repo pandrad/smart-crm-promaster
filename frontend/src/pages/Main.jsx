@@ -232,12 +232,11 @@ export function Main() {
 
   // ── Badge counts ───────────────────────────────────────────────────────────
   const isPrivileged   = currentUser?.role === "admin" || currentUser?.role === "supervisor";
-  const processosBadge = processos.filter(p => !p.archived && p.status < 7).length;
+  const processosBadge = processos.filter(p => !p.archived && p.status < 8).length;
   const _activeLabels  = new Set(["Por Fazer","Em Curso","Escalado","Devolvido","Cancelamento Pendente"]
     .map(r => store.getLabelForSystemRole(r)).filter(Boolean));
   const tarefasBadge   = tarefas.filter(t => {
     if (!_activeLabels.has(t.status)) return false;
-    if (isPrivileged) return true;
     return t.owner === currentUser?.name;
   }).length;
   // Inbox badge only relevant for admin/supervisor (standard users don't see Inbox nav item)

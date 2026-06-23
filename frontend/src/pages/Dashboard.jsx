@@ -69,9 +69,9 @@ export function Dashboard({ processos, tarefas, users, currentUser, accent, onOp
   });
   const active        = processos.filter(p => !p.archived);
   const myProcessos   = active.filter(p => p.owner === userName || p.comm === userName || p.compra === userName);
-  const myOpen        = myProcessos.filter(p => p.status < 7);
-  const myOverdue     = myProcessos.filter(p => daysLeft(p.deadline) < 0 && p.status < 7);
-  const myUrgent      = myProcessos.filter(p => { const d = daysLeft(p.deadline); return d >= 0 && d <= 2 && p.status < 7; });
+  const myOpen        = myProcessos.filter(p => p.status < 8);
+  const myOverdue     = myProcessos.filter(p => daysLeft(p.deadline) < 0 && p.status < 8);
+  const myUrgent      = myProcessos.filter(p => { const d = daysLeft(p.deadline); return d >= 0 && d <= 2 && p.status < 8; });
 
   const taskStats = [
     { label: "Por fazer",       value: myPorFazer.length,   color: "#94a3b8",     icon: "list",   nav: "/tarefas", filter: "activas" },

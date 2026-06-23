@@ -161,15 +161,11 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
         }
       }
 
-      // Resolve the "Não Classificado" task type for B outcomes
+      // B outcomes: unclassified — type stays null, assigned to Supervisor
       if (outcome === "B") {
-        const taskTypes = store.getTaskTypes();
-        taskTypeObj = taskTypes.find(t => t.label === "Não Classificado");
-        taskType = taskTypeObj ? "Não Classificado" : (taskTypes[0]?.label ?? "Tarefa");
-        if (!taskTypeObj) taskTypeObj = taskTypes[0] ?? null;
+        taskType = null;
+        taskTypeObj = null;
       }
-
-      if (!taskTypeObj) continue;
 
       const porFazerLabel = store.getLabelForSystemRole("Por Fazer") ?? "Por Fazer";
       const seq = String((tarefas.length + newTasks.length + 1)).padStart(3, "0");

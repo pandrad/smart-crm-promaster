@@ -16,17 +16,17 @@ export function SupervisorWidget({ processos, tarefas, onOpenTask }) {
 
   const closedThisMonth = processos.filter(p => {
     const [, mm, yy] = (p.created || "").split("/").map(Number);
-    return mm === month && yy === year && (p.status === 7 || p.status === 10);
+    return mm === month && yy === year && (p.status === 8 || p.status === 12);
   }).length;
 
-  const overdueNow   = processos.filter(p => daysLeft(p.deadline) < 0 && p.status < 7).length;
+  const overdueNow   = processos.filter(p => daysLeft(p.deadline) < 0 && p.status < 8).length;
   const escalated    = (tarefas || []).filter(t => t.status === "Escalado");
   const activeTasks  = (tarefas || []).filter(t =>
     t.status === "Por Fazer" || t.status === "Em Curso" || t.status === "Bloqueado"
   ).length;
 
   const mostOverdue = processos
-    .filter(p => daysLeft(p.deadline) < 0 && p.status < 7)
+    .filter(p => daysLeft(p.deadline) < 0 && p.status < 8)
     .sort((a, b) => daysLeft(a.deadline) - daysLeft(b.deadline))
     .slice(0, 3);
 

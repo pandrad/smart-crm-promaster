@@ -11,9 +11,20 @@
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const MOCK_CREDENTIALS = [
-  { email: "admin@promaster.co",      password: "admin123",  role: "admin",      name: "Admin" },
-  { email: "adelina@promaster.co",    password: "pass123",   role: "cotacao",    name: "Adelina Rodrigues" },
-  { email: "supervisor@promaster.co", password: "super123",  role: "supervisor", name: "Supervisor" },
+  { email: "adelina.rodrigues@promaster.co.ao",  password: "pass123",   role: "resp-pre-entrada",  name: "Adelina Rodrigues" },
+  { email: "alexandra.lima@oss-eu.com",          password: "pass123",   role: null,                name: "Alexandra Lima" },
+  { email: "augusto.gouveia@promaster.co.ao",    password: "pass123",   role: "resp-abertura",     name: "Augusto Gouveia" },
+  { email: "braulio.lourenco@promaster.co.ao",   password: "pass123",   role: "resp-abertura",     name: "Braulio Lourenço" },
+  { email: "eranio.cassanga@promaster.co.ao",    password: "pass123",   role: "resp-abertura",     name: "Erânio Cassanga" },
+  { email: "francisco.leitao@promaster.co.ao",   password: "pass123",   role: "resp-pre-entrada",  name: "Francisco Leitão" },
+  { email: "gabriel.dala@promaster.co.ao",       password: "pass123",   role: "resp-abertura",     name: "Gabriel Dala" },
+  { email: "joao.chiquica@promaster.co.ao",      password: "pass123",   role: "resp-abertura",     name: "João Chiquica" },
+  { email: "joao.morais@promaster.co.ao",        password: "pass123",   role: "supervisor",        name: "João Morais" },
+  { email: "joaquim.cesar@promaster.co.ao",      password: "pass123",   role: "resp-contas",       name: "Joaquim César" },
+  { email: "luis.valente@promaster.co.ao",       password: "admin123",  role: "admin",             name: "Luís Quelhas Valente" },
+  { email: "lukeny.campos@promaster.co.ao",      password: "pass123",   role: "resp-abertura",     name: "Lukeny Campos" },
+  { email: "susete.ferreira@promaster.co.ao",    password: "admin123",  role: "admin",             name: "Susete Ferreira" },
+  { email: "tiago.pinto@promaster.co.ao",        password: "pass123",   role: "resp-pre-entrada",  name: "Tiago Pinto" },
 ];
 
 // ── Toast demo ────────────────────────────────────────────────────────────────
@@ -21,7 +32,7 @@ export const MOCK_TOAST = {
   taskId:   "T006",
   type:     "Contas Correntes",
   client:   "TerraMovida Lda",
-  assignedBy: "Supervisor",
+  assignedBy: "João Morais",
   note:     "Verificar facturas pendentes Q1 2026 — total €74.700. Prazo: 30 de Maio.",
 };
 
@@ -43,10 +54,10 @@ export const PROCESSOS = [
 
   {
     id: "2605001", created: "02/05/2026", deadline: "05/05/2026", priority: "Normal",
-    status: 1, // Entrada
+    status: 5, // Entrada
     client: "Mauto – Garagem Oliveira",
     ref: "35112019", brand: "SMARTPOWER", model: "DC1065/B", vin: "",
-    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Carlos Andrade",
+    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Augusto Gouveia",
     comprador: "Evedson Figueiredo", price: null, emails: 1,
     note: "", archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
@@ -67,10 +78,10 @@ export const PROCESSOS = [
 
   {
     id: "2605002", created: "03/05/2026", deadline: "06/05/2026", priority: "Normal",
-    status: 2, // Qualificacao
+    status: 3, // Análise Técnica Promaster
     client: "Sociedade Mineira do Puri, LDA",
     ref: "RJ382/M20", brand: "VOLVO", model: "EC750L", vin: "VOE123456",
-    owner: "Vasco Lourenço", comm: "João Morais", compra: "Carlos Andrade",
+    owner: "Gabriel Dala", comm: "João Morais", compra: "Augusto Gouveia",
     comprador: "Elmo Costa", price: null, emails: 2,
     note: "", archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
@@ -85,17 +96,17 @@ export const PROCESSOS = [
     timeline: [
       { icon: "mail",  color: "#60a5fa", time: "03/05 10:22", text: "Email recebido de Elmo Costa — pedido de cotação VOLVO EC750L" },
       { icon: "cpu",   color: "#c084fc", time: "03/05 10:23", text: "IA classificou: Pedido de Cotação · Cliente: Soc. Mineira do Puri · Equipamento: VOLVO EC750L" },
-      { icon: "user",  color: "#94a3b8", time: "03/05 10:24", text: "Processo atribuído a Vasco Lourenço" },
+      { icon: "user",  color: "#94a3b8", time: "03/05 10:24", text: "Processo atribuído a Gabriel Dala" },
       { icon: "check", color: "#4ade80", time: "04/05 09:00", text: "Processo qualificado — cliente confirmado" },
     ],
   },
 
   {
     id: "2605003", created: "05/05/2026", deadline: "10/05/2026", priority: "Alta",
-    status: 5, // Consulta
+    status: 6, // Consulta
     client: "Construtora Horizonte SA",
     ref: "CH/2026/05", brand: "CATERPILLAR", model: "320GC", vin: "CAT320GC001",
-    owner: "Marta Costa", comm: "Ana Ferreira", compra: "Carlos Andrade",
+    owner: "Tiago Pinto", comm: "João Morais", compra: "Augusto Gouveia",
     comprador: "Luísa Pinto", price: null, emails: 4,
     note: "Cliente aguarda resposta urgente",
     archived: false, carryover: false,
@@ -113,17 +124,17 @@ export const PROCESSOS = [
     timeline: [
       { icon: "mail",  color: "#60a5fa", time: "05/05 14:10", text: "Email recebido de Luísa Pinto — CATERPILLAR 320GC" },
       { icon: "cpu",   color: "#c084fc", time: "05/05 14:11", text: "IA classificou: Pedido de Cotação · Urgência: Alta" },
-      { icon: "user",  color: "#94a3b8", time: "05/05 14:12", text: "Processo atribuído a Marta Costa" },
+      { icon: "user",  color: "#94a3b8", time: "05/05 14:12", text: "Processo atribuído a Tiago Pinto" },
       { icon: "check", color: "#4ade80", time: "07/05 10:00", text: "Entrou em Consulta — a aguardar resposta de fornecedor" },
     ],
   },
 
   {
     id: "2605004", created: "06/05/2026", deadline: "12/05/2026", priority: "Normal",
-    status: 6, // Para Fechar
+    status: 7, // Para Fechar
     client: "Vendap II",
     ref: "", brand: "JCB", model: "JS220", vin: "",
-    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Carlos Andrade",
+    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Augusto Gouveia",
     comprador: "Sérgio Maia", price: null, emails: 6,
     note: "", archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
@@ -145,10 +156,10 @@ export const PROCESSOS = [
 
   {
     id: "2605005", created: "07/05/2026", deadline: "14/05/2026", priority: "Alta",
-    status: 7, // Fechado
+    status: 8, // Fechado
     client: "Planasul Engenharia e Construções",
     ref: "", brand: "VOLVO", model: "EC360BLC PRIME", vin: "VOE789012",
-    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Carlos Andrade",
+    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Augusto Gouveia",
     comprador: "Rui Barros", price: null, emails: 5,
     note: "", archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
@@ -170,10 +181,10 @@ export const PROCESSOS = [
 
   {
     id: "2605006", created: "08/05/2026", deadline: "13/05/2026", priority: "Normal",
-    status: 3, // Pendente Cliente (optional stage)
+    status: 2, // Pendente Cliente
     client: "Mencons Engenharia e Construção Civil",
     ref: "SMA0119/2026", brand: "VOLVO", model: "EC360BLC", vin: "",
-    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Carlos Andrade",
+    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Augusto Gouveia",
     comprador: "Andelson Chaves", price: null, emails: 3,
     note: "A aguardar documentação do cliente",
     archived: false, carryover: false,
@@ -196,10 +207,10 @@ export const PROCESSOS = [
 
   {
     id: "2605007", created: "10/05/2026", deadline: "17/05/2026", priority: "Normal",
-    status: 4, // Pendente Master (optional stage)
+    status: 3, // Análise Técnica Promaster
     client: "BetãoCerto Construções",
     ref: "BC-291", brand: "LIEBHERR", model: "LTM 1100", vin: "",
-    owner: "Vasco Lourenço", comm: "Ana Ferreira", compra: "Carlos Andrade",
+    owner: "Gabriel Dala", comm: "João Morais", compra: "Augusto Gouveia",
     comprador: "Rui Cardoso", price: null, emails: 2,
     note: "A aguardar aprovação interna",
     archived: false, carryover: false,
@@ -215,17 +226,17 @@ export const PROCESSOS = [
     timeline: [
       { icon: "mail", color: "#60a5fa", time: "10/05 16:00", text: "Email recebido de Rui Cardoso — LIEBHERR LTM 1100" },
       { icon: "cpu",  color: "#c084fc", time: "10/05 16:01", text: "IA classificou: Pedido de Cotação · Equipamento: LIEBHERR LTM 1100" },
-      { icon: "user", color: "#94a3b8", time: "10/05 16:02", text: "Processo atribuído a Vasco Lourenço" },
+      { icon: "user", color: "#94a3b8", time: "10/05 16:02", text: "Processo atribuído a Gabriel Dala" },
     ],
   },
 
   {
     id: "2605008", created: "11/05/2026", deadline: "18/05/2026", priority: "Normal",
-    status: 9, // Enviado — fu and price now visible
+    status: 10, // Enviado — fu and price now visible
     fu: "Confirmado",
     client: "TerraMovida Lda",
     ref: "TM-0088", brand: "VOLVO", model: "L90H", vin: "VOL90H2024",
-    owner: "João Silva", comm: "Ricardo Neves", compra: "Carlos Andrade",
+    owner: "Francisco Leitão", comm: "João Morais", compra: "Augusto Gouveia",
     comprador: "Carlos Menezes", price: 210000, emails: 8,
     note: "Enviado — a aguardar PO",
     archived: false, carryover: false,
@@ -241,18 +252,18 @@ export const PROCESSOS = [
     timeline: [
       { icon: "mail",  color: "#60a5fa", time: "11/05 10:00", text: "Email recebido de Carlos Menezes — VOLVO L90H" },
       { icon: "cpu",   color: "#c084fc", time: "11/05 10:01", text: "IA classificou: Pedido de Cotação · Equipamento: VOLVO L90H" },
-      { icon: "user",  color: "#94a3b8", time: "11/05 10:02", text: "Processo atribuído a João Silva" },
+      { icon: "user",  color: "#94a3b8", time: "11/05 10:02", text: "Processo atribuído a Francisco Leitão" },
       { icon: "check", color: "#4ade80", time: "14/05 09:00", text: "Proposta enviada ao cliente — €210.000" },
     ],
   },
 
   {
     id: "2605009", created: "12/05/2026", deadline: "19/05/2026", priority: "Alta",
-    status: 10, // Encomenda — counts as "Ganhos"
+    status: 12, // Adjudicado — counts as "Ganhos"
     fu: "Confirmado",
     client: "AMF – Agentes de Formação",
     ref: "E26091", brand: "CAT – LUBRIFICAÇÃO", model: "", vin: "",
-    owner: "Tiago Pinto", comm: "João Morais", compra: "Carlos Andrade",
+    owner: "Tiago Pinto", comm: "João Morais", compra: "Augusto Gouveia",
     comprador: "Teodósio Nzunda", price: 47500, emails: 7,
     note: "Encomenda confirmada",
     archived: false, carryover: false,
@@ -275,10 +286,10 @@ export const PROCESSOS = [
 
   {
     id: "2605010", created: "13/05/2026", deadline: "15/05/2026", priority: "Alta",
-    status: 11, // Cancelado
+    status: 13, // Cancelado
     client: "Obras Nacionais SARL",
     ref: "ON-2026-33", brand: "JCB", model: "JS220", vin: "",
-    owner: "Tiago Pinto", comm: "João Morais", compra: "Carlos Andrade",
+    owner: "Tiago Pinto", comm: "João Morais", compra: "Augusto Gouveia",
     comprador: "Manuel Faria", price: null, emails: 4,
     note: "Cliente cancelou — escolheu concorrente",
     archived: false, carryover: false,
@@ -303,10 +314,10 @@ export const PROCESSOS = [
 
   {
     id: "2604001", created: "15/04/2026", deadline: "22/04/2026", priority: "Normal",
-    status: 2, // Qualificacao — still open, carried over
+    status: 3, // Análise Técnica Promaster — still open, carried over
     client: "Grupo Construções do Sul SARL",
     ref: "GCS-088", brand: "KOMATSU", model: "PC490LC", vin: "",
-    owner: "João Silva", comm: "Ricardo Neves", compra: "Carlos Andrade",
+    owner: "Francisco Leitão", comm: "João Morais", compra: "Augusto Gouveia",
     comprador: "Henrique Dias", price: null, emails: 5,
     note: "Transitado de Abril — a aguardar cotação final",
     archived: false, carryover: true,
@@ -322,16 +333,16 @@ export const PROCESSOS = [
     timeline: [
       { icon: "mail",  color: "#60a5fa", time: "15/04 10:00", text: "Email recebido de Henrique Dias — KOMATSU PC490LC" },
       { icon: "cpu",   color: "#c084fc", time: "15/04 10:01", text: "IA classificou: Pedido de Cotação · Equipamento: KOMATSU PC490LC" },
-      { icon: "user",  color: "#94a3b8", time: "15/04 10:02", text: "Processo atribuído a João Silva" },
+      { icon: "user",  color: "#94a3b8", time: "15/04 10:02", text: "Processo atribuído a Francisco Leitão" },
     ],
   },
 
   {
     id: "2604002", created: "20/04/2026", deadline: "27/04/2026", priority: "Alta",
-    status: 5, // Consulta — carried over, now overdue
+    status: 6, // Consulta — carried over, now overdue
     client: "Luso-Angola Peças Lda",
     ref: "LAP-2026-04", brand: "VOLVO", model: "EC480E", vin: "VOE555888",
-    owner: "Marta Costa", comm: "Ana Ferreira", compra: "Carlos Andrade",
+    owner: "Tiago Pinto", comm: "João Morais", compra: "Augusto Gouveia",
     comprador: "Fernando Lopes", price: null, emails: 9,
     note: "URGENTE — transitado de Abril, prazo ultrapassado",
     archived: false, carryover: true,
@@ -348,7 +359,7 @@ export const PROCESSOS = [
     timeline: [
       { icon: "mail",  color: "#60a5fa", time: "20/04 09:00", text: "Email recebido de Fernando Lopes — VOLVO EC480E" },
       { icon: "cpu",   color: "#c084fc", time: "20/04 09:01", text: "IA classificou: Pedido de Cotação · Urgência: Alta" },
-      { icon: "user",  color: "#94a3b8", time: "20/04 09:02", text: "Processo atribuído a Marta Costa" },
+      { icon: "user",  color: "#94a3b8", time: "20/04 09:02", text: "Processo atribuído a Tiago Pinto" },
       { icon: "alert", color: "#f87171", time: "27/04 00:00", text: "Prazo atingido — processo transitado para Maio" },
     ],
   },
@@ -357,11 +368,11 @@ export const PROCESSOS = [
 
   {
     id: "2301001", created: "10/01/2023", deadline: "17/01/2023", priority: "Normal",
-    status: 10, // Encomenda
+    status: 12, // Adjudicado
     fu: "Confirmado",
     client: "Metalúrgica do Kwanza SARL",
     ref: "MK-2023-01", brand: "CAT", model: "D6T", vin: "CAT123001",
-    owner: "Tiago Pinto", comm: "João Morais", compra: "Carlos Andrade",
+    owner: "Tiago Pinto", comm: "João Morais", compra: "Augusto Gouveia",
     comprador: "António Simões", price: 385000, emails: 14,
     note: "Processo arquivado — concluído em 2023",
     archived: true, carryover: false,
@@ -382,10 +393,10 @@ export const PROCESSOS = [
 
   {
     id: "2212001", created: "05/12/2022", deadline: "12/12/2022", priority: "Normal",
-    status: 11, // Cancelado
+    status: 13, // Cancelado
     client: "Construções Horizonte Norte Lda",
     ref: "CHN-2022-44", brand: "LIEBHERR", model: "LTM 1080", vin: "",
-    owner: "Adelina Rodrigues", comm: "Ana Ferreira", compra: "Carlos Andrade",
+    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Augusto Gouveia",
     comprador: "José Ferreira", price: null, emails: 6,
     note: "Processo arquivado — cancelado em 2022",
     archived: true, carryover: false,
@@ -406,8 +417,8 @@ export const PROCESSOS = [
 ];
 
 // ── Tasks (Tarefas) ───────────────────────────────────────────────────────────
-// TASK_TYPES:    Pré-Entrada, Desconto, Status Encomenda, Contas Correntes,
-//                Cliente Novo, Diversos, Follow-up, Escalação
+// TASK_TYPES:    Pré-Entrada, Abertura de Processo, Contas Correntes, Status de Encomenda,
+//                Desconto, Cliente Novo, Follow-Up, Escalação, Análise Técnica
 // TASK_STATUSES: Por Fazer, Em Curso, Bloqueado, Concluído, Escalado
 //
 // Each task has:
@@ -476,7 +487,7 @@ export const TAREFAS = [
     id: "T003",
     type: "Desconto",
     status: "Escalado",
-    owner: "Supervisor",
+    owner: "João Morais",
     client: "Construtora Horizonte SA",
     originEmail: {
       sender: "luisa.pinto@construtora-horizonte.co.ao",
@@ -493,8 +504,8 @@ export const TAREFAS = [
     created: "07/05/2026",
     due: "16/05/2026",
     history: [
-      { actor: "Marta Costa",  action: "Criada",   note: "Pedido de desconto adicional — processo 2605003",                  ts: "07/05 10:00" },
-      { actor: "Marta Costa",  action: "Passada",  note: "Passo para o Tiago — ele tem mais autoridade nestas negociações",  ts: "08/05 15:00" },
+      { actor: "Tiago Pinto",  action: "Criada",   note: "Pedido de desconto adicional — processo 2605003",                  ts: "07/05 10:00" },
+      { actor: "Tiago Pinto",  action: "Passada",  note: "Passo para o Tiago — ele tem mais autoridade nestas negociações",  ts: "08/05 15:00" },
       { actor: "Tiago Pinto",  action: "Em Curso", note: "A analisar margens com o João Morais",                             ts: "09/05 09:30" },
       { actor: "Tiago Pinto",  action: "Escalada", note: "Cliente exige 10% e cita volume anual de €400k. Ultrapassa o limite de 3% que posso aprovar. Preciso de decisão da direcção.", ts: "10/05 11:45" },
     ],
@@ -505,7 +516,7 @@ export const TAREFAS = [
     id: "T004",
     type: "Cliente Novo",
     status: "Em Curso",
-    owner: "Vasco Lourenço",
+    owner: "Gabriel Dala",
     client: "Logística Atlântico Sul Lda",
     originEmail: {
       sender: "pedro.augusto@logisticaatlantico.co.ao",
@@ -523,17 +534,17 @@ export const TAREFAS = [
     due: "20/05/2026",
     history: [
       { actor: "Adelina Rodrigues", action: "Criada via Inbox", note: "Pedido urgente cotação VOLVO EC480E — novo cliente", ts: "15/05 09:14" },
-      { actor: "Adelina Rodrigues", action: "Passada",          note: "Reencaminhado para Vasco para gestão do cliente novo",  ts: "15/05 09:30" },
-      { actor: "Vasco Lourenço",    action: "Em Curso",         note: "A recolher documentação KYC",                           ts: "15/05 10:00" },
+      { actor: "Adelina Rodrigues", action: "Passada",          note: "Reencaminhado para Gabriel para gestão do cliente novo",  ts: "15/05 09:30" },
+      { actor: "Gabriel Dala",    action: "Em Curso",         note: "A recolher documentação KYC",                           ts: "15/05 10:00" },
     ],
   },
 
-  // T005 — Diversos: completed task
+  // T005 — Follow-Up: completed task
   {
     id: "T005",
-    type: "Diversos",
+    type: "Follow-Up",
     status: "Concluído",
-    owner: "João Silva",
+    owner: "Francisco Leitão",
     client: "Vendap II",
     originEmail: {
       sender: "sergio.maia@vendap.co.ao",
@@ -550,8 +561,8 @@ export const TAREFAS = [
     created: "03/05/2026",
     due: "08/05/2026",
     history: [
-      { actor: "João Silva", action: "Criada",   note: "Documentação técnica JCB JS220",                    ts: "03/05 11:00" },
-      { actor: "João Silva", action: "Concluído", note: "Documentação enviada por email. PDF do manual e ficha de manutenção anexados.", ts: "06/05 16:30" },
+      { actor: "Francisco Leitão", action: "Criada",   note: "Documentação técnica JCB JS220",                    ts: "03/05 11:00" },
+      { actor: "Francisco Leitão", action: "Concluído", note: "Documentação enviada por email. PDF do manual e ficha de manutenção anexados.", ts: "06/05 16:30" },
     ],
   },
 
@@ -586,7 +597,7 @@ export const TAREFAS = [
     id: "T007",
     type: "Follow-up",
     status: "Bloqueado",
-    owner: "João Silva",
+    owner: "Francisco Leitão",
     client: "Grupo Construções do Sul SARL",
     originEmail: {
       sender: "henrique.dias@gcs.co.ao",
@@ -603,9 +614,9 @@ export const TAREFAS = [
     created: "14/05/2026",
     due: "21/05/2026",
     history: [
-      { actor: "João Silva", action: "Criada",   note: "Seguimento proposta KOMATSU — 3 semanas sem resposta",  ts: "14/05 15:47" },
-      { actor: "João Silva", action: "Em Curso", note: "Enviado email de seguimento + tentativa de chamada",     ts: "14/05 16:00" },
-      { actor: "João Silva", action: "Bloqueado", note: "Cliente não responde há 2 semanas. Aguardando.", ts: "15/05 09:00" },
+      { actor: "Francisco Leitão", action: "Criada",   note: "Seguimento proposta KOMATSU — 3 semanas sem resposta",  ts: "14/05 15:47" },
+      { actor: "Francisco Leitão", action: "Em Curso", note: "Enviado email de seguimento + tentativa de chamada",     ts: "14/05 16:00" },
+      { actor: "Francisco Leitão", action: "Bloqueado", note: "Cliente não responde há 2 semanas. Aguardando.", ts: "15/05 09:00" },
     ],
   },
 
@@ -614,7 +625,7 @@ export const TAREFAS = [
     id: "T008",
     type: "Escalação",
     status: "Por Fazer",
-    owner: "Admin",
+    owner: "Luís Quelhas Valente",
     client: "Construtora Horizonte SA",
     originEmail: null,
     originProcesso: "2605003",
@@ -624,21 +635,19 @@ export const TAREFAS = [
     created: "10/05/2026",
     due: "16/05/2026",
     history: [
-      { actor: "Tiago Pinto", action: "Escalada", note: "Escalado para Admin — cliente exige 10% de desconto sobre €165.000. Ver T003 para histórico completo.", ts: "10/05 11:45" },
+      { actor: "Tiago Pinto", action: "Escalada", note: "Escalado para Luís Quelhas Valente — cliente exige 10% de desconto sobre €165.000. Ver T003 para histórico completo.", ts: "10/05 11:45" },
     ],
   },
 
-  // T009 — Validação de Processo: Devolvido — shows a full back-and-forth exchange.
+  // T009 — Pré-Entrada: Devolvido — shows a full back-and-forth exchange.
   // Originated from E003 (Sérgio Maia / Vendap II, already triaged in INBOX_EMAILS).
-  // Triaged by Adelina; sent back by Marta (Resp. Cotação) because brand/model missing;
+  // Triaged by Adelina; sent back by Tiago because brand/model missing;
   // Adelina updated with details and resubmitted; still awaiting final validation.
   {
     id: "T009",
-    type: "Validação de Processo",
+    type: "Pré-Entrada",
     status: "Devolvido",
-    owner: "Adelina Rodrigues",         // returned to the person who triaged it
-    triagedBy: "Adelina Rodrigues",     // person who originally triaged the inbox email
-    validatorOwner: "Marta Costa",      // Resp. Cotação assigned to validate
+    owner: "Adelina Rodrigues",
     client: "Vendap II",
     originEmail: {
       sender: "sergio.maia@vendap.co.ao",
@@ -662,7 +671,7 @@ export const TAREFAS = [
         ts: "15/05 11:06",
       },
       {
-        actor: "Marta Costa",
+        actor: "Tiago Pinto",
         action: "Devolvido",
         note: "Falta informação essencial para abrir o processo: marca e modelo do equipamento não estão especificados no email. O cliente menciona 'peças de JCB JS220' mas precisamos confirmar se é uma nova referência ou ligada ao processo 2605004. Por favor contactar o cliente e confirmar antes de prosseguir.",
         ts: "15/05 14:22",
@@ -676,16 +685,13 @@ export const TAREFAS = [
     ],
   },
 
-  // T010 — Validação de Processo: Por Fazer — awaiting validation by Resp. Cotação.
+  // T010 — Pré-Entrada: Por Fazer — awaiting validation by Resp. Pré-Entrada.
   // Originated from E006 (Henrique Dias / Grupo Construções do Sul, already triaged).
-  // Triaged by João Silva; assigned to Adelina for validation.
   {
     id: "T010",
-    type: "Validação de Processo",
+    type: "Pré-Entrada",
     status: "Por Fazer",
-    owner: "Adelina Rodrigues",         // Resp. Cotação assigned to validate
-    triagedBy: "João Silva",            // person who triaged the inbox email
-    validatorOwner: "Adelina Rodrigues",
+    owner: "Adelina Rodrigues",
     client: "Grupo Construções do Sul SARL",
     originEmail: {
       sender: "henrique.dias@gcs.co.ao",
@@ -703,7 +709,7 @@ export const TAREFAS = [
     due: "17/05/2026",
     history: [
       {
-        actor: "João Silva",
+        actor: "Francisco Leitão",
         action: "Criada via triagem",
         note: "Email de Henrique Dias (GCS) confirmado para abertura de processo — seguimento urgente KOMATSU PC490LC. Enviado para validação por Adelina.",
         ts: "15/05 15:48",
@@ -711,12 +717,12 @@ export const TAREFAS = [
     ],
   },
 
-  // T011 — Não Classificado: AI could not classify this email; assigned to Supervisor
+  // T011 — Unclassified: AI could not classify this email; assigned to Supervisor
   {
     id: "T011",
-    type: "Não Classificado",
+    type: null,
     status: "Por Fazer",
-    owner: "Supervisor",
+    owner: "João Morais",
     client: "Remetente desconhecido",
     originEmail: {
       sender: "noreply@sistemas-internos.co.ao",
@@ -739,6 +745,60 @@ export const TAREFAS = [
         note: "IA não conseguiu classificar este email. Confiança abaixo do limiar mínimo. Atribuído ao Supervisor para triagem manual.",
         ts: "15/05 16:02",
       },
+    ],
+  },
+
+  // T012 — Pré-Entrada: Por Fazer — fresh email awaiting validation by Adelina
+  {
+    id: "T012",
+    type: "Pré-Entrada",
+    status: "Por Fazer",
+    owner: "Adelina Rodrigues",
+    client: "Transportes Nakala SARL",
+    originEmail: {
+      sender: "amaro.silva@nakala.co.ao",
+      senderName: "Amaro Silva",
+      subject: "Pedido de cotação — VOLVO A40G articulado",
+      preview: "Bom dia, a Transportes Nakala solicita cotação para 1 unidade VOLVO A40G articulado…",
+      body: "Bom dia,\n\nA Transportes Nakala SARL solicita cotação para aquisição de 1 unidade VOLVO A40G articulado para operações de transporte de minério no Leste de Angola.\n\nNecessitamos de:\n- Preço unitário CIF Luanda\n- Prazo de entrega\n- Condições de pagamento\n- Garantia e assistência técnica\n\nAguardamos proposta com urgência — temos obra a iniciar em Julho.\n\nCom os melhores cumprimentos,\nAmaro Silva\nDirector de Operações\nTransportes Nakala SARL",
+      attachments: [],
+    },
+    originProcesso: null,
+    description: "Email de Amaro Silva (Transportes Nakala) a pedir cotação para VOLVO A40G articulado. Aguarda validação para abertura de processo.",
+    escalationNote: null,
+    priority: "Normal",
+    created: "20/05/2026",
+    due: "22/05/2026",
+    history: [
+      { actor: "Sistema", action: "Criada via Inbox", note: "Pedido de cotação — VOLVO A40G articulado", ts: "20/05 09:30" },
+    ],
+  },
+
+  // T013 — Started as Pré-Entrada, validated by Adelina → now Abertura de Processo for Augusto
+  {
+    id: "T013",
+    type: "Abertura de Processo",
+    status: "Por Fazer",
+    owner: "Augusto Gouveia",
+    cotacaoOwner: "Adelina Rodrigues",
+    client: "Mineira do Cuango Lda",
+    originEmail: {
+      sender: "jorge.mateus@cuango.co.ao",
+      senderName: "Jorge Mateus",
+      subject: "Cotação urgente — KOMATSU PC210LC-11",
+      preview: "Bom dia, a Mineira do Cuango necessita de cotação urgente para KOMATSU PC210LC-11…",
+      body: "Bom dia,\n\nA Mineira do Cuango Lda necessita de cotação urgente para aquisição de 1 unidade KOMATSU PC210LC-11 para operações de escavação.\n\nReferência interna: MCL-2026-07.\n\nSolicito proposta com preço CIF Luanda, prazo de entrega e condições de garantia.\n\nCom os melhores cumprimentos,\nJorge Mateus\nResponsável de Compras\nMineira do Cuango Lda",
+      attachments: [],
+    },
+    originProcesso: null,
+    description: "Cotação urgente — KOMATSU PC210LC-11 para Mineira do Cuango Lda.",
+    escalationNote: null,
+    priority: "Alta",
+    created: "19/05/2026",
+    due: "22/05/2026",
+    history: [
+      { actor: "Sistema", action: "Criada via Inbox", note: "Cotação urgente — KOMATSU PC210LC-11", ts: "19/05 09:15" },
+      { actor: "Adelina Rodrigues", action: "Validada", note: "Pré-Entrada validada. Tipo alterado para Abertura de Processo. Atribuída a Augusto Gouveia para abertura de processo.", ts: "19/05 11:00" },
     ],
   },
 ];
@@ -767,7 +827,7 @@ export const INBOX_EMAILS = [
   },
   {
     id: "E002",
-    sender: "adelina@promaster.co",
+    sender: "adelina.rodrigues@promaster.co.ao",
     senderName: "Adelina Rodrigues",
     to: "equipa@promaster.co",
     subject: "Re: Processo 2605003 — resposta fornecedor",
@@ -813,7 +873,7 @@ export const INBOX_EMAILS = [
   },
   {
     id: "E005",
-    sender: "joao.m@promaster.co",
+    sender: "joao.morais@promaster.co.ao",
     senderName: "João Morais",
     to: "equipa@promaster.co",
     subject: "Reunião interna — revisão pipeline Maio",
@@ -854,7 +914,7 @@ export const INBOX_EMAILS = [
     received: "15/05/2026 16:10",
     isInternal: false,
     isNewClient: false,
-    aiSuggestion: { type: "Diversos", category: "Spam", confidence: 0.98 },
+    aiSuggestion: { type: null, confidence: 0 },
     status: "pending",
   },
 ];

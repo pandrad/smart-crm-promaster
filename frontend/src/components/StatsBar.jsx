@@ -13,12 +13,11 @@ export function StatsBar({ processos, myProcessos, myTab, activeFilter, onStatCl
   const src = myTab ? myProcessos : processos;
   const accentColor = accent || THEME.accent;
 
-  const overdue  = src.filter(p => daysLeft(p.deadline) < 0 && p.status < 7).length;
-  const urgent   = src.filter(p => { const d = daysLeft(p.deadline); return d >= 0 && d <= 2 && p.status < 7; }).length;
-  const open     = src.filter(p => p.status < 7).length;
-  // Ganhos = status Encomenda (id 10)
-  const won      = src.filter(p => p.status === 10).length;
-  const carryover = src.filter(p => p.carryover === true && p.status < 7).length;
+  const overdue  = src.filter(p => daysLeft(p.deadline) < 0 && p.status < 8).length;
+  const urgent   = src.filter(p => { const d = daysLeft(p.deadline); return d >= 0 && d <= 2 && p.status < 8; }).length;
+  const open     = src.filter(p => p.status < 8).length;
+  const won      = src.filter(p => p.status === 12).length;
+  const carryover = src.filter(p => p.carryover === true && p.status < 8).length;
   const total    = src.length;
 
   const stats = [

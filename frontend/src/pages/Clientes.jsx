@@ -48,7 +48,7 @@ function ClienteDrawer({ cliente, responsavel, onClose, onSelectProcesso }) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
             {[
               { label: "Processos",    value: cliente.processos.length },
-              { label: "Em aberto",    value: cliente.processos.filter(p => p.status < 7 && !p.archived).length },
+              { label: "Em aberto",    value: cliente.processos.filter(p => p.status < 8 && !p.archived).length },
               { label: "Valor total",  value: cliente.totalValue ? "€" + cliente.totalValue.toLocaleString("pt-PT") : "—" },
             ].map(s => (
               <div key={s.label} style={{ textAlign: "center", background: THEME.sidebar, borderRadius: 8, padding: "10px 8px", border: `1px solid ${THEME.border}` }}>
@@ -158,7 +158,7 @@ export function Clientes({ processos, onSelectProcesso, currentUser }) {
         <div style={{ padding: "0 14px 32px", display: "flex", flexDirection: "column", gap: 8 }}>
           {rows.length === 0 && <p style={{ textAlign: "center", color: THEME.textDim, padding: "40px 0", fontSize: 13 }}>{search ? "Nenhum cliente encontrado" : "Sem clientes"}</p>}
           {rows.map(c => {
-            const open = c.processos.filter(p => p.status < 7 && !p.archived).length;
+            const open = c.processos.filter(p => p.status < 8 && !p.archived).length;
             const latest = [...c.processos].sort((a, b) => b.created.localeCompare(a.created))[0];
             const resp = assignments[c.name];
             return (
@@ -209,7 +209,7 @@ export function Clientes({ processos, onSelectProcesso, currentUser }) {
               </thead>
               <tbody>
                 {rows.map(c => {
-                  const open   = c.processos.filter(p => p.status < 7 && !p.archived).length;
+                  const open   = c.processos.filter(p => p.status < 8 && !p.archived).length;
                   const latest = [...c.processos].sort((a, b) => b.created.localeCompare(a.created))[0];
                   const resp   = assignments[c.name];
                   return (
