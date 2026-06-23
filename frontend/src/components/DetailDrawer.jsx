@@ -190,7 +190,7 @@ function OriginEmailModal({ email, onClose }) {
   );
 }
 
-// ── Change status modal — reads from store, FU only when target status >= 9 ──
+// ── Change status modal ──────────────────────────────────────────────────────
 function ChangeStatusModal({ p, onClose, onSave }) {
   const { isMobile } = useWindowSize();
   const stages  = store.getStages();
@@ -220,9 +220,10 @@ function ChangeStatusModal({ p, onClose, onSave }) {
             </div>
           </div>
           {/* FU picker — always visible */}
-          {fuList.length > 0 && (
+          {(
             <div>
-              <div style={{ ...LABEL, marginBottom: 8 }}>Follow-up</div>
+              <div style={{ ...LABEL, marginBottom: 4 }}>Follow-up</div>
+              <div style={{ fontSize: 11, color: THEME.textDim, marginBottom: 8 }}>Selecionar estado de follow-up (opcional)</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 <button onClick={() => setFu("")}
                   style={{ padding: "4px 12px", borderRadius: 9999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: !fu ? `2px solid ${THEME.textMuted}` : `2px solid ${THEME.border}`, background: !fu ? `${THEME.textMuted}22` : "transparent", color: THEME.textMuted }}>
@@ -250,9 +251,7 @@ function ChangeStatusModal({ p, onClose, onSave }) {
 // ── Reassign modal — admin, supervisor, or own-process owner ─────────────────
 function ReassignModal({ p, users, onClose, onSave }) {
   const { isMobile } = useWindowSize();
-  const active = users.filter(u => u.active !== false);
-  // Supervisor can also reassign — include supervisor role in eligible pools
-  const byRole = role => active.filter(u => u.role === role || u.role === "admin" || u.role === "supervisor");
+  const allActive = store.getUsers().filter(u => u.active !== false);
 
   const [owner,  setOwner]  = useState(p.owner);
   const [comm,   setComm]   = useState(p.comm);
@@ -269,18 +268,15 @@ function ReassignModal({ p, users, onClose, onSave }) {
         </div>
         <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
           {[
-            { label: "Resp. Cotação",   val: owner,  set: setOwner,  pool: byRole("cotacao")   },
-            { label: "Resp. Comercial", val: comm,   set: setComm,   pool: byRole("comercial") },
-            { label: "Resp. Compra",    val: compra, set: setCompra, pool: byRole("compra")    },
-          ].map(({ label, val, set, pool }) => (
+            { label: "Resp. Cotação",   val: owner,  set: setOwner  },
+            { label: "Resp. Comercial", val: comm,   set: setComm   },
+            { label: "Resp. Compra",    val: compra, set: setCompra },
+          ].map(({ label, val, set }) => (
             <div key={label}>
               <div style={LABEL}>{label}</div>
               <select value={val} onChange={e => set(e.target.value)} style={SEL}>
-                {pool.length === 0
-                  ? <option value={val}>{val}</option>
-                  : pool.map(u => <option key={u.id} value={u.name}>{u.name}</option>)
-                }
-                {pool.length > 0 && !pool.find(u => u.name === val) && <option value={val}>{val}</option>}
+                {allActive.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                {!allActive.find(u => u.name === val) && val && <option value={val}>{val}</option>}
               </select>
             </div>
           ))}
@@ -481,8 +477,8 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
               <h2 style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 700, color: THEME.text, lineHeight: 1.2 }}>{p.client}</h2>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 <StageBadge id={p.status} />
-                {/* FU badge only shown when status >= 9 */}
-                {p.status >= 9 && p.fu && <FUBadge label={p.fu} />}
+                {/* FU badge */}
+                {p.fu && <FUBadge label={p.fu} />}
                 {p.priority === "Alta" && <Tag bg={THEME.dangerBg} color={THEME.danger}>🔴 Alta Prioridade</Tag>}
               </div>
             </div>
@@ -518,8 +514,28 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
             <InfoCell label="Data Limite"    value={p.deadline} />
             <InfoCell label="Prioridade"     value={p.priority} />
             <EditableInfoCell label="Sell Price"     value={p.price ? "€" + p.price.toLocaleString("pt-PT") : ""}  canEdit={canEdit} onSave={v => { const n = parseFloat(v.replace(/[^\d.,]/g, "").replace(",", ".")); updateField("price", isNaN(n) ? null : n); }} />
-            {p.status >= 9 && (
-              <InfoCell label="Follow-up" value={p.fu || "—"} />
+            {(
+              <div>
+                <div style={LABEL}>Follow-up</div>
+                {canEdit ? (
+                  <select
+                    value={p.fu || ""}
+                    onChange={e => {
+                      const val = e.target.value;
+                      const ts = nowTs();
+                      const entry = { icon: "check", color: "#38bdf8", time: ts, text: `Follow-up alterado para "${val || "—"}" por ${currentUser.name || "—"}` };
+                      const updated = { ...p, fu: val || null, timeline: [...(p.timeline || []), entry] };
+                      setP(updated); onUpdate?.(updated);
+                    }}
+                    style={{ ...INPUT, fontSize: 12, padding: "4px 7px", marginTop: 2 }}
+                  >
+                    <option value="">— Nenhum —</option>
+                    {store.getFUStatuses().map(s => <option key={s.id ?? s.label} value={s.label}>{s.label}</option>)}
+                  </select>
+                ) : (
+                  <div style={{ fontSize: 13, fontWeight: 600, color: THEME.text, marginTop: 2 }}>{p.fu || "—"}</div>
+                )}
+              </div>
             )}
           </div>
 

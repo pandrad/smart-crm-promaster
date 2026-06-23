@@ -10,7 +10,7 @@ import { Icon } from "../icons.jsx";
 
 function ActivityList({ items, users }) {
   return (
-    <div style={{ background: THEME.card, borderRadius: 12, border: `1px solid ${THEME.border}`, overflow: "hidden" }}>
+    <div style={{ background: THEME.card, overflow: "hidden" }}>
       {items.map((h, i) => {
         const u = users.find(usr => usr.name === h.actor);
         return (
@@ -46,6 +46,7 @@ export function Dashboard({ processos, tarefas, users, currentUser, accent, onOp
   const isPrivileged = isAdmin || isSupervisor;
 
   const [showAllProcesses, setShowAllProcesses] = useState(isPrivileged);
+  const [activityView,     setActivityView]     = useState("mine");
 
   const userName = currentUser?.name ?? "";
 
@@ -92,14 +93,14 @@ export function Dashboard({ processos, tarefas, users, currentUser, accent, onOp
     .flatMap(t => (t.history || []).map(h => ({ ...h, taskId: t.id, client: t.client })))
     .filter(h => h.ts)
     .sort((a, b) => (b.ts || "").localeCompare(a.ts || ""))
-    .slice(0, 8);
+    .slice(0, 20);
 
   const allActivity = isPrivileged
     ? tarefas
         .flatMap(t => (t.history || []).map(h => ({ ...h, taskId: t.id, client: t.client })))
         .filter(h => h.ts)
         .sort((a, b) => (b.ts || "").localeCompare(a.ts || ""))
-        .slice(0, 8)
+        .slice(0, 20)
     : [];
 
   // ── StatsBar click → navigate to Processos with filter pre-applied ────────
@@ -181,27 +182,33 @@ export function Dashboard({ processos, tarefas, users, currentUser, accent, onOp
         )}
 
         {/* ── Recent activity ── */}
-        {isPrivileged && (
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
-              Actividade geral
+        <div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              {isPrivileged && activityView === "all" ? "Actividade geral" : "Actividade recente"}
             </div>
-            {allActivity.length === 0 ? (
-              <div style={{ fontSize: 13, color: THEME.textDim, padding: "16px 0" }}>Sem actividade recente</div>
-            ) : (
-              <ActivityList items={allActivity} users={users} />
+            {isPrivileged && (
+              <div style={{ display: "flex", gap: 0, border: `1px solid ${THEME.border}`, borderRadius: 7, overflow: "hidden" }}>
+                {[{ id: "mine", label: "As Minhas" }, { id: "all", label: "Geral" }].map(v => (
+                  <button key={v.id} onClick={() => setActivityView(v.id)}
+                    style={{ padding: "3px 10px", fontSize: 10, fontWeight: 600, border: "none", cursor: "pointer",
+                      background: activityView === v.id ? `${accentColor}22` : "transparent",
+                      color: activityView === v.id ? accentColor : THEME.textMuted }}>
+                    {v.label}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
-        )}
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
-            {isPrivileged ? "As minhas" : "Actividade recente"}
-          </div>
-          {myActivity.length === 0 ? (
-            <div style={{ fontSize: 13, color: THEME.textDim, padding: "16px 0" }}>Sem actividade recente</div>
-          ) : (
-            <ActivityList items={myActivity} users={users} />
-          )}
+          {(() => {
+            const items = isPrivileged && activityView === "all" ? allActivity : myActivity;
+            if (items.length === 0) return <div style={{ fontSize: 13, color: THEME.textDim, padding: "16px 0" }}>Sem actividade recente</div>;
+            return (
+              <div style={{ maxHeight: 280, overflowY: "auto", borderRadius: 12, border: `1px solid ${THEME.border}` }}>
+                <ActivityList items={items} users={users} />
+              </div>
+            );
+          })()}
         </div>
       </div>
 

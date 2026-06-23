@@ -263,7 +263,7 @@ export function TableView({ rows, onSelect, users = [], currentUser = {}, sortSt
                 )}
                 {isVisible("fu") && (
                   <td style={{ padding: "9px 10px" }}>
-                    {p.status >= 9 && p.fu ? <FUBadge label={p.fu} /> : <span style={{ color: THEME.border, fontSize: 12 }}>—</span>}
+                    {p.fu ? <FUBadge label={p.fu} /> : <span style={{ color: THEME.border, fontSize: 12 }}>—</span>}
                   </td>
                 )}
                 {isVisible("client") && (
