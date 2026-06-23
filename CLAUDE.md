@@ -6,107 +6,109 @@ Internal web app replacing SharePoint quotation tracking for Promaster (industri
 
 ## Current State
 
-**Stage 1 — Frontend with mock data.**
-All screens complete. Technical QA passed. Awaiting: client document on task types/triggers/timings → second client review → final human QA pass → Stage 1 closure.
+**Stage 1 — Frontend with mock data. Final delivery preparation (v4).**
+All screens complete. Real client user data and role assignments loaded as mock defaults. Task lifecycle redesigned. Awaiting: final human QA pass → Stage 1 closure.
 
 Dev server: `cd frontend && npm run dev` → http://localhost:5299
-Demo login: `admin@promaster.co` / `admin123` · `supervisor@promaster.co` / `super123` · `adelina@promaster.co` / `pass123`
+Demo login: `luis.valente@promaster.co.ao` / `admin123` (Admin) · `joao.morais@promaster.co.ao` / `pass123` (Supervisor) · `adelina.rodrigues@promaster.co.ao` / `pass123` (Standard)
 
 **⚠ Before Stage 1 closes:** delete `src/components/DevTools.jsx` and remove its import from `src/pages/Main.jsx`.
 
 ---
 
-## Recent Changes (June 2026 session)
+## Changes Since v3 (June 2026 session — current)
 
-**Dashboard page** added as new default landing route (`/dashboard`) and first sidebar item. Reuses `StatsBar` (process overview, click-to-navigate to Processos with filter) and `SupervisorWidget` (admin/supervisor only). All users see a personal summary: active tasks, open processes, overdue, urgent. Sidebar order is now: Dashboard, Tarefas, Processos, Inbox, Clientes, Arquivo.
+### Task Lifecycle Redesign (single ID throughout flow)
 
-**Clientes — Responsável dropdown** no longer filters by role. All active users from `store.getUsers()` are selectable regardless of assigned roles.
+Tasks now maintain a single ID from creation to completion. All status, type, and owner changes are patches applied to the existing task object — no new tasks are ever created during flow transitions.
 
-**Email de Origem clickable** in process detail drawer (`DetailDrawer.jsx`). New `OriginEmailModal` shows sender, subject, full body read-only. `originEmail` field added to all mock process records in `data.js`.
+**Pré-Entrada → Abertura de Processo flow:**
+```
+Task T001 created (type: Pré-Entrada, owner: Adelina, status: Por Fazer)
+    ↓ Adelina clicks Validar
+Task T001 updated (type: Abertura de Processo, owner: Braulio, status: Por Fazer)
+    cotacaoOwner field stores "Adelina Rodrigues" for Devolver routing
+    ↓ Braulio clicks Devolver com Notas
+Task T001 updated (type: Pré-Entrada, owner: Adelina, status: Por Fazer)
+    ↓ Adelina clicks Validar again
+Task T001 updated (type: Abertura de Processo, owner: Braulio, status: Por Fazer)
+    ↓ Braulio clicks Abrir Processo
+Task T001 updated (status: Concluído)
+Process 2606001 created (status: Entrada, owner: Adelina via cotacaoOwner)
+```
 
-**Admin Panel — SLA tab renamed to Avisos.** Label-only change, no functional difference.
+One task, one ID, full history. Consistent with the no-deletion rule.
 
-**Pré-Entrada → Validação de Processo** conversion implemented. "Abrir Processo" button replaced with "Enviar para Validação" — converts the Pré-Entrada task into a Validação de Processo task assigned to Resp. Cotação (via mapeamento or "cotacao" role fallback). No process number generated until the validator approves via the existing Validar e Criar Processo flow.
+**Pré-Entrada action buttons:** Validar, Enviar Email ao Cliente, Escalar (standard users) / Passar (admin/supervisor), Cancelar Tarefa.
 
-**Alterar Estado Manualmente** — new action for Admin/Supervisor on any task (including Concluído/Cancelado). Opens a picker with all statuses including System Role ones, mandatory reason field. Logs a distinct `⚠ Alteração manual` history entry. Deliberately separate from normal action buttons.
+**Abertura de Processo action buttons:** Abrir Processo, Devolver com Notas, Escalar (standard) / Passar (admin/supervisor), Cancelar Tarefa.
 
-**Reclassificar Tarefa** — new action for Admin/Supervisor on Não Classificado tasks in Tarefas. Two paths: (a) reclassify as existing task type, or (b) create a brand-new task type on the spot. Either path re-runs assignment routing and updates the task's type and owner.
+**Devolver com Notas behaviour:** When returning an Abertura de Processo task to cotacaoOwner, the type reverts to Pré-Entrada automatically. For all other task types, Devolver preserves the existing type.
 
-**Tarefas — three-section split (Por Fazer / Em Curso / Concluídas).** Task list now has three persistent, always-visible sections. **Por Fazer** = new or returned/reassigned tasks not yet actioned by the current owner. **Em Curso** = actioned by current owner, no ownership change, not yet done. **Concluídas** = System Role Concluído or Cancelado — fully excluded from all SLA/Avisos evaluation, only returnable to active via Alterar Estado Manualmente. Active tasks breaching their due date are visually flagged (red border/background, alert icon). Tasks that arrived via pass/escalation/devolvido show a `↩` indicator in the Por Fazer section.
+### Real Client Data
 
-**Task ownership rule (finalised).** Every ownership-changing action (Passar, Escalar, Devolver, Enviar para Validação) resets the task to "Por Fazer" status so it appears in the new owner's Por Fazer section as fresh work. Actions that don't change ownership (Enviar Email, etc.) transition Por Fazer → Em Curso and stay with the same person. Retomar (supervisor taking an escalated task) goes directly to Em Curso since the supervisor is actively choosing to work on it.
+**14 users** loaded as mock defaults matching real Promaster team:
+Adelina Rodrigues, Alexandra Lima, Augusto Gouveia, Braulio Lourenço, Erânio Cassanga, Francisco Leitão, Gabriel Dala, João Chiquica, João Morais, Joaquim César, Luís Quelhas Valente, Lukeny Campos, Susete Ferreira, Tiago Pinto.
 
-**Dashboard — SLA breach tile** added to the "As minhas tarefas" row, showing count of the user's own tasks currently breaching their due date.
+**10 roles:** Resp. Pré-Entrada, Resp. Cotação, Resp. FPs, Resp. Abertura, Resp. Fecho, Resp. Técnico, Resp. Contas a Receber e a Pagar, Resp. Comercial, Supervisor, Administrador.
 
-**Dashboard — task stat alignment.** Task stat calculations now use the same `doneLabels` and `porFazerLabel` logic as Tarefas.jsx, so the numbers always match exactly.
+**13 process statuses** matching client specification: Pré-Entrada, Pendente Cliente, Análise Técnica Promaster, Abrir Processo, Entrada, Consulta, Para Fechar, Fechado, FP Para Envio, Enviado, Enviado Pendente, Adjudicado, Cancelado.
 
-**Dashboard — Actividade Recente split by role.** Standard users see activity filtered to tasks where they are owner or appear in history. Admin/Supervisor see two sections: "Actividade geral" (all system activity) and "As minhas" (same filtered view).
+**9 task types:** Pré-Entrada, Abertura de Processo, Contas Correntes, Status de Encomenda, Desconto, Cliente Novo, Follow-Up, Escalação, Análise Técnica. Validação de Processo removed (replaced by in-place type change). Não Classificado and Diversos removed.
 
-**Dashboard — process stats scoped by role.** Standard users see "Visão geral de processos" filtered to their own processes by default, with a "Ver todos" / "Ver meus" toggle. Admin/Supervisor see all processes by default.
+Legacy `role` field on user objects preserves `"admin"` and `"supervisor"` strings for permission checks in components. New role IDs (`resp-pre-entrada`, `resp-cotacao`, etc.) used in `crm_user_roles` for Mapeamento routing.
 
-**Processos — Meus Processos default.** Tab order swapped: "Meus processos" is first and pre-selected on load. "Todos os processos" is second.
+### Tarefas — Personal View Default
 
-**Processos — Data Limite column.** The column previously labelled "SLA" is now "Data Limite" and shows the calculated due date (process creation date + Avisos duration configured for that status). Shows "Sem SLA definido" when no timing is configured.
+Admin/Supervisor users default to personal view (own tasks only) on load. Toggle button "Ver todas as tarefas" / "Ver as minhas" switches between personal and global view. All three sections (Por Fazer, Em Curso, Concluídas) respect the toggle consistently. Sidebar badge always shows personal active task count regardless of role or view.
 
-**Process detail — SLA/Avisos section.** New section in the detail drawer showing the configured timing for the current status with an "Editar SLA" button (always visible when user has edit permission). SLA changes are logged in the process timeline.
+### Supervisor/Admin Button Overrides
 
-**Process detail — follow-up status restored.** FU field now always visible when process status ≥ 9 (Enviado+), with an editable dropdown for users with edit permission, even when no FU was previously set.
+For privileged users, across all task types: Escalar button hidden (top of escalation chain), Passar button always shown, Alterar Estado Manualmente always shown. Standard users see buttons exactly as defined by task type.
 
-**Process detail — editable fields.** Marca/Tipo, Modelo, and Sell Price are now inline-editable (click-to-edit with confirm/cancel) for admin, supervisor, or process owner/comm/compra.
+### Unclassified Email Handling
 
-**Process detail — file attachment.** "Anexar ficheiro" button in Anexos section allows uploading files, logged in timeline with uploader name and timestamp.
+Emails that cannot be classified (confidence < 0.6, type null, type not in store) create tasks with `type: null` assigned to Supervisor. Task drawer shows "Sem Classificação" tag. Supervisor sees a "Classificar Tarefa" button that opens a picker with all store task types plus "Criar novo tipo". On classification, routing runs via `store.assignForTaskType()` and the task is reassigned.
 
-**Process detail — attachment supersede with confirmation.** "Remover" action on each attachment (including Modelo de Proposta) requires a confirmation prompt before proceeding. Superseded attachments are marked `superseded: true` and hidden from the active list but preserved in the attachments array and logged in the timeline — consistent with the no-deletion rule.
+### Dashboard — Activity Toggle
 
-**Process detail — full activity timeline logging.** Every status change, reassignment (owner/comm/compra), field edit (Marca/Tipo, Modelo, Sell Price), and attachment add/remove is logged with timestamp, actor name, and description. Mirrors the task history pattern.
+Single scrollable panel (max 5 visible, scrolls for more) replaces the two stacked sections. Admin/Supervisor see a toggle: "As Minhas" (default) / "Geral". Standard users see only their own activity. Most recent entries always at top.
 
-**Process detail — originEmail on all creation paths.** `originEmail` now populated on processes created via Validar e Criar Processo (copied from the validation task) and via DEV tool "Gerar processo aleatório" (synthetic content), ensuring Email de Origem is always clickable.
+### Follow-up Status — Always Editable
 
-**Process number format** fixed to AAMMNNN with real current date (`new Date()`). Sequential counter resets per month prefix. Created/deadline dates on new processes are also dynamic.
+FU picker in the Alterar Estado modal is always visible regardless of process status — no longer restricted to status >= 9. Standalone FU dropdown in process detail info grid is also always visible. FU badge in Processos table column shows for any process with a FU value set, at any status.
 
-**Unassigned task visibility** — tasks with no owner (null/undefined/empty) now visible only to Admin/Supervisor. Standard users see only their own tasks.
+### Reatribuir Modal — All Team Members
 
-**Toast notification disabled** — `<Toast>` removed from Main.jsx render (import also removed). Toast.jsx file kept intact for potential reintroduction.
+All three dropdowns (Resp. Cotação, Resp. Comercial, Resp. Compra) show the complete list of active users from `store.getUsers()` with no role-based filtering. Any team member is selectable for any role.
 
-**Admin Panel — system task status protection.** Task statuses with a System Role other than "Nenhum" show a lock icon, cannot be deleted (delete button disabled), and have the System Role dropdown locked when editing. Label and colour remain editable.
+### SLA Breach Visual Indicators
 
-**Admin Panel — Mapeamento: Reatribui toggle removed from Por Tipo de Tarefa.** Task type rows in Mapeamento now show only the role dropdown. The Reatribui toggle remains on process status and task status sections.
+Process Data Limite column shows breached dates in red with ⚠ prefix when the SLA-calculated due date is in the past. Existing task SLA breach indicators (red border, alert icon) unchanged.
 
-**Process assignment notification cards.** When a process is assigned to a user, a dismissable notification card appears at the top of their Por Fazer section in Tarefas. Cards show process number, client, brand/model, assignment reason, and have "Ver Processo" (navigates + dismisses) and "Dispensar" (dismisses only) actions. Cards are ephemeral — not task records, don't affect counts or stats. Two mock cards seeded in `MOCK_PROCESS_NOTIFICATIONS`. Store methods: `getProcessNotifications()`, `saveProcessNotifications()`, `dismissProcessNotification()`.
+### Email Classification (rewritten)
 
-### Email Classification & Routing (rewritten — 19 June 2026)
+Two-outcome logic in Inbox.jsx triage useEffect:
+- **OUTCOME A** (AI Sim ON, confident): `getAISuggestion()` returns confidence ≥ 0.6, valid type in store → task created with that type via `store.assignForTaskType()`, email status `"auto-triaged"`.
+- **OUTCOME B** (all other cases): task created with `type: null`, assigned to Supervisor, email status `"requires-attention"`.
 
-The classification/routing flow was fully rewritten to eliminate accumulated patches. The architecture is now:
+Inbox is fully read-only for all users. Zero action buttons. All routing/classification happens in Tarefas.
 
-**Data flow:** Classification is determined once at email generation time in DevTools and stored as `email.aiSuggestion`. The `getAISuggestion(email)` function in `api/client.js` is a pure passthrough: `return email.aiSuggestion ?? null`. No heuristics, no simulation toggle check.
+### DEV Tools Additions
 
-**DevTools email generation:** When AI Simulation is ON, ~78% of generated emails get a confident classification (type randomly selected from current `store.getTaskTypes()`, confidence 0.75–0.99). ~22% get `{ type: null, confidence: 0 }`. When OFF, all emails get `{ type: null, confidence: 0 }`. The "Gerar email não classificável" button always generates `{ type: null, confidence: 0 }` regardless of toggle.
-
-**Inbox triage (single useEffect in Inbox.jsx):** Three paths:
-- **AI Sim OFF:** Every pending email → task assigned to Supervisor (resolved via `crm_user_roles` "supervisor" role), email status `"requires-attention"`, appears in Requerem atenção manual section.
-- **AI Sim ON, OUTCOME A:** `getAISuggestion()` returns non-null, confidence ≥ 0.6, type not null, type exists in `store.getTaskTypes()` → task created with that type via `store.assignForTaskType()`, email status `"auto-triaged"`, appears in Processados automaticamente section.
-- **AI Sim ON, OUTCOME B:** All other cases → task type "Não Classificado", assigned to Supervisor, email status `"requires-attention"`, appears in Requerem atenção manual section.
-
-**Inbox rendering:** Two sections always present. Section 1 ("Processados automaticamente") only visible when AI Sim ON, shows type badge + assigned person name, muted read-only style. Section 2 ("Requerem atenção manual") always visible, shows no badge/label on any email. Both sections are read-only. Preview panel shows only sender, subject, body, attachments. Zero action buttons anywhere in Inbox — all routing/categorisation happens in Tarefas.
-
-**Email status values:** `"pending"` → `"auto-triaged"` | `"requires-attention"`. Task status uses `store.getLabelForSystemRole("Por Fazer")` — never hardcoded.
-
-### Known Open Issues (pending fix)
-
-- **System Behaviour field for task types:** planned to mirror System Role on task statuses, resolving inconsistent action-button availability across task types — not yet implemented, to be tackled in next session
-- **Email de Origem clickability intermittent:** programmatically-created processes (via Validar e Criar Processo) may lack `originEmail` field if the originating task had none
+- **Gerar email por tipo:** Dropdown to select a task type, generates an email with content tailored to that type. When AI Sim ON, classification confidence is 0.85–0.99 for the selected type.
+- **Simular incumprimento SLA:** Extended to backdate process `created` field (for Data Limite calculation) and `deadline` field (for stats bar) on 2 active processes. Auto-seeds SLA settings (7 days per status) if not configured.
 
 ---
 
 ## Steps to Close Stage 1
 
-1. Apply client feedback from second review session
-2. Final human QA pass across all screens (see `docs/stage1-testing-guide.md`)
-3. Delete DevTools.jsx + remove import from Main.jsx
-4. Final commit: `Stage 1 complete — frontend closed`
-5. Push to GitHub
-6. Build v4 deliverable → `delivery/v4/`
-7. Proceed to Stage 2: schema finalisation (`database/schema.sql`)
+1. Final human QA pass across all screens (see `docs/stage1-testing-guide.md`)
+2. Delete DevTools.jsx + remove import from Main.jsx
+3. Final commit: `Stage 1 complete — frontend closed`
+4. Push to GitHub
+5. Build v4 deliverable → `delivery/v4/`
+6. Proceed to Stage 2: schema finalisation (`database/schema.sql`)
 
 ---
 
@@ -116,8 +118,7 @@ The classification/routing flow was fully rewritten to eliminate accumulated pat
 frontend/src/
 ├── api/client.js        — fetch stubs; swap for real fetch() in Stage 5
 ├── mock/data.js         — all mock content: PROCESSOS, TAREFAS, INBOX_EMAILS,
-│                          MOCK_CREDENTIALS, MOCK_TOAST, MOCK_IMPORT_PREVIEW,
-│                          MOCK_PROCESS_NOTIFICATIONS
+│                          MOCK_CREDENTIALS, MOCK_TOAST, MOCK_IMPORT_PREVIEW
 ├── data.js              — seed arrays only; consumed by store.js alone
 ├── store.js             — all admin-configurable runtime state (localStorage)
 ├── theme.js             — dark/light theme system
@@ -138,13 +139,14 @@ frontend/src/
 | File | Purpose |
 |------|---------|
 | `Main.jsx` | Layout shell — sidebar, routing, shared state, global modals |
-| `Processos.jsx` | Dashboard — stats bar, filters, table/kanban |
-| `Tarefas.jsx` | Task management — full workflow, validation, history timeline |
-| `Inbox.jsx` | Email observation — read-only two-section layout (Processados automaticamente / Requerem atenção manual); all routing happens in Tarefas |
+| `Processos.jsx` | Process list — stats bar, filters, table/kanban, Data Limite with breach indicator |
+| `Tarefas.jsx` | Task management — full lifecycle workflow, three-section split, personal/global view toggle |
+| `Inbox.jsx` | Email observation — read-only two-section layout; all routing happens in Tarefas |
+| `Dashboard.jsx` | Personal summary — task/process stats, activity panel with toggle |
 | `Clientes.jsx` | Client list — table + detail drawer + Responsável column |
 | `AdminPanel.jsx` | 9 tabs: Utilizadores, Funções, Atribuição, Processos, Tarefas, Mapeamento, SLA, Marca, Importar |
-| `DetailDrawer.jsx` | Process detail — number, Comprador, Consulta checklist, Excel link, FU, SLA edit, full activity timeline |
-| `DevTools.jsx` | 7 DEV-only tools — **delete before Stage 1 closure** |
+| `DetailDrawer.jsx` | Process detail — number, Comprador, FU always editable, Reatribuir (all users), full timeline |
+| `DevTools.jsx` | DEV-only tools — **delete before Stage 1 closure** |
 
 ---
 
@@ -177,19 +179,22 @@ When a trigger fires (process status change, task created, email triaged):
 
 ---
 
-## DEV Tools (7 tools — DEV only)
+## DEV Tools (DEV only)
 
 | # | Tool | Purpose |
 |---|------|---------|
 | 1 | Trocar utilizador | Switch session without login |
 | 2 | Gerar email aleatório | Add random inbox email |
+| 2b | Gerar email não classificável | Add email with type: null |
+| 2c | Gerar email por tipo | Select task type, generate tailored email |
 | 3 | Gerar processo aleatório | Add random process |
-| 4 | Limpar Inbox e Tarefas | Empty inbox + tasks |
-| 5 | Limpar Processos | Clear process list |
-| 6 | Limpar dados admin | Clear admin config (keeps current user) |
-| 7 | Repor todos os dados mock | Full reset to baseline |
+| 4 | Simular incumprimento SLA | Backdate task due + process created/deadline |
+| 5 | Limpar Inbox e Tarefas | Empty inbox + tasks |
+| 6 | Limpar Processos | Clear process list |
+| 7 | Limpar dados admin | Clear admin config (keeps current user) |
+| 8 | Repor todos os dados mock | Full reset to baseline |
 
-AI simulation toggle in DEV panel: controls whether generated emails receive AI classification. When ON, ~78% of generated emails get a confident type (from current `store.getTaskTypes()`), ~22% get `type: null`. When OFF, all generated emails get `type: null`. The Inbox triage useEffect then processes each email according to the three-path logic documented in "Email Classification & Routing" above.
+AI simulation toggle in DEV panel: controls whether generated emails receive AI classification. When ON, ~78% of generated emails get a confident type, ~22% get `type: null`. When OFF, all generated emails get `type: null`.
 
 ---
 
@@ -227,12 +232,13 @@ Reviewer prompt: `docs/reviewer-prompt.md`
 7. **Never hardcode status labels, task type labels, or role names.** Always read from store or database dynamically.
 8. **Git — commit freely locally. Never push without explicit per-message instruction. "Commit" does not mean "commit and push". Always stop after the commit and wait.**
 9. **All UI text pt-PT. Dates DD/MM/YYYY. Currency €1.234,56.**
+10. **Task ID never changes throughout a task's lifecycle.** All flow transitions (Validar, Devolver, Escalar, etc.) patch the existing task object in place. Never create a new task as part of a flow transition.
 
 ---
 
 ## AI Classification Rule (Backend — Stage 4)
 
-Never hardcode task type or status labels in the classification prompt. At runtime: fetch current task types and process statuses from DB, inject dynamically into prompt. If classification returns unrecognised label → default to Não Classificado → assign to Supervisor.
+Never hardcode task type or status labels in the classification prompt. At runtime: fetch current task types and process statuses from DB, inject dynamically into prompt. If classification returns unrecognised label → assign task with `type: null` → assign to Supervisor for manual classification.
 
 ---
 

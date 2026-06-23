@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notas de Versão — Smart CRM Promaster v4</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 20px;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: #f8fafc; color: #1e293b;
+    line-height: 1.7; font-size: 15px;
+  }
+  .container { max-width: 740px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin: 0 0 4px; letter-spacing: -0.02em; }
+  h2 { font-size: 16px; font-weight: 600; color: #64748b; margin: 0 0 32px; letter-spacing: 0.02em; }
+  h3 { font-size: 17px; font-weight: 700; color: #0f172a; margin: 36px 0 14px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
+  ul { margin: 0 0 10px; padding-left: 20px; }
+  li { margin-bottom: 7px; color: #334155; padding-left: 4px; }
+  li::marker { color: #94a3b8; }
+  strong { color: #0f172a; }
+  code { background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 13px; color: #475569; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 9999px; font-size: 11px; font-weight: 700; background: #dbeafe; color: #1d4ed8; vertical-align: middle; margin-left: 6px; letter-spacing: 0.03em; }
+  .header-line { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .logo { width: 36px; height: 36px; background: #3b82f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 16px; flex-shrink: 0; }
+  .flow { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin: 10px 0 14px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; color: #475569; line-height: 1.9; white-space: pre-line; }
+  .flow strong { color: #1e293b; }
+  .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center; }
+  @media print {
+    body { padding: 20px; font-size: 12px; background: white; }
+    h1 { font-size: 22px; } h3 { font-size: 14px; margin-top: 24px; }
+    li { margin-bottom: 4px; font-size: 12px; }
+    .flow { font-size: 10px; padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header-line">
+    <div class="logo">P</div>
+    <div>
+      <h1>Smart CRM — Promaster</h1>
+      <h2>Novidades desde v3 <span class="badge">v4</span></h2>
+    </div>
+  </div>
+
+  <h3>Dados Reais da Equipa</h3>
+  <ul>
+    <li>Os 14 utilizadores reais da equipa Promaster estão carregados como dados de demonstração: Adelina Rodrigues, Alexandra Lima, Augusto Gouveia, Braulio Lourenço, Erânio Cassanga, Francisco Leitão, Gabriel Dala, João Chiquica, João Morais, Joaquim César, Luís Quelhas Valente, Lukeny Campos, Susete Ferreira, Tiago Pinto.</li>
+    <li>10 funções definidas conforme a estrutura real: Resp. Pré-Entrada, Resp. Cotação, Resp. FPs, Resp. Abertura, Resp. Fecho, Resp. Técnico, Resp. Contas a Receber e a Pagar, Resp. Comercial, Supervisor, Administrador.</li>
+    <li>Cada utilizador está pré-atribuído às funções correctas (ex: Adelina tem Resp. Pré-Entrada e Resp. Cotação, Augusto tem Resp. Abertura e Resp. FPs, João Morais tem Supervisor).</li>
+    <li>Credenciais de login actualizadas: Admin (<code>luis.valente@promaster.co.ao</code> / <code>admin123</code>), Supervisor (<code>joao.morais@promaster.co.ao</code> / <code>pass123</code>), Standard (<code>adelina.rodrigues@promaster.co.ao</code> / <code>pass123</code>).</li>
+  </ul>
+
+  <h3>Estados de Processo</h3>
+  <ul>
+    <li>13 estados de processo substituem os 11 anteriores, conforme a especificação do cliente: Pré-Entrada, Pendente Cliente, Análise Técnica Promaster, Abrir Processo, Entrada, Consulta, Para Fechar, Fechado, FP Para Envio, Enviado, Enviado Pendente, Adjudicado, Cancelado.</li>
+    <li>Os estados "Qualificacao", "Pendente Master", "Fechado Pendente" e "Encomenda" foram substituídos.</li>
+  </ul>
+
+  <h3>Tipos de Tarefa</h3>
+  <ul>
+    <li>9 tipos de tarefa: Pré-Entrada, Abertura de Processo, Contas Correntes, Status de Encomenda, Desconto, Cliente Novo, Follow-Up, Escalação, Análise Técnica.</li>
+    <li>Removidos: "Validação de Processo", "Não Classificado", "Diversos". Novo: "Análise Técnica".</li>
+  </ul>
+
+  <h3>Novo Fluxo de Tarefas — Pré-Entrada → Abertura de Processo</h3>
+  <ul>
+    <li>O fluxo de validação de processos foi completamente redesenhado. Uma tarefa mantém o mesmo número de identificação desde a criação até à conclusão — o ID nunca muda.</li>
+  </ul>
+  <div class="flow"><strong>Tarefa T001</strong> criada (tipo: Pré-Entrada, responsável: Adelina, estado: Por Fazer)
+    ↓ Adelina clica <strong>Validar</strong>
+<strong>Tarefa T001</strong> actualizada (tipo: Abertura de Processo, responsável: Braulio, estado: Por Fazer)
+    ↓ Braulio clica <strong>Devolver com Notas</strong>
+<strong>Tarefa T001</strong> actualizada (tipo: Pré-Entrada, responsável: Adelina, estado: Por Fazer)
+    ↓ Adelina clica <strong>Validar</strong> novamente
+<strong>Tarefa T001</strong> actualizada (tipo: Abertura de Processo, responsável: Braulio, estado: Por Fazer)
+    ↓ Braulio clica <strong>Abrir Processo</strong>
+<strong>Tarefa T001</strong> actualizada (estado: Concluído)
+<strong>Processo 2606001</strong> criado (estado: Entrada, Resp. Cotação: Adelina)</div>
+  <ul>
+    <li><strong>Pré-Entrada:</strong> Botões disponíveis — Validar, Enviar Email ao Cliente, Escalar/Passar, Cancelar Tarefa.</li>
+    <li><strong>Abertura de Processo:</strong> Botões disponíveis — Abrir Processo, Devolver com Notas, Escalar/Passar, Cancelar Tarefa.</li>
+    <li><strong>Devolver com Notas:</strong> Se o Resp. Abertura devolve, o tipo reverte automaticamente para Pré-Entrada e a tarefa volta ao validador original.</li>
+    <li>Todo o histórico de cada alteração fica registado na timeline da tarefa.</li>
+  </ul>
+
+  <h3>Classificação de Emails Reescrita</h3>
+  <ul>
+    <li>Lógica de dois resultados: classificado automaticamente (confiança ≥ 60%, tipo válido) ou marcado como "requer atenção manual".</li>
+    <li>Emails não classificáveis criam tarefas sem tipo definido, atribuídas ao Supervisor.</li>
+    <li>O Supervisor classifica através do botão "Classificar Tarefa" — seleccionando um tipo existente ou criando um novo. Após classificação, a tarefa é reatribuída automaticamente.</li>
+  </ul>
+
+  <h3>Inbox</h3>
+  <ul>
+    <li>Totalmente de leitura para todos os utilizadores — sem botões de acção.</li>
+    <li>Duas secções: "Processados automaticamente" e "Requerem atenção manual".</li>
+    <li>Toda a classificação e encaminhamento acontece na página de Tarefas.</li>
+  </ul>
+
+  <h3>Dashboard</h3>
+  <ul>
+    <li>Nova secção "As minhas tarefas" com indicadores: Por Fazer, Activas, SLA Excedido.</li>
+    <li>Secção "Visão geral de processos" com StatsBar e toggle "Ver todos" / "Ver meus".</li>
+    <li>Widget de Supervisor (Admin/Supervisor): resumo de processos fechados, em atraso, escalados.</li>
+    <li>Actividade Recente: painel com scroll fixo (5 entradas visíveis). Admin/Supervisor vêem toggle "As Minhas" / "Geral".</li>
+  </ul>
+
+  <h3>Tarefas — Vista Pessoal e Três Secções</h3>
+  <ul>
+    <li>Três secções permanentes: Por Fazer, Em Curso, Concluídas.</li>
+    <li>Todos os utilizadores vêem as suas próprias tarefas por defeito. Admin/Supervisor podem alternar para ver todas.</li>
+    <li>O badge na barra lateral mostra sempre a contagem pessoal de tarefas activas.</li>
+    <li>Tarefas com prazo ultrapassado: borda vermelha e ícone de alerta. Tarefas redireccionadas: indicador ↩.</li>
+  </ul>
+
+  <h3>Botões de Acção — Regras para Admin e Supervisor</h3>
+  <ul>
+    <li>Nunca vêem o botão "Escalar" — são o topo da cadeia de escalação.</li>
+    <li>Vêem sempre o botão "Passar" para reatribuir a qualquer utilizador.</li>
+    <li>"Alterar Estado Manualmente" disponível em qualquer tarefa e estado.</li>
+  </ul>
+
+  <h3>Processos — Melhorias</h3>
+  <ul>
+    <li>Coluna "Data Limite" com indicador visual vermelho (⚠) quando a data de SLA está ultrapassada.</li>
+    <li>Follow-up editável em qualquer estado do processo — no modal "Alterar Estado" e directamente no painel de detalhe.</li>
+    <li>"Reatribuir" mostra todos os membros activos da equipa nos três dropdowns.</li>
+    <li>Formato de número de processo: AAMMNNN com data real e contador sequencial por mês.</li>
+  </ul>
+
+  <h3>Mapeamento de Responsabilidades</h3>
+  <ul>
+    <li>Pré-configurado para todos os 13 estados de processo: cada estado com função atribuída e Reatribui ligado.</li>
+    <li>Pré-configurado para tipos de tarefa: Pré-Entrada → Resp. Pré-Entrada, Abertura de Processo → Resp. Abertura, etc.</li>
+    <li>Estados de tarefa: Escalado → Supervisor, Cancelado → Supervisor.</li>
+  </ul>
+
+  <h3>Alterar Estado Manualmente</h3>
+  <ul>
+    <li>Admin/Supervisor podem alterar o estado de qualquer tarefa, incluindo Concluído/Cancelado.</li>
+    <li>Picker com todos os estados, campo obrigatório de motivo, registo "⚠ Alteração manual" no histórico.</li>
+  </ul>
+
+  <h3>Ferramentas DEV</h3>
+  <ul>
+    <li>"Gerar email por tipo": seleccionar um tipo de tarefa e gerar um email com conteúdo adequado.</li>
+    <li>"Gerar email não classificável": gera um email que a IA não consegue classificar.</li>
+    <li>Simulação de incumprimento de SLA estendida a processos.</li>
+    <li>Toggle de simulação IA: controla classificação automática dos emails gerados.</li>
+  </ul>
+
+  <h3>Detalhe de Processo</h3>
+  <ul>
+    <li>Email de Origem clicável com modal de leitura completo.</li>
+    <li>Campos editáveis: Marca/Tipo, Modelo, Sell Price (clique para editar).</li>
+    <li>Anexos: upload com "Anexar ficheiro", remoção com confirmação (marca como substituído, não apaga).</li>
+    <li>Timeline completa: cada alteração registada com timestamp, actor e descrição.</li>
+    <li>Secção SLA/Avisos com timing configurado e botão "Editar SLA".</li>
+  </ul>
+
+  <h3>Painel de Administração</h3>
+  <ul>
+    <li>Estados de tarefa com campo System Role — estados de sistema mostram cadeado, não podem ser eliminados.</li>
+    <li>Mapeamento: por estado de processo (com Reatribui), por tipo de tarefa (dropdown), por estado de tarefa (com Reatribui).</li>
+    <li>Atribuição: um utilizador pode ter várias funções, distribuição round-robin.</li>
+  </ul>
+
+  <h3>Correções e Ajustes</h3>
+  <ul>
+    <li>Todos os rótulos em formato Title Case consistente.</li>
+    <li>Processos e tarefas mock com nomes e emails reais da equipa Promaster.</li>
+    <li>Notificação toast desactivada (componente mantido para reintrodução futura).</li>
+    <li>Tarefas sem responsável visíveis apenas para Admin/Supervisor.</li>
+  </ul>
+
+  <div class="footer">
+    Smart CRM — Promaster · v4 · Junho 2026
+  </div>
+
+</div>
+</body>
+</html>
