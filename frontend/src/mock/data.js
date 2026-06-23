@@ -11,20 +11,21 @@
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const MOCK_CREDENTIALS = [
-  { email: "adelina.rodrigues@promaster.co.ao",  password: "pass123",   role: "resp-pre-entrada",  name: "Adelina Rodrigues" },
-  { email: "alexandra.lima@oss-eu.com",          password: "pass123",   role: null,                name: "Alexandra Lima" },
-  { email: "augusto.gouveia@promaster.co.ao",    password: "pass123",   role: "resp-abertura",     name: "Augusto Gouveia" },
-  { email: "braulio.lourenco@promaster.co.ao",   password: "pass123",   role: "resp-abertura",     name: "Braulio Lourenço" },
-  { email: "eranio.cassanga@promaster.co.ao",    password: "pass123",   role: "resp-abertura",     name: "Erânio Cassanga" },
-  { email: "francisco.leitao@promaster.co.ao",   password: "pass123",   role: "resp-pre-entrada",  name: "Francisco Leitão" },
-  { email: "gabriel.dala@promaster.co.ao",       password: "pass123",   role: "resp-abertura",     name: "Gabriel Dala" },
-  { email: "joao.chiquica@promaster.co.ao",      password: "pass123",   role: "resp-abertura",     name: "João Chiquica" },
-  { email: "joao.morais@promaster.co.ao",        password: "pass123",   role: "supervisor",        name: "João Morais" },
-  { email: "joaquim.cesar@promaster.co.ao",      password: "pass123",   role: "resp-contas",       name: "Joaquim César" },
-  { email: "luis.valente@promaster.co.ao",       password: "admin123",  role: "admin",             name: "Luís Quelhas Valente" },
-  { email: "lukeny.campos@promaster.co.ao",      password: "pass123",   role: "resp-abertura",     name: "Lukeny Campos" },
-  { email: "susete.ferreira@promaster.co.ao",    password: "admin123",  role: "admin",             name: "Susete Ferreira" },
-  { email: "tiago.pinto@promaster.co.ao",        password: "pass123",   role: "resp-pre-entrada",  name: "Tiago Pinto" },
+  { email: "admin@promaster.co.ao",              password: "promaster26", role: "admin",             name: "Luís Quelhas Valente" },
+  { email: "adelina.rodrigues@promaster.co.ao",  password: "promaster26", role: "resp-pre-entrada",  name: "Adelina Rodrigues" },
+  { email: "alexandra.lima@oss-eu.com",          password: "promaster26", role: null,                name: "Alexandra Lima" },
+  { email: "augusto.gouveia@promaster.co.ao",    password: "promaster26", role: "resp-abertura",     name: "Augusto Gouveia" },
+  { email: "braulio.lourenco@promaster.co.ao",   password: "promaster26", role: "resp-abertura",     name: "Braulio Lourenço" },
+  { email: "eranio.cassanga@promaster.co.ao",    password: "promaster26", role: "resp-abertura",     name: "Erânio Cassanga" },
+  { email: "francisco.leitao@promaster.co.ao",   password: "promaster26", role: "resp-pre-entrada",  name: "Francisco Leitão" },
+  { email: "gabriel.dala@promaster.co.ao",       password: "promaster26", role: "resp-abertura",     name: "Gabriel Dala" },
+  { email: "joao.chiquica@promaster.co.ao",      password: "promaster26", role: "resp-abertura",     name: "João Chiquica" },
+  { email: "joao.morais@promaster.co.ao",        password: "promaster26", role: "supervisor",        name: "João Morais" },
+  { email: "joaquim.cesar@promaster.co.ao",      password: "promaster26", role: "resp-contas",       name: "Joaquim César" },
+  { email: "luis.valente@promaster.co.ao",       password: "promaster26", role: "admin",             name: "Luís Quelhas Valente" },
+  { email: "lukeny.campos@promaster.co.ao",      password: "promaster26", role: "resp-abertura",     name: "Lukeny Campos" },
+  { email: "susete.ferreira@promaster.co.ao",    password: "promaster26", role: "admin",             name: "Susete Ferreira" },
+  { email: "tiago.pinto@promaster.co.ao",        password: "promaster26", role: "resp-pre-entrada",  name: "Tiago Pinto" },
 ];
 
 // ── Toast demo ────────────────────────────────────────────────────────────────
