@@ -729,12 +729,12 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
       id: newId,
       created: createdStr, deadline: deadlineStr, priority: t.priority || "Normal",
       status: 5,
-      client: t.client || email?.senderName || "",
+      client: t.client || "",
       ref: "", brand: "", model: "", vin: "",
       owner: cotacaoOwner,
       comm:  "",
       compra: "",
-      comprador: email?.senderName || t.client || "",
+      comprador: email?.senderName || "",
       price: null, emails: 1,
       note: `Aberto via tarefa de Abertura ${t.id}`,
       archived: false, carryover: false, excelLink: "Excel Modelo.xlsx",
@@ -798,6 +798,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
         actor:  currentUser?.name,
         action: "Email enviado ao cliente",
         note:   `Para: ${to}\nAssunto: ${subject}\n\n${body}${attachments?.length ? `\n\nAnexos: ${attachments.join(", ")}` : ""}`,
+        email:  { direction: "outbound", from: currentUser?.name, to, subject, body, attachments: attachments || [] },
       }
     );
   }
@@ -905,13 +906,35 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
               ["Estado",   t.status],
               ["Criado",   t.created],
               ["Prazo",    t.due],
-              ["Processo", t.originProcesso || "—"],
             ].map(([lbl, val]) => (
               <div key={lbl}>
                 <div style={LABEL}>{lbl}</div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: THEME.text, marginTop: 2 }}>{val || "—"}</div>
               </div>
             ))}
+            <div>
+              <div style={LABEL}>Processo</div>
+              {isPrivileged && !isDone ? (
+                <select
+                  value={t.originProcesso || ""}
+                  onChange={e => {
+                    const val = e.target.value || null;
+                    update(
+                      { originProcesso: val },
+                      { actor: currentUser?.name, action: "Processo associado", note: val ? `Tarefa associada ao processo ${val}.` : "Associação a processo removida." }
+                    );
+                  }}
+                  style={{ ...INPUT, fontSize: 12, padding: "4px 7px", marginTop: 2 }}
+                >
+                  <option value="">— Nenhum —</option>
+                  {(processos || []).filter(p => !p.archived).map(p => (
+                    <option key={p.id} value={p.id}>{p.id} — {p.client}</option>
+                  ))}
+                </select>
+              ) : (
+                <div style={{ fontSize: 13, fontWeight: 600, color: THEME.text, marginTop: 2 }}>{t.originProcesso || "—"}</div>
+              )}
+            </div>
           </div>
 
           {/* Description */}

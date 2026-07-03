@@ -54,7 +54,7 @@ export const PROCESSOS = [
   // ── Current month (May 2026) ──────────────────────────────────────────────
 
   {
-    id: "2605001", created: "02/05/2026", deadline: "05/05/2026", priority: "Normal",
+    id: "2605001", conversationId: "conv-2605001", created: "02/05/2026", deadline: "05/05/2026", priority: "Normal",
     status: 5, // Entrada
     client: "Mauto – Garagem Oliveira",
     ref: "35112019", brand: "SMARTPOWER", model: "DC1065/B", vin: "",
@@ -71,14 +71,14 @@ export const PROCESSOS = [
       attachments: [],
     },
     timeline: [
-      { icon: "mail",  color: "#60a5fa", time: "02/05 08:05", text: "Email recebido de Evedson Figueiredo — pedido de cotação SMARTPOWER DC1065/B" },
+      { icon: "mail",  color: "#60a5fa", time: "02/05 08:05", text: "Email recebido de Evedson Figueiredo — pedido de cotação SMARTPOWER DC1065/B", email: { direction: "inbound", from: "evedson.figueiredo@mauto.co.ao", to: "info@promaster.co", subject: "Pedido de cotação — SMARTPOWER DC1065/B", body: "", attachments: [] } },
       { icon: "cpu",   color: "#c084fc", time: "02/05 08:06", text: "IA classificou: Pedido de Cotação · Cliente: Mauto · Equipamento: SMARTPOWER DC1065/B" },
       { icon: "user",  color: "#94a3b8", time: "02/05 08:07", text: "Processo atribuído a Adelina Rodrigues" },
     ],
   },
 
   {
-    id: "2605002", created: "03/05/2026", deadline: "06/05/2026", priority: "Normal",
+    id: "2605002", conversationId: "conv-2605002", created: "03/05/2026", deadline: "06/05/2026", priority: "Normal",
     status: 3, // Análise Técnica Promaster
     client: "Sociedade Mineira do Puri, LDA",
     ref: "RJ382/M20", brand: "VOLVO", model: "EC750L", vin: "VOE123456",
@@ -95,7 +95,7 @@ export const PROCESSOS = [
       attachments: [],
     },
     timeline: [
-      { icon: "mail",  color: "#60a5fa", time: "03/05 10:22", text: "Email recebido de Elmo Costa — pedido de cotação VOLVO EC750L" },
+      { icon: "mail",  color: "#60a5fa", time: "03/05 10:22", text: "Email recebido de Elmo Costa — pedido de cotação VOLVO EC750L", email: { direction: "inbound", from: "elmo.costa@smpuri.co.ao", to: "info@promaster.co", subject: "Cotação VOLVO EC750L — ref. RJ382/M20", body: "", attachments: [] } },
       { icon: "cpu",   color: "#c084fc", time: "03/05 10:23", text: "IA classificou: Pedido de Cotação · Cliente: Soc. Mineira do Puri · Equipamento: VOLVO EC750L" },
       { icon: "user",  color: "#94a3b8", time: "03/05 10:24", text: "Processo atribuído a Gabriel Dala" },
       { icon: "check", color: "#4ade80", time: "04/05 09:00", text: "Processo qualificado — cliente confirmado" },
@@ -103,7 +103,7 @@ export const PROCESSOS = [
   },
 
   {
-    id: "2605003", created: "05/05/2026", deadline: "10/05/2026", priority: "Alta",
+    id: "2605003", conversationId: "conv-2605003", created: "05/05/2026", deadline: "10/05/2026", priority: "Alta",
     status: 6, // Consulta
     client: "Construtora Horizonte SA",
     ref: "CH/2026/05", brand: "CATERPILLAR", model: "320GC", vin: "CAT320GC001",
@@ -123,7 +123,7 @@ export const PROCESSOS = [
     // consulta checklist — only present when status === 5
     consulta: { pedidoFornecedor: false, pedidoTs: null, respostaFornecedor: false, respostaTs: null },
     timeline: [
-      { icon: "mail",  color: "#60a5fa", time: "05/05 14:10", text: "Email recebido de Luísa Pinto — CATERPILLAR 320GC" },
+      { icon: "mail",  color: "#60a5fa", time: "05/05 14:10", text: "Email recebido de Luísa Pinto — CATERPILLAR 320GC", email: { direction: "inbound", from: "luisa.pinto@construtora-horizonte.co.ao", to: "info@promaster.co", subject: "Pedido de cotação urgente — CATERPILLAR 320GC — ref. CH/2026/05", body: "", attachments: [] } },
       { icon: "cpu",   color: "#c084fc", time: "05/05 14:11", text: "IA classificou: Pedido de Cotação · Urgência: Alta" },
       { icon: "user",  color: "#94a3b8", time: "05/05 14:12", text: "Processo atribuído a Tiago Pinto" },
       { icon: "check", color: "#4ade80", time: "07/05 10:00", text: "Entrou em Consulta — a aguardar resposta de fornecedor" },
@@ -131,7 +131,7 @@ export const PROCESSOS = [
   },
 
   {
-    id: "2605004", created: "06/05/2026", deadline: "12/05/2026", priority: "Normal",
+    id: "2605004", conversationId: "conv-2605004", created: "06/05/2026", deadline: "12/05/2026", priority: "Normal",
     status: 7, // Para Fechar
     client: "Vendap II",
     ref: "", brand: "JCB", model: "JS220", vin: "",
@@ -148,7 +148,7 @@ export const PROCESSOS = [
       attachments: [],
     },
     timeline: [
-      { icon: "mail",  color: "#60a5fa", time: "06/05 11:00", text: "Email recebido de Sérgio Maia — pedido de cotação JCB JS220" },
+      { icon: "mail",  color: "#60a5fa", time: "06/05 11:00", text: "Email recebido de Sérgio Maia — pedido de cotação JCB JS220", email: { direction: "inbound", from: "sergio.maia@vendap.co.ao", to: "info@promaster.co", subject: "Cotação JCB JS220 — pedido de aquisição", body: "", attachments: [] } },
       { icon: "cpu",   color: "#c084fc", time: "06/05 11:01", text: "IA classificou: Pedido de Cotação · Cliente: Vendap II · Equipamento: JCB JS220" },
       { icon: "user",  color: "#94a3b8", time: "06/05 11:02", text: "Processo atribuído a Adelina Rodrigues" },
       { icon: "check", color: "#4ade80", time: "10/05 15:00", text: "Cotação enviada — a negociar fecho" },
@@ -156,7 +156,7 @@ export const PROCESSOS = [
   },
 
   {
-    id: "2605005", created: "07/05/2026", deadline: "14/05/2026", priority: "Alta",
+    id: "2605005", conversationId: "conv-2605005", created: "07/05/2026", deadline: "14/05/2026", priority: "Alta",
     status: 8, // Fechado
     client: "Planasul Engenharia e Construções",
     ref: "", brand: "VOLVO", model: "EC360BLC PRIME", vin: "VOE789012",
@@ -173,7 +173,7 @@ export const PROCESSOS = [
       attachments: [],
     },
     timeline: [
-      { icon: "mail",  color: "#60a5fa", time: "07/05 08:30", text: "Email recebido de Rui Barros — pedido urgente VOLVO EC360BLC PRIME" },
+      { icon: "mail",  color: "#60a5fa", time: "07/05 08:30", text: "Email recebido de Rui Barros — pedido urgente VOLVO EC360BLC PRIME", email: { direction: "inbound", from: "rui.barros@planasul.co.ao", to: "info@promaster.co", subject: "URGENTE — Cotação VOLVO EC360BLC PRIME (VIN: VOE789012)", body: "", attachments: [] } },
       { icon: "cpu",   color: "#c084fc", time: "07/05 08:31", text: "IA classificou: Pedido de Cotação · Urgência: Alta" },
       { icon: "user",  color: "#94a3b8", time: "07/05 08:32", text: "Processo atribuído a Adelina Rodrigues (Alta Prioridade)" },
       { icon: "check", color: "#4ade80", time: "12/05 16:00", text: "Processo fechado" },
@@ -181,7 +181,7 @@ export const PROCESSOS = [
   },
 
   {
-    id: "2605006", created: "08/05/2026", deadline: "13/05/2026", priority: "Normal",
+    id: "2605006", conversationId: "conv-2605006", created: "08/05/2026", deadline: "13/05/2026", priority: "Normal",
     status: 2, // Pendente Cliente
     client: "Mencons Engenharia e Construção Civil",
     ref: "SMA0119/2026", brand: "VOLVO", model: "EC360BLC", vin: "",
@@ -199,15 +199,15 @@ export const PROCESSOS = [
       attachments: [],
     },
     timeline: [
-      { icon: "mail", color: "#60a5fa", time: "08/05 09:45", text: "Email recebido de Andelson Chaves — pedido de cotação VOLVO EC360BLC" },
+      { icon: "mail", color: "#60a5fa", time: "08/05 09:45", text: "Email recebido de Andelson Chaves — pedido de cotação VOLVO EC360BLC", email: { direction: "inbound", from: "andelson.chaves@mencons.co.ao", to: "info@promaster.co", subject: "Pedido de cotação VOLVO EC360BLC — ref. SMA0119/2026", body: "", attachments: [] } },
       { icon: "cpu",  color: "#c084fc", time: "08/05 09:46", text: "IA classificou: Pedido de Cotação · Cliente: Mencons · Equipamento: VOLVO EC360BLC" },
       { icon: "user", color: "#94a3b8", time: "08/05 09:47", text: "Processo atribuído a Adelina Rodrigues" },
-      { icon: "mail", color: "#60a5fa", time: "09/05 15:00", text: "Cliente enviou esclarecimento — a aguardar documentos" },
+      { icon: "mail", color: "#60a5fa", time: "09/05 15:00", text: "Cliente enviou esclarecimento — a aguardar documentos", email: { direction: "inbound", from: "andelson.chaves@mencons.co.ao", to: "info@promaster.co", subject: "Re: Pedido de cotação VOLVO EC360BLC", body: "", attachments: [] } },
     ],
   },
 
   {
-    id: "2605007", created: "10/05/2026", deadline: "17/05/2026", priority: "Normal",
+    id: "2605007", conversationId: "conv-2605007", created: "10/05/2026", deadline: "17/05/2026", priority: "Normal",
     status: 3, // Análise Técnica Promaster
     client: "BetãoCerto Construções",
     ref: "BC-291", brand: "LIEBHERR", model: "LTM 1100", vin: "",
@@ -225,14 +225,14 @@ export const PROCESSOS = [
       attachments: [],
     },
     timeline: [
-      { icon: "mail", color: "#60a5fa", time: "10/05 16:00", text: "Email recebido de Rui Cardoso — LIEBHERR LTM 1100" },
+      { icon: "mail", color: "#60a5fa", time: "10/05 16:00", text: "Email recebido de Rui Cardoso — LIEBHERR LTM 1100", email: { direction: "inbound", from: "rui.cardoso@betaocerto.co.ao", to: "info@promaster.co", subject: "Cotação LIEBHERR LTM 1100 — ref. BC-291", body: "", attachments: [] } },
       { icon: "cpu",  color: "#c084fc", time: "10/05 16:01", text: "IA classificou: Pedido de Cotação · Equipamento: LIEBHERR LTM 1100" },
       { icon: "user", color: "#94a3b8", time: "10/05 16:02", text: "Processo atribuído a Gabriel Dala" },
     ],
   },
 
   {
-    id: "2605008", created: "11/05/2026", deadline: "18/05/2026", priority: "Normal",
+    id: "2605008", conversationId: "conv-2605008", created: "11/05/2026", deadline: "18/05/2026", priority: "Normal",
     status: 10, // Enviado — fu and price now visible
     fu: "Confirmado",
     client: "TerraMovida Lda",
@@ -251,7 +251,7 @@ export const PROCESSOS = [
       attachments: [],
     },
     timeline: [
-      { icon: "mail",  color: "#60a5fa", time: "11/05 10:00", text: "Email recebido de Carlos Menezes — VOLVO L90H" },
+      { icon: "mail",  color: "#60a5fa", time: "11/05 10:00", text: "Email recebido de Carlos Menezes — VOLVO L90H", email: { direction: "inbound", from: "carlos.menezes@terramovida.pt", to: "info@promaster.co", subject: "Pedido de cotação — VOLVO L90H — ref. TM-0088", body: "", attachments: [] } },
       { icon: "cpu",   color: "#c084fc", time: "11/05 10:01", text: "IA classificou: Pedido de Cotação · Equipamento: VOLVO L90H" },
       { icon: "user",  color: "#94a3b8", time: "11/05 10:02", text: "Processo atribuído a Francisco Leitão" },
       { icon: "check", color: "#4ade80", time: "14/05 09:00", text: "Proposta enviada ao cliente — €210.000" },
@@ -259,7 +259,7 @@ export const PROCESSOS = [
   },
 
   {
-    id: "2605009", created: "12/05/2026", deadline: "19/05/2026", priority: "Alta",
+    id: "2605009", conversationId: "conv-2605009", created: "12/05/2026", deadline: "19/05/2026", priority: "Alta",
     status: 12, // Adjudicado — counts as "Ganhos"
     fu: "Confirmado",
     client: "AMF – Agentes de Formação",
@@ -278,7 +278,7 @@ export const PROCESSOS = [
       attachments: [{ name: "Especificacoes_Lubrificacao_CAT_E26091.pdf" }],
     },
     timeline: [
-      { icon: "mail",  color: "#60a5fa", time: "12/05 09:12", text: "Email recebido de Teodósio Nzunda — pedido de cotação CAT – LUBRIFICAÇÃO" },
+      { icon: "mail",  color: "#60a5fa", time: "12/05 09:12", text: "Email recebido de Teodósio Nzunda — pedido de cotação CAT – LUBRIFICAÇÃO", email: { direction: "inbound", from: "teodosio.nzunda@amf.co.ao", to: "info@promaster.co", subject: "Pedido de cotação — CAT Lubrificação — ref. E26091", body: "", attachments: [{ name: "Especificacoes_Lubrificacao_CAT_E26091.pdf" }] } },
       { icon: "cpu",   color: "#c084fc", time: "12/05 09:13", text: "IA classificou: Pedido de Cotação · Cliente: AMF · Equipamento: CAT – LUBRIFICAÇÃO" },
       { icon: "user",  color: "#94a3b8", time: "12/05 09:14", text: "Processo atribuído a Tiago Pinto" },
       { icon: "check", color: "#4ade80", time: "15/05 11:30", text: "Encomenda confirmada — €47.500" },
@@ -286,7 +286,7 @@ export const PROCESSOS = [
   },
 
   {
-    id: "2605010", created: "13/05/2026", deadline: "15/05/2026", priority: "Alta",
+    id: "2605010", conversationId: "conv-2605010", created: "13/05/2026", deadline: "15/05/2026", priority: "Alta",
     status: 13, // Cancelado
     client: "Obras Nacionais SARL",
     ref: "ON-2026-33", brand: "JCB", model: "JS220", vin: "",
@@ -304,7 +304,7 @@ export const PROCESSOS = [
       attachments: [],
     },
     timeline: [
-      { icon: "mail",  color: "#60a5fa", time: "13/05 11:00", text: "Email recebido de Manuel Faria — JCB JS220" },
+      { icon: "mail",  color: "#60a5fa", time: "13/05 11:00", text: "Email recebido de Manuel Faria — JCB JS220", email: { direction: "inbound", from: "manuel.faria@obrasnacionais.co.ao", to: "info@promaster.co", subject: "Pedido de cotação — JCB JS220 — ref. ON-2026-33", body: "", attachments: [] } },
       { icon: "cpu",   color: "#c084fc", time: "13/05 11:01", text: "IA classificou: Pedido de Cotação · Equipamento: JCB JS220" },
       { icon: "user",  color: "#94a3b8", time: "13/05 11:02", text: "Processo atribuído a Tiago Pinto" },
       { icon: "x",     color: "#f87171", time: "15/05 17:00", text: "Processo cancelado — cliente escolheu concorrente" },
@@ -314,7 +314,7 @@ export const PROCESSOS = [
   // ── Carryover from April (previous month, still open) ─────────────────────
 
   {
-    id: "2604001", created: "15/04/2026", deadline: "22/04/2026", priority: "Normal",
+    id: "2604001", conversationId: "conv-2604001", created: "15/04/2026", deadline: "22/04/2026", priority: "Normal",
     status: 3, // Análise Técnica Promaster — still open, carried over
     client: "Grupo Construções do Sul SARL",
     ref: "GCS-088", brand: "KOMATSU", model: "PC490LC", vin: "",
@@ -332,14 +332,14 @@ export const PROCESSOS = [
       attachments: [],
     },
     timeline: [
-      { icon: "mail",  color: "#60a5fa", time: "15/04 10:00", text: "Email recebido de Henrique Dias — KOMATSU PC490LC" },
+      { icon: "mail",  color: "#60a5fa", time: "15/04 10:00", text: "Email recebido de Henrique Dias — KOMATSU PC490LC", email: { direction: "inbound", from: "henrique.dias@gcs.co.ao", to: "info@promaster.co", subject: "Pedido de cotação KOMATSU PC490LC — ref. GCS-088", body: "", attachments: [] } },
       { icon: "cpu",   color: "#c084fc", time: "15/04 10:01", text: "IA classificou: Pedido de Cotação · Equipamento: KOMATSU PC490LC" },
       { icon: "user",  color: "#94a3b8", time: "15/04 10:02", text: "Processo atribuído a Francisco Leitão" },
     ],
   },
 
   {
-    id: "2604002", created: "20/04/2026", deadline: "27/04/2026", priority: "Alta",
+    id: "2604002", conversationId: "conv-2604002", created: "20/04/2026", deadline: "27/04/2026", priority: "Alta",
     status: 6, // Consulta — carried over, now overdue
     client: "Luso-Angola Peças Lda",
     ref: "LAP-2026-04", brand: "VOLVO", model: "EC480E", vin: "VOE555888",
@@ -358,7 +358,7 @@ export const PROCESSOS = [
     },
     consulta: { pedidoFornecedor: true, pedidoTs: "20/04 14:30", respostaFornecedor: false, respostaTs: null },
     timeline: [
-      { icon: "mail",  color: "#60a5fa", time: "20/04 09:00", text: "Email recebido de Fernando Lopes — VOLVO EC480E" },
+      { icon: "mail",  color: "#60a5fa", time: "20/04 09:00", text: "Email recebido de Fernando Lopes — VOLVO EC480E", email: { direction: "inbound", from: "fernando.lopes@lusoangolapecas.co.ao", to: "info@promaster.co", subject: "Cotação urgente VOLVO EC480E (VIN: VOE555888) — ref. LAP-2026-04", body: "", attachments: [] } },
       { icon: "cpu",   color: "#c084fc", time: "20/04 09:01", text: "IA classificou: Pedido de Cotação · Urgência: Alta" },
       { icon: "user",  color: "#94a3b8", time: "20/04 09:02", text: "Processo atribuído a Tiago Pinto" },
       { icon: "alert", color: "#f87171", time: "27/04 00:00", text: "Prazo atingido — processo transitado para Maio" },
@@ -368,7 +368,7 @@ export const PROCESSOS = [
   // ── Archived processes (older than 3 years) ───────────────────────────────
 
   {
-    id: "2301001", created: "10/01/2023", deadline: "17/01/2023", priority: "Normal",
+    id: "2301001", conversationId: "conv-2301001", created: "10/01/2023", deadline: "17/01/2023", priority: "Normal",
     status: 12, // Adjudicado
     fu: "Confirmado",
     client: "Metalúrgica do Kwanza SARL",
@@ -387,13 +387,13 @@ export const PROCESSOS = [
       attachments: [],
     },
     timeline: [
-      { icon: "mail",  color: "#60a5fa", time: "10/01 09:00", text: "Email recebido de António Simões — CAT D6T" },
+      { icon: "mail",  color: "#60a5fa", time: "10/01 09:00", text: "Email recebido de António Simões — CAT D6T", email: { direction: "inbound", from: "antonio.simoes@kwanza.co.ao", to: "info@promaster.co", subject: "Pedido de cotação CAT D6T — ref. MK-2023-01", body: "", attachments: [] } },
       { icon: "check", color: "#4ade80", time: "20/01 11:00", text: "Encomenda confirmada — €385.000" },
     ],
   },
 
   {
-    id: "2212001", created: "05/12/2022", deadline: "12/12/2022", priority: "Normal",
+    id: "2212001", conversationId: "conv-2212001", created: "05/12/2022", deadline: "12/12/2022", priority: "Normal",
     status: 13, // Cancelado
     client: "Construções Horizonte Norte Lda",
     ref: "CHN-2022-44", brand: "LIEBHERR", model: "LTM 1080", vin: "",
@@ -411,7 +411,7 @@ export const PROCESSOS = [
       attachments: [],
     },
     timeline: [
-      { icon: "mail",  color: "#60a5fa", time: "05/12 08:00", text: "Email recebido de José Ferreira — LIEBHERR LTM 1080" },
+      { icon: "mail",  color: "#60a5fa", time: "05/12 08:00", text: "Email recebido de José Ferreira — LIEBHERR LTM 1080", email: { direction: "inbound", from: "jose.ferreira@chornorte.co.ao", to: "info@promaster.co", subject: "Cotação LIEBHERR LTM 1080 — ref. CHN-2022-44", body: "", attachments: [] } },
       { icon: "x",     color: "#f87171", time: "15/12 17:00", text: "Processo cancelado pelo cliente" },
     ],
   },
@@ -812,7 +812,7 @@ export const TAREFAS = [
 // attachments: array of { name } objects
 export const INBOX_EMAILS = [
   {
-    id: "E001",
+    id: "E001", conversationId: "conv-E001",
     sender: "pedro.augusto@logisticaatlantico.co.ao",
     senderName: "Pedro Augusto",
     to: "info@promaster.co",
@@ -842,7 +842,7 @@ export const INBOX_EMAILS = [
     status: "pending",
   },
   {
-    id: "E003",
+    id: "E003", conversationId: "conv-2605004",
     sender: "sergio.maia@vendap.co.ao",
     senderName: "Sérgio Maia",
     to: "info@promaster.co",
@@ -858,7 +858,7 @@ export const INBOX_EMAILS = [
     triagedTaskId: "T009", // link to the validation task
   },
   {
-    id: "E004",
+    id: "E004", conversationId: "conv-2605003",
     sender: "luisa.pinto@construtora-horizonte.co.ao",
     senderName: "Luísa Pinto",
     to: "info@promaster.co",
@@ -888,7 +888,7 @@ export const INBOX_EMAILS = [
     status: "pending",
   },
   {
-    id: "E006",
+    id: "E006", conversationId: "conv-2604001",
     sender: "henrique.dias@gcs.co.ao",
     senderName: "Henrique Dias",
     to: "info@promaster.co",
@@ -904,7 +904,7 @@ export const INBOX_EMAILS = [
     triagedTaskId: "T010", // link to the validation task
   },
   {
-    id: "E007",
+    id: "E007", conversationId: "conv-E007",
     sender: "noreply@marketing-updates.com",
     senderName: "Marketing Updates",
     to: "info@promaster.co",

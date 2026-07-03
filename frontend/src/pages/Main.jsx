@@ -127,7 +127,7 @@ function ProfileModal({ currentUser, onClose, onSave }) {
 // ── Shell ─────────────────────────────────────────────────────────────────────
 export function Main() {
   const { isMobile } = useWindowSize();
-  const [processos,    setProcessos]    = useState(PROCESSOS);
+  const [processos,    setProcessos]    = useState(() => store.getProcessos());
   const [tarefas,      setTarefas]      = useState(() => store.getTarefas());
   const [inboxEmails,  setInboxEmails]  = useState(() => store.getInboxEmails());
   const [users,        setUsers]        = useState(() => store.getUsers());
@@ -202,7 +202,7 @@ export function Main() {
     // Clear every runtime key including theme
     const keys = [
       "crm_users","crm_stages","crm_fu","crm_priorities","crm_roles",
-      "crm_assignment","crm_task_assignment","crm_tarefas","crm_inbox",
+      "crm_assignment","crm_task_assignment","crm_processos","crm_tarefas","crm_inbox",
       "crm_col_prefs","crm_sort_prefs","crm_branding","crm_theme",
     ];
     keys.forEach(k => localStorage.removeItem(k));

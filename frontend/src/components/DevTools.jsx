@@ -386,6 +386,7 @@ export function DevTools({
   // ── Tool 5: Clear processos ───────────────────────────────────────────────
   function handleClearProcessos() {
     setProcessos([]);
+    store.saveProcessos([]);
     setThemeVersion(v => v + 1);
   }
 
@@ -433,7 +434,7 @@ export function DevTools({
       "crm_task_types", "crm_task_statuses",
       "crm_mapeamento", "crm_sla",
       "crm_priorities",
-      "crm_tarefas", "crm_inbox",
+      "crm_processos", "crm_tarefas", "crm_inbox",
       "crm_col_prefs", "crm_sort_prefs",
       "crm_branding", "crm_theme",
       "crm_rr_counters",

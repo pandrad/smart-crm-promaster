@@ -4,7 +4,7 @@
  */
 
 import { USERS, STAGES, FOLLOWUP_STATUSES } from "./data.js";
-import { TAREFAS, INBOX_EMAILS } from "./mock/data.js";
+import { PROCESSOS, TAREFAS, INBOX_EMAILS } from "./mock/data.js";
 
 // ── Default seed data ─────────────────────────────────────────────────────────
 
@@ -234,6 +234,10 @@ export const store = {
     const roleId = mapeamento.processoStatus?.[statusId] ?? null;
     return store.assignRoundRobin(roleId);
   },
+
+  // ── Processos ──────────────────────────────────────────────────────────────
+  getProcessos()           { return load("crm_processos", PROCESSOS); },
+  saveProcessos(processos) { save("crm_processos", processos); },
 
   // ── Tarefas (tasks) ────────────────────────────────────────────────────────
   getTarefas()         { return load("crm_tarefas", TAREFAS); },

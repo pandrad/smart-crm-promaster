@@ -293,8 +293,8 @@ function ReassignModal({ p, users, onClose, onSave }) {
 // ── Consulta checklist — only when status === 6 ───────────────────────────────
 function ConsultaChecklist({ consulta, onChange }) {
   const sla = store.getSLASettings();
-  const SLA_PEDIDO   = sla.tasks["Em Curso"]  ?? 48;
-  const SLA_RESPOSTA = sla.tasks["Por Fazer"] ?? 72;
+  const SLA_PEDIDO   = sla.tasks?.["Em Curso"]  ?? 48;
+  const SLA_RESPOSTA = sla.tasks?.["Por Fazer"] ?? 72;
 
   function hoursAgo(ts) {
     if (!ts) return null;
@@ -370,10 +370,11 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
   const [confirmRemove, setConfirmRemove] = useState(null);
 
   function handleEmailSent({ to, subject, body, attachments }) {
+    const ts = new Date().toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
     const entry = {
-      icon: "mail", color: "#60a5fa",
-      time: new Date().toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", ""),
+      icon: "mail", color: "#60a5fa", time: ts,
       text: `Email enviado por ${currentUser.name || "—"} para ${to} — ${subject}${attachments?.length ? ` (${attachments.join(", ")})` : ""}`,
+      email: { direction: "outbound", from: currentUser.name || "—", to, subject, body, attachments: attachments || [], timestamp: ts },
     };
     const updated = { ...p, timeline: [...(p.timeline || []), entry] };
     setP(updated);
@@ -393,7 +394,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
   function photoOf(name) { return users.find(u => u.name === name)?.photo; }
 
   function updateField(field, value) {
-    const fieldLabels = { brand: "Marca / Tipo", model: "Modelo", price: "Sell Price" };
+    const fieldLabels = { client: "Cliente", brand: "Marca / Tipo", model: "Modelo", price: "Sell Price" };
     const label = fieldLabels[field] || field;
     const oldVal = p[field] ?? "—";
     const displayNew = field === "price" && value ? `€${value}` : (value || "—");
@@ -506,7 +507,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
 
           {/* ── Info grid ── */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 16px" }}>
-            <InfoCell label="Cliente"        value={p.client} />
+            <EditableInfoCell label="Cliente" value={p.client} canEdit={canEdit} onSave={v => updateField("client", v)} />
             <InfoCell label="Ref. Cliente"   value={p.ref} />
             <EditableInfoCell label="Marca / Tipo"   value={p.brand}  canEdit={canEdit} onSave={v => updateField("brand", v)} />
             <EditableInfoCell label="Modelo"         value={p.model}  canEdit={canEdit} onSave={v => updateField("model", v)} />

@@ -7,10 +7,10 @@ Internal web app replacing SharePoint quotation tracking for Promaster (industri
 ## Current State
 
 **Stage 1 — Frontend with mock data. Final delivery preparation (v4).**
-All screens complete. Real client user data and role assignments loaded as mock defaults. Task lifecycle redesigned. Awaiting: final human QA pass → Stage 1 closure.
+All screens complete. Real client user data and role assignments loaded as mock defaults. Task lifecycle redesigned. Post-v4 bug fixes applied (see Changes Since v3). Awaiting: final human QA pass → Stage 1 closure.
 
 Dev server: `cd frontend && npm run dev` → http://localhost:5299
-Demo login: `luis.valente@promaster.co.ao` / `admin123` (Admin) · `joao.morais@promaster.co.ao` / `pass123` (Supervisor) · `adelina.rodrigues@promaster.co.ao` / `pass123` (Standard)
+Demo login: `admin@promaster.co.ao` / `promaster26` (Admin) · `joao.morais@promaster.co.ao` / `promaster26` (Supervisor) · `adelina.rodrigues@promaster.co.ao` / `promaster26` (Standard)
 
 **⚠ Before Stage 1 closes:** delete `src/components/DevTools.jsx` and remove its import from `src/pages/Main.jsx`.
 
@@ -98,6 +98,15 @@ Inbox is fully read-only for all users. Zero action buttons. All routing/classif
 
 - **Gerar email por tipo:** Dropdown to select a task type, generates an email with content tailored to that type. When AI Sim ON, classification confidence is 0.85–0.99 for the selected type.
 - **Simular incumprimento SLA:** Extended to backdate process `created` field (for Data Limite calculation) and `deadline` field (for stats bar) on 2 active processes. Auto-seeds SLA settings (7 days per status) if not configured.
+- **Limpar Processos** now persists the clear to localStorage via `store.saveProcessos([])` — previously only cleared React state and reverted on refresh.
+
+### Post-v4 Bug Fixes (July 2026)
+
+- **ConsultaChecklist crash**: Opening the 3rd process row caused a blank page. Root cause: `sla.tasks["Em Curso"]` accessed on undefined `sla.tasks`. Fixed with optional chaining (`sla.tasks?.["Em Curso"] ?? 48`) in DetailDrawer.jsx.
+- **Processo field editable for Admin/Supervisor**: Task drawer "Processo" field was display-only for all users. Restored as an editable `<select>` for privileged users (Admin/Supervisor), allowing manual process association from a list of active processes. Non-privileged users and done tasks remain display-only.
+- **Limpar Processos not persisting**: DEV tool clear reverted on page refresh because only React state was cleared. Added `store.getProcessos()` / `store.saveProcessos()` to store.js; Main.jsx now seeds `processos` from store; DevTools calls `store.saveProcessos([])` alongside `setProcessos([])`.
+- **Client name separated from contact person in process creation**: `handleAbrirProcesso` in Tarefas.jsx now maps `t.client` → `process.client` (company name) and `email.senderName` → `process.comprador` (contact person) independently — no cross-fallback between the two fields. Client field in DetailDrawer info grid is now an editable `EditableInfoCell` (Admin/Supervisor/assigned user), with changes logged in the activity timeline. `fieldLabels` updated to include `client: "Cliente"`.
+- **conversationId + structured email timeline entries**: All 14 mock processes in data.js have a `conversationId` field (format `conv-{processId}`). Inbound email timeline entries now carry a structured `email` object (`{ direction, from, to, subject, body, attachments }`) alongside `text`. `handleEnviarEmailCliente` in Tarefas.jsx and `handleEmailSent` in DetailDrawer.jsx both write structured outbound email objects to the timeline for Stage 4 Graph API compatibility.
 
 ---
 
@@ -232,6 +241,22 @@ The DEV tools panel is visible on the deployed version because the environment v
 | Email | Microsoft Graph API (webhook on info@promaster.co) |
 | AI | Claude API — `claude-sonnet-4-20250514` |
 | Hosting | Vercel (frontend) + Supabase (Stage 5+) |
+
+### File Storage — Architecture Decision
+
+The app currently supports file attachments via URL only — files are stored in SharePoint/OneDrive and the app stores the URL string in the database.
+
+In Stage 4, add **Supabase Storage** as a direct file upload option for files that do not originate from SharePoint (supplier catalogues, client attachments received by email, photos, PDFs, etc.).
+
+**Implementation:** A file upload endpoint in FastAPI accepts files, stores them in a Supabase Storage bucket, and returns a URL that gets stored in the attachments table alongside SharePoint URLs — the schema is unchanged since both are just URL strings. The frontend attachment UI needs a file picker option added alongside the existing URL input.
+
+**Estimated additional effort:** 2–3 days in Stage 4.
+
+**Cost:** ~€0.021 per GB per month via Supabase Storage — negligible at expected volumes.
+
+**Migration:** Existing SharePoint files stay in SharePoint permanently — no migration needed.
+
+**Practical rule for client:** Files that need editing (quotation Excel files) stay in SharePoint. Read-only reference files (catalogues, received PDFs, photos) can be uploaded directly in the app.
 
 ---
 
