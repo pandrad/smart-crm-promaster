@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { THEME } from "../theme.js";
 import { store } from "../store.js";
 import { daysLeft } from "../utils.js";
@@ -8,8 +8,35 @@ import { TableView } from "../components/TableView.jsx";
 import { KanbanView } from "../components/KanbanView.jsx";
 import { Icon } from "../icons.jsx";
 
+// ── Summary strip — pooled Por Fazer / Activas / SLA Excedido across tasks and
+// processes, compact entry point into Dashboard's detailed breakdown. ────────
+function SummaryStrip({ porFazer, activas, slaExcedido, onClick }) {
+  const items = [
+    { label: "Por fazer",    value: porFazer,    color: "#94a3b8" },
+    { label: "Activas",      value: activas,      color: THEME.warning },
+    { label: "SLA excedido", value: slaExcedido, color: THEME.danger },
+  ];
+  return (
+    <div
+      onClick={onClick}
+      style={{ display: "flex", alignItems: "center", gap: 18, padding: "8px 24px", cursor: "pointer", borderBottom: `1px solid ${THEME.border}`, background: THEME.sidebar }}
+      title="Ver detalhe no Dashboard"
+    >
+      {items.map((it, i) => (
+        <div key={it.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: it.value > 0 ? it.color : THEME.textMuted }}>{it.value}</span>
+          <span style={{ fontSize: 11, color: THEME.textDim }}>{it.label}</span>
+          {i < items.length - 1 && <span style={{ width: 1, height: 12, background: THEME.border, marginLeft: 12 }} />}
+        </div>
+      ))}
+      <Icon name="chevron" size={11} color={THEME.textDim} style={{ marginLeft: "auto" }} />
+    </div>
+  );
+}
+
 export function Processos({ processos, setProcessos, tarefas, users, currentUser, accent, onSelectProcesso }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [view,         setView]         = useState("table");
   const [search,       setSearch]       = useState("");
   const [ownerFilter,  setOwnerFilter]  = useState("Todos");
@@ -21,6 +48,35 @@ export function Processos({ processos, setProcessos, tarefas, users, currentUser
 
   // Visible (non-archived) processes only on this page
   const active = processos.filter(p => !p.archived);
+
+  // ── Pooled summary strip — combines tasks and processes for the current user.
+  // Mirrors Dashboard's own per-entity definitions (myActive/myPorFazer/
+  // mySlaBreach for tasks; myOpen/myOverdue for processes) just summed together,
+  // since Dashboard already provides the detailed split — this is only a
+  // compact entry point, not a new breakdown.
+  const userName = currentUser?.name ?? "";
+  const doneLabels = new Set(
+    ["Concluído", "Cancelado"].map(r => store.getLabelForSystemRole(r)).filter(Boolean)
+  );
+  const porFazerLabel = store.getLabelForSystemRole("Por Fazer");
+  function isTaskSlaBreach(task) {
+    if (!task.due) return false;
+    try {
+      const [d, m, y] = task.due.split("/").map(Number);
+      return new Date("2026-05-15T12:00:00") > new Date(y, m - 1, d);
+    } catch { return false; }
+  }
+  const myTasksAll      = (tarefas || []).filter(t => t.owner === userName);
+  const myActiveTasks   = myTasksAll.filter(t => !doneLabels.has(t.status));
+  const myPorFazerTasks = myTasksAll.filter(t => t.status === porFazerLabel);
+  const myTaskSlaBreach = myActiveTasks.filter(isTaskSlaBreach);
+  const myProcessosForStrip    = active.filter(p => p.owner === userName || p.comm === userName || p.compra === userName);
+  const myOpenProcessosStrip   = myProcessosForStrip.filter(p => p.status < 8);
+  const myOverdueProcessosStrip = myProcessosForStrip.filter(p => daysLeft(p.deadline) < 0 && p.status < 8);
+
+  const pooledPorFazer    = myPorFazerTasks.length;
+  const pooledActivas     = myActiveTasks.length + myOpenProcessosStrip.length;
+  const pooledSlaExcedido = myTaskSlaBreach.length + myOverdueProcessosStrip.length;
 
   // Apply all filters
   let rows = active.filter(p => {
@@ -103,6 +159,8 @@ export function Processos({ processos, setProcessos, tarefas, users, currentUser
           </div>
         </div>
       </div>
+
+      <SummaryStrip porFazer={pooledPorFazer} activas={pooledActivas} slaExcedido={pooledSlaExcedido} onClick={() => navigate("/dashboard")} />
 
       {/* Meus/Todos tabs */}
       <div style={{ padding: "12px 24px 0", display: "flex", gap: 6 }}>

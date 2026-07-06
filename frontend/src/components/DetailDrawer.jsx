@@ -390,6 +390,10 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
   const isOwned      = p.owner === currentUser.name || p.comm === currentUser.name || p.compra === currentUser.name;
   const canReassign  = isAdmin || isSupervisor || isOwned;
   const canEdit      = isAdmin || isSupervisor || isOwned;
+  // Cliente, Marca/Tipo, Modelo, and Sell Price are editable by any user —
+  // unlike canEdit (which still gates attachments and Follow-up), this is not
+  // restricted to admin/supervisor/assigned team members.
+  const canEditFields = true;
 
   function photoOf(name) { return users.find(u => u.name === name)?.photo; }
 
@@ -416,8 +420,16 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
     let patch = { status: newStatus, ...(newFu !== undefined ? { fu: newFu } : {}) };
 
     if (reatribuiMap[newStatus]) {
-      const newOwner = store.assignForProcessStatus(newStatus, p.client || null);
-      if (newOwner) patch = { ...patch, owner: newOwner };
+      const roleId = mapeamento.processoStatus?.[newStatus] ?? null;
+      const clientAssignee = store.resolveClientRoleAssignment(p.client || null, roleId);
+      const hasOwner = !!p.owner;
+      // Reassign only if there is no current owner, or a role-specific client
+      // assignment points to someone other than the current owner. Otherwise
+      // the existing owner is preserved even though the Reatribui toggle is on.
+      if (!hasOwner || (clientAssignee && clientAssignee !== p.owner)) {
+        const newOwner = clientAssignee || store.assignForProcessStatus(newStatus, p.client || null);
+        if (newOwner) patch = { ...patch, owner: newOwner };
+      }
     }
 
     const oldStage = stages.find(s => s.id === p.status);
@@ -507,14 +519,14 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
 
           {/* ── Info grid ── */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 16px" }}>
-            <EditableInfoCell label="Cliente" value={p.client} canEdit={canEdit} onSave={v => updateField("client", v)} />
+            <EditableInfoCell label="Cliente" value={p.client} canEdit={canEditFields} onSave={v => updateField("client", v)} />
             <InfoCell label="Ref. Cliente"   value={p.ref} />
-            <EditableInfoCell label="Marca / Tipo"   value={p.brand}  canEdit={canEdit} onSave={v => updateField("brand", v)} />
-            <EditableInfoCell label="Modelo"         value={p.model}  canEdit={canEdit} onSave={v => updateField("model", v)} />
+            <EditableInfoCell label="Marca / Tipo"   value={p.brand}  canEdit={canEditFields} onSave={v => updateField("brand", v)} />
+            <EditableInfoCell label="Modelo"         value={p.model}  canEdit={canEditFields} onSave={v => updateField("model", v)} />
             <InfoCell label="Nº Série / VIN" value={p.vin} />
             <InfoCell label="Data Limite"    value={p.deadline} />
             <InfoCell label="Prioridade"     value={p.priority} />
-            <EditableInfoCell label="Sell Price"     value={p.price ? "€" + p.price.toLocaleString("pt-PT") : ""}  canEdit={canEdit} onSave={v => { const n = parseFloat(v.replace(/[^\d.,]/g, "").replace(",", ".")); updateField("price", isNaN(n) ? null : n); }} />
+            <EditableInfoCell label="Sell Price"     value={p.price ? "€" + p.price.toLocaleString("pt-PT") : ""}  canEdit={canEditFields} onSave={v => { const n = parseFloat(v.replace(/[^\d.,]/g, "").replace(",", ".")); updateField("price", isNaN(n) ? null : n); }} />
             {(
               <div>
                 <div style={LABEL}>Follow-up</div>
@@ -559,6 +571,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
               <TeamCard name={p.owner}  role="Resp. Cotação"   photo={photoOf(p.owner)} />
               <TeamCard name={p.comm}   role="Resp. Comercial" photo={photoOf(p.comm)} />
               <TeamCard name={p.compra} role="Resp. Compra"    photo={photoOf(p.compra)} />
+              {p.respAbertura && <TeamCard name={p.respAbertura} role="Resp. Abertura" photo={photoOf(p.respAbertura)} />}
             </div>
           </div>
 

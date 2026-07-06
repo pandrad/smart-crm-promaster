@@ -73,7 +73,7 @@ const DEFAULT_TASK_STATUSES = [
 // explicitly hand off to a new person; all other statuses default OFF.
 const DEFAULT_MAPEAMENTO = {
   processoStatus: {
-    2: "resp-cotacao", 3: "resp-tecnico", 4: "resp-abertura", 5: "resp-cotacao",
+    2: "resp-cotacao", 3: "resp-tecnico", 4: "resp-abertura", 45: "resp-abertura", 5: "resp-cotacao",
     6: "resp-cotacao", 7: "resp-cotacao", 8: "resp-fecho", 9: "resp-fps",
     10: "resp-cotacao", 11: "resp-cotacao", 12: "supervisor", 13: "supervisor",
   },
@@ -85,7 +85,11 @@ const DEFAULT_MAPEAMENTO = {
     4: "supervisor", 6: "supervisor",
   },
   taskStatusReatribui:     { 3: true, 4: true, 6: true },
-  processoStatusReatribui: { 2: true, 3: true, 4: true, 5: true, 6: true, 7: true, 8: true, 9: true, 10: true, 11: true, 12: true, 13: true },
+  // Em Abertura (id 45) defaults OFF — the process must stay with whoever
+  // opened it while they populate required files. Entrada (id 5) stays ON so
+  // the manual Em Abertura → Entrada transition hands off to Resp. Cotação
+  // via the mapping above.
+  processoStatusReatribui: { 2: true, 3: true, 4: true, 45: false, 5: true, 6: true, 7: true, 8: true, 9: true, 10: true, 11: true, 12: true, 13: true },
   taskTypeReatribui:       {},
 };
 
@@ -204,34 +208,42 @@ export const store = {
   },
 
   // ── Client responsibility assignments ────────────────────────────────────────
-  // Maps client name (string) → user name (string) for direct routing.
-  // When set, incoming work from that client bypasses round-robin and goes
-  // directly to the assigned user.
+  // Maps client name (string) → { [roleId]: user name (string) } for direct,
+  // role-aware routing. When a client has an assignment for the specific role
+  // being resolved, that assignment bypasses round-robin and goes directly to
+  // the assigned user. A client with no entry for that role falls through to
+  // the mapping/round-robin logic as usual.
   getClientAssignments()          { return load("crm_client_assignments", {}); },
   saveClientAssignments(mapping)  { save("crm_client_assignments", mapping); },
 
+  // Resolve a client's role-specific assignment, or null if none exists.
+  // clientMap[clientName] may be a role → user-name object (current shape).
+  resolveClientRoleAssignment(clientName, roleId) {
+    if (!clientName || !roleId) return null;
+    const clientMap = load("crm_client_assignments", {});
+    const entry = clientMap[clientName];
+    if (!entry) return null;
+    return entry[roleId] ?? null;
+  },
+
   // Resolve the responsible user for a given task type id.
-  // If clientName is provided and has a direct assignment, that takes priority
-  // over round-robin. Falls back to round-robin if no client assignment exists.
+  // If clientName has a role-specific assignment for the mapped role, that
+  // takes priority over round-robin. Falls back to round-robin otherwise.
   assignForTaskType(typeId, clientName) {
-    if (clientName) {
-      const clientMap = load("crm_client_assignments", {});
-      if (clientMap[clientName]) return clientMap[clientName];
-    }
     const mapeamento = load("crm_mapeamento", DEFAULT_MAPEAMENTO);
     const roleId = mapeamento.taskType?.[typeId] ?? null;
+    const clientAssignee = store.resolveClientRoleAssignment(clientName, roleId);
+    if (clientAssignee) return clientAssignee;
     return store.assignRoundRobin(roleId);
   },
 
   // Resolve the responsible user for a given process status id.
-  // Same client-first logic as assignForTaskType.
+  // Same client-first, role-aware logic as assignForTaskType.
   assignForProcessStatus(statusId, clientName) {
-    if (clientName) {
-      const clientMap = load("crm_client_assignments", {});
-      if (clientMap[clientName]) return clientMap[clientName];
-    }
     const mapeamento = load("crm_mapeamento", DEFAULT_MAPEAMENTO);
     const roleId = mapeamento.processoStatus?.[statusId] ?? null;
+    const clientAssignee = store.resolveClientRoleAssignment(clientName, roleId);
+    if (clientAssignee) return clientAssignee;
     return store.assignRoundRobin(roleId);
   },
 

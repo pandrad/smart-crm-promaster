@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { THEME } from "../theme.js";
 import { store } from "../store.js";
-import { useWindowSize } from "../utils.js";
+import { daysLeft, useWindowSize } from "../utils.js";
 import { PROCESSOS } from "../mock/data.js";
 import { Avatar, Tag } from "../components/Primitives.jsx";
 import { Icon } from "../icons.jsx";
@@ -131,6 +131,7 @@ function EnviarEmailClienteModal({ task, currentUser, onClose, onSave }) {
   const fileRef = useRef(null);
   const email = task.originEmail;
   const [to,          setTo]          = useState(email?.sender || "");
+  const [cc,          setCc]          = useState("");
   const [subject,     setSubject]     = useState(`Re: ${email?.subject || "Consulta de processo"}`);
   const [body,        setBody]        = useState(
     `Exmo(a) Sr(a) ${email?.senderName || task.client || ""},\n\nEm resposta ao seu pedido, ` +
@@ -148,7 +149,7 @@ function EnviarEmailClienteModal({ task, currentUser, onClose, onSave }) {
   }
 
   function handleSend() {
-    onSave({ to, subject, body, attachments });
+    onSave({ to, cc, subject, body, attachments });
     setSent(true);
     setTimeout(onClose, 1400);
   }
@@ -173,6 +174,10 @@ function EnviarEmailClienteModal({ task, currentUser, onClose, onSave }) {
             <div>
               <label style={{ ...LABEL, display: "block", marginBottom: 4 }}>Para</label>
               <input style={INPUT} value={to} onChange={e => setTo(e.target.value)} placeholder="email@cliente.com" />
+            </div>
+            <div>
+              <label style={{ ...LABEL, display: "block", marginBottom: 4 }}>CC</label>
+              <input style={INPUT} value={cc} onChange={e => setCc(e.target.value)} placeholder="email@empresa.com (opcional)" />
             </div>
             <div>
               <label style={{ ...LABEL, display: "block", marginBottom: 4 }}>Assunto</label>
@@ -604,6 +609,66 @@ function AlterarEstadoModal({ currentStatus, onClose, onSave }) {
   );
 }
 
+// ── Associar a Processo modal — searchable autocomplete by process number or client ──
+function AssociarProcessoModal({ processos, currentId, onClose, onSave }) {
+  const { isMobile } = useWindowSize();
+  const [query, setQuery] = useState("");
+
+  const active = (processos || []).filter(p => !p.archived);
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? active.filter(p => p.id.toLowerCase().includes(q) || (p.client || "").toLowerCase().includes(q))
+    : active;
+
+  function pick(id) { onSave(id); onClose(); }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden", ...mobileModal(isMobile, 440) }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Associar a Processo Existente</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
+        </div>
+        <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ position: "relative" }}>
+            <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: THEME.textDim, pointerEvents: "none" }}>
+              <Icon name="search" size={13} />
+            </span>
+            <input
+              autoFocus
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Pesquisar por nº de processo ou cliente…"
+              style={{ ...INPUT, paddingLeft: 28 }}
+            />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 3, maxHeight: 300, overflowY: "auto" }}>
+            <button
+              onClick={() => pick(null)}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: !currentId ? `${THEME.accent}22` : "transparent", border: !currentId ? `1px solid ${THEME.accent}55` : "1px solid transparent", cursor: "pointer", textAlign: "left", fontSize: 13, color: !currentId ? THEME.accent : THEME.textMuted }}
+            >
+              — Nenhum —
+            </button>
+            {filtered.length === 0 && (
+              <div style={{ fontSize: 12, color: THEME.textDim, padding: "10px 4px", textAlign: "center" }}>Nenhum processo encontrado</div>
+            )}
+            {filtered.map(p => (
+              <button
+                key={p.id}
+                onClick={() => pick(p.id)}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: currentId === p.id ? `${THEME.accent}22` : "transparent", border: currentId === p.id ? `1px solid ${THEME.accent}55` : "1px solid transparent", cursor: "pointer", textAlign: "left" }}
+              >
+                <span style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700, color: THEME.textMuted, flexShrink: 0 }}>{p.id}</span>
+                <span style={{ fontSize: 13, color: THEME.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.client || "—"}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── TaskDrawer ────────────────────────────────────────────────────────────────
 export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onUpdate, setProcessos, processos, setTarefas, tarefas }) {
   const { isMobile } = useWindowSize();
@@ -628,7 +693,14 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   const tc = getTypeColor(t.type);
   const sc = getStatusColor(t.status);
 
+  // Any action that reassigns the task away from the current user (Passar,
+  // Escalar, a reclassification that triggers reassignment, or a status change
+  // that reassigns via applyReatribui) must close the drawer — the current user
+  // no longer owns this task and shouldn't keep looking at it. Retomar and any
+  // other action that leaves the current user as owner (or doesn't touch
+  // ownership at all) leaves the drawer open as before.
   function update(patch, historyEntry) {
+    const reassignedAway = "owner" in patch && patch.owner !== t.owner && patch.owner !== currentUser?.name;
     const updated = {
       ...t,
       ...patch,
@@ -636,10 +708,16 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     };
     setT(updated);
     onUpdate(updated);
+    if (reassignedAway) onClose();
   }
 
   // If the mapeamento has reatribuiResponsavel ON for the target status and
   // the patch doesn't already set an explicit owner, run the mapeamento lookup.
+  // Existing owner guard: only reassign if the task has no current owner, or a
+  // role-specific client assignment points to someone other than the current
+  // owner. Otherwise the current owner is preserved even with Reatribui on.
+  // This only applies to this in-place reassignment path — task creation
+  // (Inbox triage, Abrir Processo) never calls applyReatribui and is unaffected.
   function applyReatribui(newStatus, patch) {
     if ("owner" in patch) return patch; // explicit owner wins
     const statusObj = store.getTaskStatuses().find(s => s.label === newStatus);
@@ -648,7 +726,14 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     if (!reatribui[statusObj.id]) return patch;
     const typeObj = store.getTaskTypes().find(x => x.label === t.type);
     if (!typeObj) return patch;
-    const newOwner = store.assignForTaskType(typeObj.id, t.client || null);
+
+    const mapeamento = store.getMapeamento();
+    const roleId = mapeamento.taskType?.[typeObj.id] ?? null;
+    const clientAssignee = store.resolveClientRoleAssignment(t.client || null, roleId);
+    const hasOwner = !!t.owner;
+    if (hasOwner && !(clientAssignee && clientAssignee !== t.owner)) return patch;
+
+    const newOwner = clientAssignee || store.assignForTaskType(typeObj.id, t.client || null);
     if (!newOwner) return patch;
     return { ...patch, owner: newOwner };
   }
@@ -718,7 +803,12 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     const newId = `${prefix}${String(max + 1).padStart(3, "0")}`;
     const email = t.originEmail;
 
-    const cotacaoOwner = t.cotacaoOwner || store.assignForProcessStatus(5, t.client || null) || currentUser?.name;
+    // Lands at Em Abertura (id 45), owned by whoever opened it — Reatribui is
+    // off for this status so it stays with them while they populate the
+    // required files (including the composed quotation spreadsheet). They
+    // manually move it to Entrada when ready, which is where Reatribui is on
+    // and hands off to Resp. Cotação via the mapping.
+    const abridoPor = currentUser?.name;
 
     const pad = n => String(n).padStart(2, "0");
     const createdStr  = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()}`;
@@ -728,12 +818,13 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     const newProcesso = {
       id: newId,
       created: createdStr, deadline: deadlineStr, priority: t.priority || "Normal",
-      status: 5,
+      status: 45,
       client: t.client || "",
       ref: "", brand: "", model: "", vin: "",
-      owner: cotacaoOwner,
+      owner: abridoPor,
       comm:  "",
       compra: "",
+      respAbertura: abridoPor,
       comprador: email?.senderName || "",
       price: null, emails: 1,
       note: `Aberto via tarefa de Abertura ${t.id}`,
@@ -741,7 +832,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
       originEmail: email ? { sender: email.sender, senderName: email.senderName, subject: email.subject, preview: email.preview, body: email.body || "", attachments: email.attachments || [] } : null,
       timeline: [
         { icon: "mail",  color: "#60a5fa", time: nowTs(), text: `Email original de ${email?.senderName || t.client}: ${email?.subject || ""}` },
-        { icon: "check", color: "#4ade80", time: nowTs(), text: `Processo aberto por ${currentUser?.name} (tarefa ${t.id}). Resp. Cotação: ${cotacaoOwner}` },
+        { icon: "check", color: "#4ade80", time: nowTs(), text: `Processo aberto por ${currentUser?.name} (tarefa ${t.id}). Estado: Em Abertura. Resp. Abertura: ${abridoPor}` },
       ],
     };
 
@@ -749,7 +840,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     const concluido = sysStatus("Concluído");
     update(
       applyReatribui(concluido, { status: concluido, originProcesso: newId }),
-      { actor: currentUser?.name, action: "Processo Aberto", note: `Processo ${newId} criado com estado Entrada. Resp. Cotação: ${cotacaoOwner}.` }
+      { actor: currentUser?.name, action: "Processo Aberto", note: `Processo ${newId} criado com estado Em Abertura. Resp. Abertura: ${abridoPor}.` }
     );
   }
 
@@ -789,7 +880,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   }
 
   // Action: Enviar Email ao Cliente — all task types
-  function handleEnviarEmailCliente({ to, subject, body, attachments }) {
+  function handleEnviarEmailCliente({ to, cc, subject, body, attachments }) {
     const statusPorFazer = sysStatus("Por Fazer");
     const newStatus = t.status === statusPorFazer ? sysStatus("Em Curso") : t.status;
     update(
@@ -797,8 +888,8 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
       {
         actor:  currentUser?.name,
         action: "Email enviado ao cliente",
-        note:   `Para: ${to}\nAssunto: ${subject}\n\n${body}${attachments?.length ? `\n\nAnexos: ${attachments.join(", ")}` : ""}`,
-        email:  { direction: "outbound", from: currentUser?.name, to, subject, body, attachments: attachments || [] },
+        note:   `Para: ${to}${cc ? `\nCC: ${cc}` : ""}\nAssunto: ${subject}\n\n${body}${attachments?.length ? `\n\nAnexos: ${attachments.join(", ")}` : ""}`,
+        email:  { direction: "outbound", from: currentUser?.name, to, cc: cc || null, subject, body, attachments: attachments || [] },
       }
     );
   }
@@ -821,7 +912,11 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     );
   }
 
-  // Action: Reclassificar (Não Classificado → existing or new type)
+  // Action: Classificar / Reclassificar (unclassified tasks, or Sup/Admin changing
+  // an already-typed task at any time). Either way this runs the same assignment
+  // logic as a first-time classification — client-based assignment first, then
+  // mapping, then round-robin as last resort — so the new type gets a fresh
+  // ownership decision instead of blindly keeping whoever owned the old type.
   function handleReclassificar(result) {
     let newType;
     if (result.mode === "new") {
@@ -834,13 +929,40 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     }
     const tt = store.getTaskTypes().find(x => x.label === newType);
     const newOwner = tt ? (store.assignForTaskType(tt.id, t.client || null) || t.owner) : t.owner;
+    const wasUnclassified = isUnclassified;
     update(
       { type: newType, owner: newOwner },
-      { actor: currentUser?.name, action: "Classificado", note: `Tipo atribuído: "${newType}". Responsável: ${newOwner}.` }
+      {
+        actor: currentUser?.name,
+        action: wasUnclassified ? "Classificado" : "Tipo alterado",
+        note: wasUnclassified
+          ? `Tipo atribuído: "${newType}". Responsável: ${newOwner}.`
+          : `Tipo alterado de "${t.type}" para "${newType}" por ${currentUser?.name}. Responsável: ${newOwner}.`,
+      }
     );
   }
 
   const isUnclassified = t.type === null || t.type === "Não Classificado";
+  const [processoPickerOpen, setProcessoPickerOpen] = useState(false);
+
+  // No type-specific action group applies to this task/user combination — e.g.
+  // an unclassified task viewed by a non-privileged user (who can't Classificar).
+  // The drawer must never render an empty action panel, so a baseline set of
+  // actions is always available as a fallback.
+  const hasTypeSpecificActions =
+    (isPre && !isDone) ||
+    (isAbertura && !isDone) ||
+    (isUnclassified && isPrivileged && !isDone) ||
+    (!isPre && !isAbertura && !isUnclassified);
+  const showBaseline = !hasTypeSpecificActions && !isDone;
+
+  // Action: Associar a Processo Existente — sets/clears originProcesso directly.
+  function handleAssociarProcesso(processoId) {
+    update(
+      { originProcesso: processoId || null },
+      { actor: currentUser?.name, action: "Processo associado", note: processoId ? `Tarefa associada ao processo ${processoId}.` : "Associação a processo removida." }
+    );
+  }
 
   const user = users.find(u => u.name === t.owner);
 
@@ -914,23 +1036,13 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
             ))}
             <div>
               <div style={LABEL}>Processo</div>
-              {isPrivileged && !isDone ? (
-                <select
-                  value={t.originProcesso || ""}
-                  onChange={e => {
-                    const val = e.target.value || null;
-                    update(
-                      { originProcesso: val },
-                      { actor: currentUser?.name, action: "Processo associado", note: val ? `Tarefa associada ao processo ${val}.` : "Associação a processo removida." }
-                    );
-                  }}
-                  style={{ ...INPUT, fontSize: 12, padding: "4px 7px", marginTop: 2 }}
+              {(isPrivileged || isOwner) && !isDone ? (
+                <button
+                  onClick={() => setProcessoPickerOpen(true)}
+                  style={{ ...INPUT, fontSize: 12, padding: "4px 7px", marginTop: 2, textAlign: "left", cursor: "pointer", color: t.originProcesso ? THEME.text : THEME.textDim }}
                 >
-                  <option value="">— Nenhum —</option>
-                  {(processos || []).filter(p => !p.archived).map(p => (
-                    <option key={p.id} value={p.id}>{p.id} — {p.client}</option>
-                  ))}
-                </select>
+                  {t.originProcesso || "— Nenhum —"}
+                </button>
               ) : (
                 <div style={{ fontSize: 13, fontWeight: 600, color: THEME.text, marginTop: 2 }}>{t.originProcesso || "—"}</div>
               )}
@@ -1093,6 +1205,18 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
               </>
             )}
 
+            {/* ── Alterar Tipo — Sup/Admin can reclassify an already-typed task at
+                 any time, whether the type came from AI or manual classification.
+                 Reuses the same ReclassificarModal + handleReclassificar flow. ── */}
+            {!isUnclassified && isPrivileged && !isDone && (
+              <button
+                onClick={() => setModal("reclassificar")}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+              >
+                <Icon name="tag" size={13} color={THEME.textMuted} /> Alterar Tipo
+              </button>
+            )}
+
             {/* ── Standard task actions (hidden for Pré-Entrada, Abertura de Processo, and unclassified) ── */}
             {!isPre && !isAbertura && !isUnclassified && (
               <>
@@ -1146,6 +1270,58 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
               >
                 <Icon name="mail" size={14} color="#93c5fd" /> Enviar Email ao Cliente
               </button>
+            )}
+
+            {/* ── Associar a Processo Existente — standard task types, available to
+                 whoever the task is currently assigned to (not just Sup/Admin) ── */}
+            {!isDone && !isPre && !isAbertura && !isUnclassified && (isPrivileged || isOwner) && (
+              <button
+                onClick={() => setProcessoPickerOpen(true)}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+              >
+                <Icon name="paperclip" size={13} color={THEME.textMuted} /> Associar a Processo
+              </button>
+            )}
+
+            {/* ── Baseline actions — always shown when no type-specific group applies,
+                 so the drawer is never left with an empty action panel. ── */}
+            {showBaseline && (
+              <>
+                <button
+                  onClick={() => setModal("concluir")}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.success, color: "white", border: "none", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                >
+                  <Icon name="check" size={14} color="white" /> Marcar como Concluído
+                </button>
+                <button
+                  onClick={() => setModal("enviarEmailCliente")}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#0c1a2e", color: "#93c5fd", border: "1px solid #1e3a5f", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                >
+                  <Icon name="mail" size={14} color="#93c5fd" /> Enviar Email ao Cliente
+                </button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => setModal("passar")}
+                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+                  >
+                    <Icon name="edit" size={13} color={THEME.textMuted} /> Passar
+                  </button>
+                  <button
+                    onClick={() => setModal("escalar")}
+                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.dangerBg, color: THEME.danger, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+                  >
+                    <Icon name="escalate" size={13} color={THEME.danger} /> Escalar
+                  </button>
+                </div>
+                {(isPrivileged || isOwner) && (
+                  <button
+                    onClick={() => setProcessoPickerOpen(true)}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+                  >
+                    <Icon name="paperclip" size={13} color={THEME.textMuted} /> Associar a Processo
+                  </button>
+                )}
+              </>
             )}
 
             {/* ── Alterar Estado Manualmente — Admin/Supervisor override (any status) ── */}
@@ -1208,7 +1384,114 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
       {modal === "escalar"               && <EscalarModal              users={users} onClose={() => setModal(null)} onSave={handleEscalar} />}
       {modal === "alterarEstado"         && <AlterarEstadoModal        currentStatus={t.status} onClose={() => setModal(null)} onSave={handleAlterarEstado} />}
       {modal === "reclassificar"         && <ReclassificarModal        onClose={() => setModal(null)} onSave={handleReclassificar} />}
+      {processoPickerOpen && <AssociarProcessoModal processos={processos} currentId={t.originProcesso || null} onClose={() => setProcessoPickerOpen(false)} onSave={handleAssociarProcesso} />}
     </>
+  );
+}
+
+// ── Acknowledgment card — appears in Por Fazer when a task or process landed
+// with the current user purely through someone else's action (status change,
+// reassignment, mapeamento hand-off) with no click from them. Not a real task:
+// visually distinct (dashed border, muted background, no click-through to a
+// drawer) and dismissible. Dismissal is persisted per-user so it never
+// reappears once seen. ─────────────────────────────────────────────────────
+const ACK_DISMISSED_KEY = "crm_ack_dismissed";
+
+function loadDismissed(userName) {
+  try {
+    const raw = localStorage.getItem(ACK_DISMISSED_KEY);
+    const all = raw ? JSON.parse(raw) : {};
+    return new Set(all[userName] ?? []);
+  } catch { return new Set(); }
+}
+
+function saveDismissed(userName, idsSet) {
+  try {
+    const raw = localStorage.getItem(ACK_DISMISSED_KEY);
+    const all = raw ? JSON.parse(raw) : {};
+    all[userName] = [...idsSet];
+    localStorage.setItem(ACK_DISMISSED_KEY, JSON.stringify(all));
+  } catch { /* ignore */ }
+}
+
+// A task landed passively if it's owned by the user but the most recent
+// history entry was performed by someone else — Passar/Escalar/Devolver/
+// mapeamento reassignment/reclassification all log the acting party, never
+// the passive recipient, as the actor.
+function taskPassiveHandoff(task, userName) {
+  if (task.owner !== userName) return null;
+  const last = task.history?.[task.history.length - 1];
+  if (!last || last.actor === userName) return null;
+  return { id: `task-${task.id}-${last.ts || ""}`, kind: "tarefa", refId: task.id, client: task.client, action: last.action, actor: last.actor, ts: last.ts };
+}
+
+// A process landed passively if it's owned by the user but the most recent
+// owner-changing timeline entry either came from the mapeamento hand-off
+// (system-driven, no actor to click anything) or was performed "por" someone
+// other than the user themself via the manual Reatribuir modal.
+function processPassiveHandoff(proc, userName) {
+  if (proc.owner !== userName) return null;
+  const entries = proc.timeline || [];
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const text = entries[i].text || "";
+    const mapMatch = text.match(/^Reatribuído a (.+) \(via mapeamento de estado\)$/);
+    if (mapMatch && mapMatch[1] === userName) {
+      return { id: `proc-${proc.id}-${entries[i].time || i}`, kind: "processo", refId: proc.id, client: proc.client, action: "Reatribuído via mapeamento", actor: null, ts: entries[i].time };
+    }
+    const manualMatch = text.match(/^Resp\. Cotação alterado de .+ para (.+) por (.+)$/);
+    if (manualMatch && manualMatch[1] === userName) {
+      if (manualMatch[2] === userName) return null; // self-reassignment — not passive
+      return { id: `proc-${proc.id}-${entries[i].time || i}`, kind: "processo", refId: proc.id, client: proc.client, action: "Reatribuído", actor: manualMatch[2], ts: entries[i].time };
+    }
+  }
+  return null;
+}
+
+function AckCard({ item, onDismiss }) {
+  const desc = item.kind === "tarefa"
+    ? `Tarefa ${item.refId}${item.client ? ` — ${item.client}` : ""} foi-lhe atribuída${item.actor ? ` por ${item.actor}` : ""} (${item.action}).`
+    : `Processo ${item.refId}${item.client ? ` — ${item.client}` : ""} foi-lhe atribuído${item.actor ? ` por ${item.actor}` : ""} (${item.action}).`;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, border: `1px dashed ${THEME.accent}66`, background: `${THEME.accent}11` }}>
+      <Icon name="alert" size={14} color={THEME.accent} style={{ flexShrink: 0 }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: THEME.accent, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>Recebido automaticamente</div>
+        <div style={{ fontSize: 12, color: THEME.textMuted }}>{desc}</div>
+      </div>
+      <button
+        onClick={() => onDismiss(item.id)}
+        title="Marcar como visto"
+        style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 6, padding: "4px 9px", fontSize: 11, color: THEME.textMuted, cursor: "pointer", flexShrink: 0 }}
+      >
+        Visto
+      </button>
+    </div>
+  );
+}
+
+// ── Summary strip — pooled Por Fazer / Activas / SLA Excedido across tasks and
+// processes, compact entry point into Dashboard's detailed breakdown. ────────
+function SummaryStrip({ porFazer, activas, slaExcedido, onClick }) {
+  const items = [
+    { label: "Por fazer",    value: porFazer,    color: "#94a3b8" },
+    { label: "Activas",      value: activas,      color: THEME.warning },
+    { label: "SLA excedido", value: slaExcedido, color: THEME.danger },
+  ];
+  return (
+    <div
+      onClick={onClick}
+      style={{ display: "flex", alignItems: "center", gap: 18, padding: "8px 24px", cursor: "pointer", borderBottom: `1px solid ${THEME.border}`, background: THEME.sidebar }}
+      title="Ver detalhe no Dashboard"
+    >
+      {items.map((it, i) => (
+        <div key={it.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: it.value > 0 ? it.color : THEME.textMuted }}>{it.value}</span>
+          <span style={{ fontSize: 11, color: THEME.textDim }}>{it.label}</span>
+          {i < items.length - 1 && <span style={{ width: 1, height: 12, background: THEME.border, marginLeft: 12 }} />}
+        </div>
+      ))}
+      <Icon name="chevron" size={11} color={THEME.textDim} style={{ marginLeft: "auto" }} />
+    </div>
   );
 }
 
@@ -1227,12 +1510,23 @@ function isSlaBreach(task) {
 export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, currentUser, accent }) {
   const { isMobile } = useWindowSize();
   const location = useLocation();
+  const navigate = useNavigate();
   const [search,         setSearch]         = useState("");
   const [typeFilter,     setTypeFilter]     = useState("Todos");
   const [statusFilter,   setStatusFilter]   = useState("Todos");
   const [assignedFilter, setAssignedFilter] = useState("Todos");
   const [selected,       setSelected]       = useState(null);
   const [showAll,        setShowAll]        = useState(false);
+  const [dismissedAcks,  setDismissedAcks]  = useState(() => loadDismissed(currentUser?.name ?? ""));
+
+  function dismissAck(id) {
+    setDismissedAcks(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      saveDismissed(currentUser?.name ?? "", next);
+      return next;
+    });
+  }
 
   const isAdmin      = currentUser?.role === "admin";
   const isSupervisor = currentUser?.role === "supervisor";
@@ -1268,6 +1562,32 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
   const doneTasks     = filtered.filter(t => doneLabels.has(t.status));
 
   const activeCount = scope.filter(t => !doneLabels.has(t.status)).length;
+
+  // ── Pooled summary strip — combines tasks and processes for the current user.
+  // Mirrors Dashboard's own per-entity definitions (myActive/myPorFazer/
+  // mySlaBreach for tasks; myOpen/myOverdue for processes) just summed together,
+  // since Dashboard already provides the detailed split — this is only a
+  // compact entry point, not a new breakdown.
+  const userName          = currentUser?.name ?? "";
+  const myTasksAll        = tarefas.filter(t => t.owner === userName);
+  const myActiveTasks     = myTasksAll.filter(t => !doneLabels.has(t.status));
+  const myPorFazerTasks   = myTasksAll.filter(t => t.status === porFazerLabel);
+  const myTaskSlaBreach   = myActiveTasks.filter(isSlaBreach);
+  const myProcessosAll    = (processos || []).filter(p => !p.archived && (p.owner === userName || p.comm === userName || p.compra === userName));
+  const myOpenProcessos   = myProcessosAll.filter(p => p.status < 8);
+  const myOverdueProcessos = myProcessosAll.filter(p => daysLeft(p.deadline) < 0 && p.status < 8);
+
+  const pooledPorFazer    = myPorFazerTasks.length;
+  const pooledActivas     = myActiveTasks.length + myOpenProcessos.length;
+  const pooledSlaExcedido = myTaskSlaBreach.length + myOverdueProcessos.length;
+
+  // ── Passive handoff acknowledgment cards — tasks/processes that landed with
+  // this user via someone else's action, not their own click. Only active
+  // (not-done) items are surfaced; dismissed ones are filtered out.
+  const ackItems = [
+    ...myTasksAll.filter(t => !doneLabels.has(t.status)).map(t => taskPassiveHandoff(t, userName)).filter(Boolean),
+    ...myProcessosAll.map(p => processPassiveHandoff(p, userName)).filter(Boolean),
+  ].filter(it => !dismissedAcks.has(it.id));
 
   function handleUpdate(updated) {
     const next = tarefas.map(t => t.id === updated.id ? updated : t);
@@ -1382,6 +1702,8 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
         )}
       </div>
 
+      <SummaryStrip porFazer={pooledPorFazer} activas={pooledActivas} slaExcedido={pooledSlaExcedido} onClick={() => navigate("/dashboard")} />
+
       {/* Toolbar */}
       <div style={{ padding: isMobile ? "10px 14px" : "12px 24px", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ position: "relative" }}>
@@ -1418,6 +1740,13 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
           <div style={{ flex: 1, height: 1, background: THEME.border }} />
         </div>
       </div>
+
+      {/* ── Acknowledgment cards — passive handoffs, not real tasks ── */}
+      {ackItems.length > 0 && (
+        <div style={{ padding: isMobile ? "0 14px 8px" : "0 24px 8px", display: "flex", flexDirection: "column", gap: 6 }}>
+          {ackItems.map(item => <AckCard key={item.id} item={item} onDismiss={dismissAck} />)}
+        </div>
+      )}
 
       {isMobile ? (
         <div style={{ padding: "0 14px 8px", display: "flex", flexDirection: "column", gap: 8 }}>

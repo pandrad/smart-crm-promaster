@@ -5,8 +5,31 @@ import { useWindowSize } from "../utils.js";
 import { StageBadge } from "../components/Primitives.jsx";
 import { Icon } from "../icons.jsx";
 
+const CLIENT_ROLES = [
+  { id: "resp-cotacao",   label: "Resp. Cotação"   },
+  { id: "resp-comercial", label: "Resp. Comercial" },
+];
+
+// Migrate old-style { clientName: "User Name" } entries into the role-aware
+// { clientName: { [roleId]: "User Name" } } shape, mapping the legacy single
+// value onto Resp. Cotação and leaving Resp. Comercial empty. Object-shaped
+// entries (already migrated) pass through unchanged.
+function normalizeAssignments(raw) {
+  let changed = false;
+  const next = {};
+  for (const [clientName, value] of Object.entries(raw)) {
+    if (typeof value === "string") {
+      next[clientName] = { "resp-cotacao": value };
+      changed = true;
+    } else {
+      next[clientName] = value;
+    }
+  }
+  return { next, changed };
+}
+
 // ── Client detail panel ───────────────────────────────────────────────────────
-function ClienteDrawer({ cliente, responsavel, onClose, onSelectProcesso }) {
+function ClienteDrawer({ cliente, roleAssignments, roleOptions, canAssign, onSetRole, onClose, onSelectProcesso }) {
   const { isMobile } = useWindowSize();
   return (
     <>
@@ -30,11 +53,6 @@ function ClienteDrawer({ cliente, responsavel, onClose, onSelectProcesso }) {
               {cliente.comprador && (
                 <div style={{ fontSize: 12, color: THEME.textDim }}>Contacto: {cliente.comprador}</div>
               )}
-              {responsavel && (
-                <div style={{ fontSize: 12, color: THEME.textDim, marginTop: 2 }}>
-                  Responsável: <strong style={{ color: THEME.text }}>{responsavel}</strong>
-                </div>
-              )}
             </div>
             <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4, flexShrink: 0 }}>
               <Icon name="x" size={18} />
@@ -43,6 +61,30 @@ function ClienteDrawer({ cliente, responsavel, onClose, onSelectProcesso }) {
         </div>
 
         <div style={{ padding: isMobile ? "12px 16px" : "16px 24px", display: "flex", flexDirection: "column", gap: 18 }}>
+
+          {/* Responsáveis — Resp. Cotação / Resp. Comercial */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            {roleOptions.map(role => {
+              const resp = roleAssignments[role.id] ?? null;
+              return (
+                <div key={role.id}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{role.label}</div>
+                  {canAssign ? (
+                    <select
+                      value={resp || ""}
+                      onChange={e => onSetRole(role.id, e.target.value)}
+                      style={{ width: "100%", fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 7, padding: "6px 8px", background: THEME.sidebar, color: resp ? THEME.text : THEME.textDim, outline: "none", cursor: "pointer", boxSizing: "border-box" }}
+                    >
+                      <option value="">— Sem responsável —</option>
+                      {role.users.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                    </select>
+                  ) : (
+                    <div style={{ fontSize: 13, fontWeight: 600, color: resp ? THEME.text : THEME.textDim }}>{resp || "—"}</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
           {/* Stats row */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
@@ -96,18 +138,25 @@ export function Clientes({ processos, onSelectProcesso, currentUser }) {
   const { isMobile } = useWindowSize();
   const [search,      setSearch]      = useState("");
   const [selected,    setSelected]    = useState(null);
-  const [assignments, setAssignments] = useState(() => store.getClientAssignments());
+  const [assignments, setAssignments] = useState(() => {
+    const { next, changed } = normalizeAssignments(store.getClientAssignments());
+    if (changed) store.saveClientAssignments(next); // persist migrated shape once
+    return next;
+  });
 
   const isAdmin      = currentUser?.role === "admin";
   const isSupervisor = currentUser?.role === "supervisor";
   const canAssign    = isAdmin || isSupervisor;
 
-  const responsavelOptions = store.getUsers().filter(u => u.active !== false);
+  // Role-based user lookup — same pattern used elsewhere (store.resolveRoleUsers)
+  const roleOptions = CLIENT_ROLES.map(r => ({ ...r, users: store.resolveRoleUsers(r.id) }));
 
-  function setClientResponsavel(clientName, userName) {
-    const updated = { ...assignments, [clientName]: userName || null };
-    // Remove null entries to keep store clean
-    if (!userName) delete updated[clientName];
+  function setClientRole(clientName, roleId, userName) {
+    const current = assignments[clientName] ?? {};
+    const nextEntry = { ...current, [roleId]: userName || null };
+    if (!userName) delete nextEntry[roleId];
+    const updated = { ...assignments, [clientName]: nextEntry };
+    if (Object.keys(nextEntry).length === 0) delete updated[clientName];
     setAssignments(updated);
     store.saveClientAssignments(updated);
   }
@@ -160,13 +209,13 @@ export function Clientes({ processos, onSelectProcesso, currentUser }) {
           {rows.map(c => {
             const open = c.processos.filter(p => p.status < 8 && !p.archived).length;
             const latest = [...c.processos].sort((a, b) => b.created.localeCompare(a.created))[0];
-            const resp = assignments[c.name];
+            const roleAssignments = assignments[c.name] ?? {};
             return (
               <div key={c.name} style={{ background: THEME.card, borderRadius: 10, border: `1px solid ${THEME.border}`, padding: "12px 14px" }}>
                 <div onClick={() => setSelected(c)} style={{ cursor: "pointer" }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: THEME.text, marginBottom: 4 }}>{c.name}</div>
                   {c.comprador && <div style={{ fontSize: 12, color: THEME.textMuted, marginBottom: 6 }}>{c.comprador}</div>}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: resp || canAssign ? 8 : 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                     <div style={{ display: "flex", gap: 10 }}>
                       <span style={{ fontSize: 12, color: THEME.textDim }}>{c.processos.length} proc.</span>
                       {open > 0 && <span style={{ background: "#1e3a5f", color: "#60a5fa", borderRadius: 9999, fontSize: 11, fontWeight: 700, padding: "1px 8px" }}>{open} abertos</span>}
@@ -174,22 +223,29 @@ export function Clientes({ processos, onSelectProcesso, currentUser }) {
                     {latest && <StageBadge id={latest.status} />}
                   </div>
                 </div>
-                {/* Responsável row — shown to all, editable by admin/supervisor */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${THEME.border}`, paddingTop: 8 }}>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0 }}>Responsável</span>
-                  {canAssign ? (
-                    <select
-                      value={resp || ""}
-                      onChange={e => setClientResponsavel(c.name, e.target.value)}
-                      onClick={e => e.stopPropagation()}
-                      style={{ flex: 1, fontSize: 11, border: `1px solid ${THEME.border}`, borderRadius: 6, padding: "3px 7px", background: THEME.sidebar, color: resp ? THEME.text : THEME.textDim, outline: "none", cursor: "pointer" }}
-                    >
-                      <option value="">— Sem responsável —</option>
-                      {responsavelOptions.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                    </select>
-                  ) : (
-                    <span style={{ fontSize: 12, color: resp ? THEME.text : THEME.textDim }}>{resp || "—"}</span>
-                  )}
+                {/* Responsáveis row — shown to all, editable by admin/supervisor */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: `1px solid ${THEME.border}`, paddingTop: 8 }}>
+                  {roleOptions.map(role => {
+                    const resp = roleAssignments[role.id] ?? null;
+                    return (
+                      <div key={role.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0, width: 90 }}>{role.label}</span>
+                        {canAssign ? (
+                          <select
+                            value={resp || ""}
+                            onChange={e => setClientRole(c.name, role.id, e.target.value)}
+                            onClick={e => e.stopPropagation()}
+                            style={{ flex: 1, fontSize: 11, border: `1px solid ${THEME.border}`, borderRadius: 6, padding: "3px 7px", background: THEME.sidebar, color: resp ? THEME.text : THEME.textDim, outline: "none", cursor: "pointer" }}
+                          >
+                            <option value="">— Sem responsável —</option>
+                            {role.users.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                          </select>
+                        ) : (
+                          <span style={{ fontSize: 12, color: resp ? THEME.text : THEME.textDim }}>{resp || "—"}</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -199,10 +255,10 @@ export function Clientes({ processos, onSelectProcesso, currentUser }) {
         /* Desktop table */
         <div style={{ padding: "0 24px 32px" }}>
           <div style={{ background: THEME.card, borderRadius: 12, border: `1px solid ${THEME.border}`, overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 760 }}>
               <thead>
                 <tr style={{ background: THEME.sidebar, borderBottom: `1px solid ${THEME.border}` }}>
-                  {["Cliente", "Contacto", "Responsável", "Processos", "Em aberto", "Valor total", "Último processo"].map(h => (
+                  {["Cliente", "Contacto", "Resp. Cotação", "Resp. Comercial", "Processos", "Em aberto", "Valor total", "Último processo"].map(h => (
                     <th key={h} style={{ padding: "9px 14px", fontSize: 10, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "left", whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr>
@@ -211,7 +267,7 @@ export function Clientes({ processos, onSelectProcesso, currentUser }) {
                 {rows.map(c => {
                   const open   = c.processos.filter(p => p.status < 8 && !p.archived).length;
                   const latest = [...c.processos].sort((a, b) => b.created.localeCompare(a.created))[0];
-                  const resp   = assignments[c.name];
+                  const roleAssignments = assignments[c.name] ?? {};
                   return (
                     <tr key={c.name} onClick={() => setSelected(c)}
                       style={{ borderBottom: `1px solid ${THEME.borderLight}`, cursor: "pointer", background: THEME.bg }}
@@ -220,21 +276,26 @@ export function Clientes({ processos, onSelectProcesso, currentUser }) {
                     >
                       <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600, color: THEME.text }}>{c.name}</td>
                       <td style={{ padding: "10px 14px", fontSize: 12, color: THEME.textMuted }}>{c.comprador || "—"}</td>
-                      {/* Responsável — dropdown for admin/supervisor, read-only text for others */}
-                      <td style={{ padding: "6px 14px" }} onClick={e => canAssign && e.stopPropagation()}>
-                        {canAssign ? (
-                          <select
-                            value={resp || ""}
-                            onChange={e => setClientResponsavel(c.name, e.target.value)}
-                            style={{ fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 6, padding: "4px 8px", background: THEME.sidebar, color: resp ? THEME.text : THEME.textDim, outline: "none", cursor: "pointer", maxWidth: 160 }}
-                          >
-                            <option value="">— Sem responsável —</option>
-                            {responsavelOptions.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                          </select>
-                        ) : (
-                          <span style={{ fontSize: 12, color: resp ? THEME.text : THEME.textDim }}>{resp || "—"}</span>
-                        )}
-                      </td>
+                      {/* Resp. Cotação / Resp. Comercial — dropdown for admin/supervisor, read-only text for others */}
+                      {roleOptions.map(role => {
+                        const resp = roleAssignments[role.id] ?? null;
+                        return (
+                          <td key={role.id} style={{ padding: "6px 14px" }} onClick={e => canAssign && e.stopPropagation()}>
+                            {canAssign ? (
+                              <select
+                                value={resp || ""}
+                                onChange={e => setClientRole(c.name, role.id, e.target.value)}
+                                style={{ fontSize: 12, border: `1px solid ${THEME.border}`, borderRadius: 6, padding: "4px 8px", background: THEME.sidebar, color: resp ? THEME.text : THEME.textDim, outline: "none", cursor: "pointer", maxWidth: 160 }}
+                              >
+                                <option value="">— Sem responsável —</option>
+                                {role.users.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                              </select>
+                            ) : (
+                              <span style={{ fontSize: 12, color: resp ? THEME.text : THEME.textDim }}>{resp || "—"}</span>
+                            )}
+                          </td>
+                        );
+                      })}
                       <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600, color: THEME.text, textAlign: "center" }}>{c.processos.length}</td>
                       <td style={{ padding: "10px 14px", textAlign: "center" }}>
                         {open > 0
@@ -270,7 +331,10 @@ export function Clientes({ processos, onSelectProcesso, currentUser }) {
       {selected && (
         <ClienteDrawer
           cliente={selected}
-          responsavel={assignments[selected.name] ?? null}
+          roleAssignments={assignments[selected.name] ?? {}}
+          roleOptions={roleOptions}
+          canAssign={canAssign}
+          onSetRole={(roleId, userName) => setClientRole(selected.name, roleId, userName)}
           onClose={() => setSelected(null)}
           onSelectProcesso={onSelectProcesso}
         />

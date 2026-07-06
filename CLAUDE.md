@@ -108,6 +108,38 @@ Inbox is fully read-only for all users. Zero action buttons. All routing/classif
 - **Client name separated from contact person in process creation**: `handleAbrirProcesso` in Tarefas.jsx now maps `t.client` → `process.client` (company name) and `email.senderName` → `process.comprador` (contact person) independently — no cross-fallback between the two fields. Client field in DetailDrawer info grid is now an editable `EditableInfoCell` (Admin/Supervisor/assigned user), with changes logged in the activity timeline. `fieldLabels` updated to include `client: "Cliente"`.
 - **conversationId + structured email timeline entries**: All 14 mock processes in data.js have a `conversationId` field (format `conv-{processId}`). Inbound email timeline entries now carry a structured `email` object (`{ direction, from, to, subject, body, attachments }`) alongside `text`. `handleEnviarEmailCliente` in Tarefas.jsx and `handleEmailSent` in DetailDrawer.jsx both write structured outbound email objects to the timeline for Stage 4 Graph API compatibility.
 
+### Role-Aware Client Assignments (July 2026)
+
+Client responsibility assignments moved from a single `{ clientName: userName }` mapping to role-aware `{ clientName: { roleId: userName } }`, distinguishing "Resp. Cotação" and "Resp. Comercial" per client independently. Old string-shaped entries auto-migrate on load and persist once. Clientes.jsx list/table/drawer now show two responsible-user dropdowns per client instead of one.
+
+`store.resolveClientRoleAssignment(clientName, roleId)` replaces the old client-override shortcut — a client assignment only wins routing if it matches the *specific role* being resolved for that trigger, not a blanket per-client override. `assignForTaskType` / `assignForProcessStatus` updated accordingly.
+
+### New Process Stage — "Em Abertura" (id 45)
+
+Added between "4. Abrir Processo" and "5. Entrada", flagged `optional: true`. `processoStatusReatribui[45]` defaults OFF, so a newly opened process stays with whoever opened it (tracked in a new `respAbertura` field) instead of auto-reassigning. Moving the process on to "Entrada" (still Reatribui-ON) hands off to Resp. Cotação as before. The process-opening flow in Tarefas.jsx now creates the processo at status 45 with `owner`/`respAbertura` set to the opener, rather than immediately assigning a Resp. Cotação at status 5. DetailDrawer shows a new "Resp. Abertura" TeamCard when `respAbertura` is set.
+
+### Owner-Preserving Reassignment
+
+Both the process status change flow (DetailDrawer.jsx) and `applyReatribui` (Tarefas.jsx) now only trigger reassignment when there's no current owner, or a role-specific client assignment names someone else. Previously Reatribui-ON always reran round-robin/mapping on every status change, which could bounce an existing owner off a process they were actively working. This was a deliberate behavior change, not a bug fix — Reatribui ON now means "eligible for reassignment," not "always reassign."
+
+### DetailDrawer — Wider Field Editing
+
+`Cliente`, `Marca/Tipo`, `Modelo`, `Sell Price` are now editable by any user via a new `canEditFields = true` flag, decoupled from `canEdit` (still admin/supervisor/owner-only), which continues to gate attachments and Follow-up.
+
+### Tarefas — New Actions and UI
+
+- **CC field** added to "Enviar Email ao Cliente" modal; persisted in history and the structured email object.
+- **Associar a Processo Existente**: new searchable modal (`AssociarProcessoModal`) replaces the old inline `<select>`; now available to the task owner as well as Sup/Admin, not privileged-only.
+- **Alterar Tipo**: new action letting Sup/Admin reclassify an already-typed task at any time (reuses `ReclassificarModal` / `handleReclassificar`), which now also re-runs assignment logic on type change.
+- **Baseline action fallback**: the task drawer's action panel no longer goes empty when no type-specific action group applies.
+- Task drawer auto-closes when an action reassigns the task away from the current user.
+- **Acknowledgment cards** (`AckCard`) surfaced in Por Fazer for tasks/processes passively handed to the user without them clicking anything — dismissible, persisted per-user in localStorage.
+- New pooled **SummaryStrip** (Por Fazer / Activas / SLA Excedido) added to both Tarefas.jsx and Processos.jsx, clickable through to `/dashboard`.
+
+### Dashboard — Activity Feed Accuracy Fix
+
+`myActivity` now filters per history entry (actor === user OR the task's current owner === user) instead of per-task. Previously, a task the user merely touched once would leak all other actors' history entries into "As Minhas".
+
 ---
 
 ## Steps to Close Stage 1
@@ -284,6 +316,7 @@ Never hardcode task type or status labels in the classification prompt. At runti
 ## References
 
 - Testing guide: `docs/stage1-testing-guide.md`
+- QA journeys tracker: `docs/smart-crm-qa-journeys.xlsx` (personal tracking copy, 15 journeys, with formatting)
 - Full brief: `docs/build-brief.md`
 - Design reference: `docs/mockup-mission-control.html`
 - Reviewer prompt: `docs/reviewer-prompt.md`

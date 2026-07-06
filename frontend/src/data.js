@@ -9,6 +9,7 @@ export const STAGES = [
   { id:  2, label: "2. Pendente Cliente",            color: "#b45309", bg: "#1c1005" },
   { id:  3, label: "3. Análise Técnica Promaster",   color: "#7c3aed", bg: "#2e1065" },
   { id:  4, label: "4. Abrir Processo",              color: "#0369a1", bg: "#0c1a2e" },
+  { id: 45, label: "Em Abertura",                    color: "#1d4ed8", bg: "#0c1a2e", optional: true },
   { id:  5, label: "5. Entrada",                     color: "#475569", bg: "#1e293b" },
   { id:  6, label: "6. Consulta",                    color: "#0891b2", bg: "#0c2231" },
   { id:  7, label: "7. Para Fechar",                 color: "#be185d", bg: "#2d0a1e" },

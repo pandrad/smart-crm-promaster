@@ -88,10 +88,16 @@ export function Dashboard({ processos, tarefas, users, currentUser, accent, onOp
 
   // ── Recent activity ────────────────────────────────────────────────────────
 
+  // Personal view must only show entries the current user is actually part of —
+  // where they were the actor, or they were the task's owner at the time of the
+  // entry. History entries don't store an owner snapshot, so "owner at the time"
+  // is approximated as the task's current owner: correct for every entry after
+  // the last reassignment, which is what matters for a recent-activity feed.
+  // Filtering per-entry (not per-task) prevents a task the user merely touched
+  // once, or currently owns, from leaking every other person's entries on it.
   const myActivity = tarefas
-    .filter(t => t.owner === userName || t.history?.some(h => h.actor === userName))
-    .flatMap(t => (t.history || []).map(h => ({ ...h, taskId: t.id, client: t.client })))
-    .filter(h => h.ts)
+    .flatMap(t => (t.history || []).map(h => ({ ...h, taskId: t.id, client: t.client, taskOwner: t.owner })))
+    .filter(h => h.ts && (h.actor === userName || h.taskOwner === userName))
     .sort((a, b) => (b.ts || "").localeCompare(a.ts || ""))
     .slice(0, 20);
 
