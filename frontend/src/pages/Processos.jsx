@@ -70,7 +70,10 @@ export function Processos({ processos, setProcessos, tarefas, users, currentUser
   const myActiveTasks   = myTasksAll.filter(t => !doneLabels.has(t.status));
   const myPorFazerTasks = myTasksAll.filter(t => t.status === porFazerLabel);
   const myTaskSlaBreach = myActiveTasks.filter(isTaskSlaBreach);
-  const myProcessosForStrip    = active.filter(p => p.owner === userName || p.comm === userName || p.compra === userName);
+  // "Mine" is based on respActual (who currently has the process), not owner
+  // (Resp. Cotação), since owner is now a frozen historical field that no
+  // longer necessarily reflects who is actively working the process today.
+  const myProcessosForStrip    = active.filter(p => p.respActual === userName || p.comm === userName || p.compra === userName);
   const myOpenProcessosStrip   = myProcessosForStrip.filter(p => p.status < 8);
   const myOverdueProcessosStrip = myProcessosForStrip.filter(p => daysLeft(p.deadline) < 0 && p.status < 8);
 
@@ -81,9 +84,12 @@ export function Processos({ processos, setProcessos, tarefas, users, currentUser
   // Apply all filters
   let rows = active.filter(p => {
     if (myTab) {
-      const n = currentUser?.name ?? "";
-      if (p.owner !== n && p.comm !== n && p.compra !== n) return false;
+      // "Meus processos" strictly follows Resp. Actual — who currently has
+      // the process — not Resp. Comercial/Resp. Compra.
+      if (p.respActual !== (currentUser?.name ?? "")) return false;
     }
+    // This dropdown is explicitly labeled "Resp. Cotação" (Toolbar.jsx) and
+    // filters by that specific historical role, not by current holder.
     if (ownerFilter !== "Todos" && p.owner !== ownerFilter) return false;
     if (commFilter  !== "Todos" && p.comm  !== commFilter)  return false;
 

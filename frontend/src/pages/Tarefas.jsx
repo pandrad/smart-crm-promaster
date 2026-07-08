@@ -803,11 +803,16 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     const newId = `${prefix}${String(max + 1).padStart(3, "0")}`;
     const email = t.originEmail;
 
-    // Lands at Em Abertura (id 45), owned by whoever opened it — Reatribui is
-    // off for this status so it stays with them while they populate the
-    // required files (including the composed quotation spreadsheet). They
-    // manually move it to Entrada when ready, which is where Reatribui is on
-    // and hands off to Resp. Cotação via the mapping.
+    // Lands at Em Abertura (id 45), with Resp. Abertura set to whoever opened
+    // it — Reatribui is off for this status so it stays with them while they
+    // populate the required files (including the composed quotation
+    // spreadsheet). Resp. Cotação is intentionally left unset: the real
+    // Resp. Cotação person is only determined once the process advances to
+    // Entrada, where the existing owner-resolution logic in
+    // handleStatusSave (DetailDrawer.jsx) resolves a real person via
+    // client assignment / mapping / round-robin. Filling owner with the
+    // opener's name here would make it look like Resp. Cotação is already
+    // assigned when nobody has actually been assigned that role yet.
     const abridoPor = currentUser?.name;
 
     const pad = n => String(n).padStart(2, "0");
@@ -821,7 +826,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
       status: 45,
       client: t.client || "",
       ref: "", brand: "", model: "", vin: "",
-      owner: abridoPor,
+      owner: "",
       comm:  "",
       compra: "",
       respAbertura: abridoPor,
@@ -956,10 +961,16 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     (!isPre && !isAbertura && !isUnclassified);
   const showBaseline = !hasTypeSpecificActions && !isDone;
 
-  // Action: Associar a Processo Existente — sets/clears originProcesso directly.
+  // Action: Associar a Processo Existente — sets/clears originProcesso on the
+  // task. The existing process is authoritative and must never be altered by
+  // this action: the task instead inherits the process's own client (and any
+  // other relevant shared detail) so the task drawer reflects what the
+  // process already is, not the other way around.
   function handleAssociarProcesso(processoId) {
+    const proc = processoId ? (processos || []).find(p => p.id === processoId) : null;
+    const inheritedPatch = proc ? { client: proc.client || t.client } : {};
     update(
-      { originProcesso: processoId || null },
+      { originProcesso: processoId || null, ...inheritedPatch },
       { actor: currentUser?.name, action: "Processo associado", note: processoId ? `Tarefa associada ao processo ${processoId}.` : "Associação a processo removida." }
     );
   }
@@ -1414,23 +1425,18 @@ function saveDismissed(userName, idsSet) {
   } catch { /* ignore */ }
 }
 
-// A task landed passively if it's owned by the user but the most recent
-// history entry was performed by someone else — Passar/Escalar/Devolver/
-// mapeamento reassignment/reclassification all log the acting party, never
-// the passive recipient, as the actor.
-function taskPassiveHandoff(task, userName) {
-  if (task.owner !== userName) return null;
-  const last = task.history?.[task.history.length - 1];
-  if (!last || last.actor === userName) return null;
-  return { id: `task-${task.id}-${last.ts || ""}`, kind: "tarefa", refId: task.id, client: task.client, action: last.action, actor: last.actor, ts: last.ts };
-}
-
 // A process landed passively if it's owned by the user but the most recent
 // owner-changing timeline entry either came from the mapeamento hand-off
 // (system-driven, no actor to click anything) or was performed "por" someone
-// other than the user themself via the manual Reatribuir modal.
+// other than the user themself via the manual Reatribuir modal. Tasks never
+// trigger this notification — only a process changing owner does, since
+// task-level notifications were confirmed as redundant and unwanted.
 function processPassiveHandoff(proc, userName) {
-  if (proc.owner !== userName) return null;
+  // Mapping-driven reassignment now updates respActual only (owner/Resp.
+  // Cotação is a frozen historical field once set), while manual Reatribuir
+  // still writes to owner directly. Check whichever field this user actually
+  // ended up in so both notification paths keep working.
+  if (proc.respActual !== userName && proc.owner !== userName) return null;
   const entries = proc.timeline || [];
   for (let i = entries.length - 1; i >= 0; i--) {
     const text = entries[i].text || "";
@@ -1447,15 +1453,27 @@ function processPassiveHandoff(proc, userName) {
   return null;
 }
 
+// Shared helper — computes the current user's unacknowledged process-handoff
+// notifications, reused by the Tarefas page itself and by Main.jsx's sidebar
+// badge count so both stay in sync with the exact same eligibility rule.
+export function getUnacknowledgedAckCount(processos, userName) {
+  if (!userName) return 0;
+  const dismissed = loadDismissed(userName);
+  return (processos || [])
+    .filter(p => !p.archived)
+    .map(p => processPassiveHandoff(p, userName))
+    .filter(Boolean)
+    .filter(it => !dismissed.has(it.id))
+    .length;
+}
+
 function AckCard({ item, onDismiss }) {
-  const desc = item.kind === "tarefa"
-    ? `Tarefa ${item.refId}${item.client ? ` — ${item.client}` : ""} foi-lhe atribuída${item.actor ? ` por ${item.actor}` : ""} (${item.action}).`
-    : `Processo ${item.refId}${item.client ? ` — ${item.client}` : ""} foi-lhe atribuído${item.actor ? ` por ${item.actor}` : ""} (${item.action}).`;
+  const desc = `Processo ${item.refId}${item.client ? ` — ${item.client}` : ""} foi-lhe atribuído${item.actor ? ` por ${item.actor}` : ""} (${item.action}).`;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, border: `1px dashed ${THEME.accent}66`, background: `${THEME.accent}11` }}>
-      <Icon name="alert" size={14} color={THEME.accent} style={{ flexShrink: 0 }} />
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, border: `1px solid ${THEME.warning}66`, background: `${THEME.warning}11` }}>
+      <Icon name="alert" size={14} color={THEME.warning} style={{ flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: THEME.accent, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>Recebido automaticamente</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: THEME.warning, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>Recebido automaticamente</div>
         <div style={{ fontSize: 12, color: THEME.textMuted }}>{desc}</div>
       </div>
       <button
@@ -1573,7 +1591,11 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
   const myActiveTasks     = myTasksAll.filter(t => !doneLabels.has(t.status));
   const myPorFazerTasks   = myTasksAll.filter(t => t.status === porFazerLabel);
   const myTaskSlaBreach   = myActiveTasks.filter(isSlaBreach);
-  const myProcessosAll    = (processos || []).filter(p => !p.archived && (p.owner === userName || p.comm === userName || p.compra === userName));
+  // "Mine" is based on respActual (who currently has the process), not owner
+  // (Resp. Cotação), since owner is now a frozen historical field that no
+  // longer necessarily reflects who is actively working the process today —
+  // consistent with the same change already applied in Processos.jsx.
+  const myProcessosAll    = (processos || []).filter(p => !p.archived && (p.respActual === userName || p.comm === userName || p.compra === userName));
   const myOpenProcessos   = myProcessosAll.filter(p => p.status < 8);
   const myOverdueProcessos = myProcessosAll.filter(p => daysLeft(p.deadline) < 0 && p.status < 8);
 
@@ -1581,13 +1603,16 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
   const pooledActivas     = myActiveTasks.length + myOpenProcessos.length;
   const pooledSlaExcedido = myTaskSlaBreach.length + myOverdueProcessos.length;
 
-  // ── Passive handoff acknowledgment cards — tasks/processes that landed with
-  // this user via someone else's action, not their own click. Only active
-  // (not-done) items are surfaced; dismissed ones are filtered out.
-  const ackItems = [
-    ...myTasksAll.filter(t => !doneLabels.has(t.status)).map(t => taskPassiveHandoff(t, userName)).filter(Boolean),
-    ...myProcessosAll.map(p => processPassiveHandoff(p, userName)).filter(Boolean),
-  ].filter(it => !dismissedAcks.has(it.id));
+  // ── Passive handoff acknowledgment cards — processes that landed with this
+  // user via someone else's action (mapeamento hand-off or a manual
+  // Reatribuir performed by someone else), not their own click. Tasks never
+  // trigger this notification — only a process changing owner does. Self-
+  // reassignment is excluded inside processPassiveHandoff. Dismissed ones are
+  // filtered out.
+  const ackItems = myProcessosAll
+    .map(p => processPassiveHandoff(p, userName))
+    .filter(Boolean)
+    .filter(it => !dismissedAcks.has(it.id));
 
   function handleUpdate(updated) {
     const next = tarefas.map(t => t.id === updated.id ? updated : t);
@@ -1732,6 +1757,14 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
         )}
       </div>
 
+      {/* ── Acknowledgment cards — passive process handoffs, not real tasks.
+           Sits above the Por Fazer section and below the search/toolbar. ── */}
+      {ackItems.length > 0 && (
+        <div style={{ padding: isMobile ? "8px 14px 0" : "8px 24px 0", display: "flex", flexDirection: "column", gap: 6 }}>
+          {ackItems.map(item => <AckCard key={item.id} item={item} onDismiss={dismissAck} />)}
+        </div>
+      )}
+
       {/* ── Section: Por Fazer ── */}
       <div style={{ padding: isMobile ? "4px 14px" : "4px 24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "8px 0 8px" }}>
@@ -1740,13 +1773,6 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
           <div style={{ flex: 1, height: 1, background: THEME.border }} />
         </div>
       </div>
-
-      {/* ── Acknowledgment cards — passive handoffs, not real tasks ── */}
-      {ackItems.length > 0 && (
-        <div style={{ padding: isMobile ? "0 14px 8px" : "0 24px 8px", display: "flex", flexDirection: "column", gap: 6 }}>
-          {ackItems.map(item => <AckCard key={item.id} item={item} onDismiss={dismissAck} />)}
-        </div>
-      )}
 
       {isMobile ? (
         <div style={{ padding: "0 14px 8px", display: "flex", flexDirection: "column", gap: 8 }}>

@@ -13,7 +13,7 @@ import { Icon } from "../icons.jsx";
 
 import { Dashboard } from "./Dashboard.jsx";
 import { Processos } from "./Processos.jsx";
-import { Tarefas, TaskDrawer } from "./Tarefas.jsx";
+import { Tarefas, TaskDrawer, getUnacknowledgedAckCount } from "./Tarefas.jsx";
 import { Inbox } from "./Inbox.jsx";
 import { Arquivo } from "./Arquivo.jsx";
 import { Clientes } from "./Clientes.jsx";
@@ -236,10 +236,13 @@ export function Main() {
   const processosBadge = processos.filter(p => !p.archived && p.status < 8).length;
   const _activeLabels  = new Set(["Por Fazer","Em Curso","Escalado","Devolvido","Cancelamento Pendente"]
     .map(r => store.getLabelForSystemRole(r)).filter(Boolean));
+  // Combines the user's own active tasks with unacknowledged process-handoff
+  // notifications (see getUnacknowledgedAckCount in Tarefas.jsx) into a single
+  // badge total, since both genuinely require the person's attention.
   const tarefasBadge   = tarefas.filter(t => {
     if (!_activeLabels.has(t.status)) return false;
     return t.owner === currentUser?.name;
-  }).length;
+  }).length + getUnacknowledgedAckCount(processos, currentUser?.name);
   // Inbox badge only relevant for admin/supervisor (standard users don't see Inbox nav item)
   const inboxBadge = isPrivileged
     ? inboxEmails.filter(e => !e.isInternal && e.status === "pending").length

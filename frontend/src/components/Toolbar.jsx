@@ -14,8 +14,10 @@ const ALL_COLUMNS = [
   { key: "client",   label: "Cliente"         },
   { key: "brand",    label: "Marca"           },
   { key: "model",    label: "Modelo"          },
-  { key: "owner",    label: "Resp. Cotação"   },
-  { key: "comm",     label: "Resp. Comercial" },
+  { key: "respActual",   label: "Resp. Actual"    },
+  { key: "respAbertura", label: "Resp. Abertura"  },
+  { key: "owner",        label: "Resp. Cotação"   },
+  { key: "comm",         label: "Resp. Comercial" },
   { key: "comprador",label: "Comprador"       },
   { key: "price",    label: "Valor"           },
   { key: "emails",   label: "Emails"          },
@@ -33,9 +35,12 @@ export function Toolbar({ view, setView, search, setSearch, ownerFilter, setOwne
   const { isMobile } = useWindowSize();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const stages  = store.getStages();
-  const users   = store.getUsers();
-  const cotacaoOwners   = [...new Set(users.filter(u => u.role === "cotacao"   && u.active !== false).map(u => u.name))];
-  const comercialOwners = [...new Set(users.filter(u => u.role === "comercial" && u.active !== false).map(u => u.name))];
+  // Resp. Cotação / Resp. Comercial are role assignments tracked in
+  // crm_user_roles (role ids "resp-cotacao"/"resp-comercial"), not the legacy
+  // user.role field (which only ever holds "admin"/"supervisor"/etc. for
+  // permission checks) — resolveRoleUsers is the correct lookup here.
+  const cotacaoOwners   = store.resolveRoleUsers("resp-cotacao").map(u => u.name);
+  const comercialOwners = store.resolveRoleUsers("resp-comercial").map(u => u.name);
 
   // Column visibility
   const savedPrefs = store.getColumnPrefs(currentUser?.email);

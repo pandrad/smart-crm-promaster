@@ -212,6 +212,8 @@ export function TableView({ rows, onSelect, users = [], currentUser = {}, sortSt
               {isVisible("client")    && <TH colKey="client"    label="Cliente"          {...thProps} />}
               {isVisible("brand")     && <TH colKey="brand"     label="Marca"            {...thProps} />}
               {isVisible("model")     && <TH colKey="model"     label="Modelo"           {...thProps} />}
+              {isVisible("respActual") && <TH colKey="respActual" label="Resp. Actual"    {...thProps} />}
+              {isVisible("respAbertura") && <TH colKey="respAbertura" label="Resp. Abertura" {...thProps} />}
               {isVisible("owner")     && <TH colKey="owner"     label="Resp. Cotação"    {...thProps} />}
               {isVisible("comm")      && <TH colKey="comm"      label="Resp. Comercial"  {...thProps} />}
               {isVisible("comprador") && <TH colKey="comprador" label="Comprador"        {...thProps} />}
@@ -275,12 +277,45 @@ export function TableView({ rows, onSelect, users = [], currentUser = {}, sortSt
                 {isVisible("model") && (
                   <td style={{ padding: "9px 10px", fontSize: 12, color: THEME.textMuted }}>{p.model || "—"}</td>
                 )}
+                {/* Resp. Actual — who currently has the process right now
+                    (respActual), independent of the historical Resp. Cotação/
+                    Resp. Comercial fields, which never change automatically
+                    once set. Falls back to owner for older processes created
+                    before respActual existed. */}
+                {isVisible("respActual") && (
+                  <td style={{ padding: "9px 10px" }}>
+                    {(p.respActual || p.owner) ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <Avatar name={p.respActual || p.owner} size={22} photo={photoOf(p.respActual || p.owner)} />
+                        <span style={{ fontSize: 11, color: THEME.textMuted }}>{(p.respActual || p.owner).split(" ")[0]}</span>
+                      </div>
+                    ) : (
+                      <span style={{ color: THEME.border, fontSize: 12 }}>—</span>
+                    )}
+                  </td>
+                )}
+                {isVisible("respAbertura") && (
+                  <td style={{ padding: "9px 10px" }}>
+                    {p.respAbertura ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <Avatar name={p.respAbertura} size={22} photo={photoOf(p.respAbertura)} />
+                        <span style={{ fontSize: 11, color: THEME.textMuted }}>{p.respAbertura.split(" ")[0]}</span>
+                      </div>
+                    ) : (
+                      <span style={{ color: THEME.border, fontSize: 12 }}>—</span>
+                    )}
+                  </td>
+                )}
                 {isVisible("owner") && (
                   <td style={{ padding: "9px 10px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <Avatar name={p.owner} size={22} photo={photoOf(p.owner)} />
-                      <span style={{ fontSize: 11, color: THEME.textMuted }}>{p.owner.split(" ")[0]}</span>
-                    </div>
+                    {p.owner ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <Avatar name={p.owner} size={22} photo={photoOf(p.owner)} />
+                        <span style={{ fontSize: 11, color: THEME.textMuted }}>{p.owner.split(" ")[0]}</span>
+                      </div>
+                    ) : (
+                      <span style={{ color: THEME.border, fontSize: 12 }}>—</span>
+                    )}
                   </td>
                 )}
                 {isVisible("comm") && (

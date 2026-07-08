@@ -142,6 +142,50 @@ Both the process status change flow (DetailDrawer.jsx) and `applyReatribui` (Tar
 
 ---
 
+## Changes Since v4 (current session)
+
+### Resp. Cotação Assignment Fix — Em Abertura → Entrada
+
+When a process advances from Em Abertura to Entrada, a real Resp. Cotação person is now correctly resolved through client-based assignment first, then mapping, then round-robin — rather than incorrectly inheriting the Resp. Abertura person's name. While a process sits at Em Abertura, Resp. Cotação now correctly stays empty rather than showing a placeholder name.
+
+Resp. Abertura now also appears as its own column in the Processos table, in addition to already showing correctly in the drawer.
+
+### Quotation File Naming Convention
+
+Naming pattern implemented: `<processo> Lista_T.xlsx`. For testing purposes only, a synthetic placeholder file with a `_TEST` suffix is generated in the browser, since real Microsoft Graph API integration does not exist yet. Documented as a known Stage 4 dependency (see Stage 4 Dependencies section) — real production behavior must call the Microsoft Graph API to create an actual copy of the template inside the client's SharePoint.
+
+### Attachment Uploads — Clickable, Locally Stored
+
+Uploaded attachments are now clickable and functional, but only stored locally in the browser session of whoever is testing. Documented as a known Stage 4 dependency (see Stage 4 Dependencies section) requiring real backend or database file storage in production.
+
+### Associar a Processo Existente — Direction Fix
+
+Previously the process itself was incorrectly overwritten with the task's client details. Now the task correctly inherits the existing process's details instead, and the process itself remains unchanged. This action is now logged correctly in both the task history and the Dashboard activity feed.
+
+### Reassignment Design Decision Reversed (Intentional)
+
+Previously an existing process owner was preserved through routine status changes unless a client-specific assignment named someone different. Now, whenever Reatribui is ON for a status and the mapping or round-robin resolves a different person than the current holder, that person becomes the new Resp. Actual, following the same priority order used everywhere else: client-based assignment first, then mapping, then round-robin.
+
+### Resp. Cotação / Resp. Comercial vs. Resp. Actual
+
+Two roles are now clearly separated by design:
+- **Resp. Cotação and Resp. Comercial** are historical record fields, set once and never changed automatically afterward — representing who was genuinely responsible for that part of the process.
+- **Resp. Actual** is a live field that always reflects who currently holds the process right now, and updates automatically whenever the mapping reassigns ownership at a new status.
+
+The Processos table column order is now: Resp. Actual, Resp. Abertura, Resp. Cotação, Resp. Comercial.
+
+Meus Processos, the summary strip, and the passive reassignment notification system in Tarefas.jsx now correctly check Resp. Actual to determine what belongs to the current user, rather than the old Resp. Cotação owner field — fixing a bug where mapping-driven reassignments never surfaced as notifications. The Dashboard stat tiles were also updated to the same Resp. Actual definition for consistency.
+
+The Resp. Cotação–labeled filter dropdown in Toolbar.jsx intentionally still filters by the historical Resp. Cotação field, not Resp. Actual, since its label specifically refers to that role.
+
+### Passive Reassignment Notification System
+
+Now correctly fires for any process that changes owner without a direct action from the new owner, including routine status changes through the pipeline — not only the initial Em Abertura → Entrada handover. A visible badge count was added combining active tasks and unacknowledged notifications together on the Tarefas sidebar tab, and a separate dedicated Notificações tile was added to the Dashboard under "As minhas tarefas", distinct from the existing Activas tile.
+
+**Pending / not yet confirmed:** the Dashboard.jsx consistency fix for `myProcessos` (aligning it to the same Resp. Actual definition used elsewhere) was the very last instruction sent before pausing this session, and has not yet been confirmed back as completed.
+
+---
+
 ## Steps to Close Stage 1
 
 1. Final human QA pass across all screens (see `docs/stage1-testing-guide.md`)
@@ -236,6 +280,16 @@ When a trigger fires (process status change, task created, email triaged):
 | 8 | Repor todos os dados mock | Full reset to baseline |
 
 AI simulation toggle in DEV panel: controls whether generated emails receive AI classification. When ON, ~78% of generated emails get a confident type, ~22% get `type: null`. When OFF, all generated emails get `type: null`.
+
+---
+
+## Stage 4 Dependencies — Known Frontend Limitations to Resolve
+
+These are temporary, browser-only workarounds in the current frontend that have no real backend equivalent yet. Both must be properly resolved once Stage 4 backend work begins — they are not production-ready and must not be mistaken for real functionality.
+
+- **Quotation spreadsheet is a synthetic placeholder, not a real file.** The quotation file shown on a process (named `"<processo> Lista_T_TEST.xlsx"`) is currently a synthetic placeholder Blob generated entirely in the browser for testing purposes — it has no real content and lives only as a temporary browser blob, not a persisted or shared file. In production, this must instead call the **Microsoft Graph API** to create a real copy of the **Modelo de Proposta** template inside the client's actual SharePoint, using the same naming pattern but **without** the `_TEST` suffix (i.e. `"<processo> Lista_T.xlsx"`). The resulting real SharePoint link must then be stored on the process record instead of a local blob.
+
+- **Manually attached files are only stored in the browser session, not shared or persistent.** Any file a user manually attaches to a process or task is currently stored only in that user's local browser session (on their own machine) — it is not shared with the team, not persisted anywhere durable, and disappears once that session ends. In production, this must be stored in real backend storage: either the client's SharePoint or a proper file storage service connected to the database, so attached files are genuinely shared and permanently accessible to the whole team.
 
 ---
 

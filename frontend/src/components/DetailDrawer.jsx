@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { daysLeft, useWindowSize } from "../utils.js";
 import { store } from "../store.js";
 import { THEME } from "../theme.js";
@@ -53,10 +53,10 @@ function EditableInfoCell({ label, value, canEdit, onSave }) {
 function TeamCard({ name, role, photo }) {
   return (
     <div style={{ flex: 1, background: THEME.sidebar, borderRadius: 8, padding: "8px 12px", display: "flex", gap: 8, alignItems: "center", minWidth: 130, border: `1px solid ${THEME.border}` }}>
-      <Avatar name={name} photo={photo} />
+      {name ? <Avatar name={name} photo={photo} /> : <div style={{ width: 28, height: 28, borderRadius: "50%", border: `1px dashed ${THEME.border}`, flexShrink: 0 }} />}
       <div>
         <div style={{ fontSize: 10, color: THEME.textDim }}>{role}</div>
-        <div style={{ fontSize: 12, fontWeight: 600, color: THEME.text }}>{name}</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: name ? THEME.text : THEME.textDim, fontStyle: name ? "normal" : "italic" }}>{name || "Por atribuir"}</div>
       </div>
     </div>
   );
@@ -368,6 +368,32 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
   const [reassignOpen,    setReassignOpen]    = useState(false);
   const attachRef = useRef(null);
   const [confirmRemove, setConfirmRemove] = useState(null);
+  const [modeloCopyUrl, setModeloCopyUrl] = useState(null);
+
+  // TEMPORARY TESTING CONVENTION — no backend file storage/copy mechanism
+  // exists yet (Stage 4 will add real server-side file handling, including
+  // real server-side copying of the Modelo de Proposta template). For testing
+  // purposes only, this generates a synthetic placeholder Blob — NOT the real
+  // template content, since the browser has no way to read/copy the actual
+  // shared SharePoint file (that link is a guest-access auth page, not a raw
+  // file endpoint fetchable cross-origin). The placeholder is served as a
+  // genuinely distinct Blob URL, named "<processo> Lista_T_TEST.xlsx". The
+  // "_TEST" suffix is mandatory and must stay until real backend file copying
+  // exists — it exists specifically so this generated file can never be
+  // mistaken for a real production quotation file. Remove this entire
+  // mechanism once Stage 4 backend file handling is implemented.
+  useEffect(() => {
+    const placeholderText =
+      `TESTE — cópia gerada automaticamente do Modelo de Proposta\n` +
+      `Processo: ${p.id}\n` +
+      `Gerado em: ${new Date().toISOString()}\n\n` +
+      `Este ficheiro é um marcador de posição para testes. Não contém dados reais de cotação.\n` +
+      `Será substituído por uma cópia real do modelo assim que a integração com o backend (Stage 4) estiver disponível.`;
+    const blob = new Blob([placeholderText], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    setModeloCopyUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [p.id]);
 
   function handleEmailSent({ to, subject, body, attachments }) {
     const ts = new Date().toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
@@ -420,16 +446,23 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
     let patch = { status: newStatus, ...(newFu !== undefined ? { fu: newFu } : {}) };
 
     if (reatribuiMap[newStatus]) {
-      const roleId = mapeamento.processoStatus?.[newStatus] ?? null;
-      const clientAssignee = store.resolveClientRoleAssignment(p.client || null, roleId);
-      const hasOwner = !!p.owner;
-      // Reassign only if there is no current owner, or a role-specific client
-      // assignment points to someone other than the current owner. Otherwise
-      // the existing owner is preserved even though the Reatribui toggle is on.
-      if (!hasOwner || (clientAssignee && clientAssignee !== p.owner)) {
-        const newOwner = clientAssignee || store.assignForProcessStatus(newStatus, p.client || null);
-        if (newOwner) patch = { ...patch, owner: newOwner };
-      }
+      // Resolve who currently should have the process using the same
+      // priority order used everywhere else: client-specific role assignment
+      // first, then mapeamento, then round-robin as last resort. This only
+      // ever updates respActual — the "who has this right now" field — and
+      // deliberately never touches owner (Resp. Cotação) or comm (Resp.
+      // Comercial). Those are historical record fields: once someone is
+      // genuinely assigned to either role during the process's journey, that
+      // name must stay fixed and never be silently overwritten by an
+      // automatic status-driven reassignment. respActual updates whenever
+      // this resolves someone different from the current respActual, for
+      // every Reatribui-ON status transition in the pipeline (Em Abertura →
+      // Entrada, → Para Fechar, etc.), so the passive-handoff notification
+      // (which fires off the "Reatribuído a X (via mapeamento de estado)"
+      // timeline entry below) triggers consistently everywhere a process
+      // actually changes hands without the new owner's own action.
+      const newActual = store.assignForProcessStatus(newStatus, p.client || null);
+      if (newActual && newActual !== p.respActual) patch = { ...patch, respActual: newActual };
     }
 
     const oldStage = stages.find(s => s.id === p.status);
@@ -437,8 +470,8 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
     const ts = nowTs();
     const entries = [];
     entries.push({ icon: "tag", color: newStage?.color || THEME.textMuted, time: ts, text: `Estado alterado de "${oldStage?.label || p.status}" para "${newStage?.label || newStatus}" por ${currentUser.name || "—"}` });
-    if (patch.owner && patch.owner !== p.owner) {
-      entries.push({ icon: "user", color: THEME.textMuted, time: ts, text: `Reatribuído a ${patch.owner} (via mapeamento de estado)` });
+    if (patch.respActual && patch.respActual !== p.respActual) {
+      entries.push({ icon: "user", color: THEME.textMuted, time: ts, text: `Reatribuído a ${patch.respActual} (via mapeamento de estado)` });
     }
     if (newFu !== undefined && newFu !== p.fu) {
       entries.push({ icon: "check", color: "#38bdf8", time: ts, text: `Follow-up alterado para "${newFu || "—"}" por ${currentUser.name || "—"}` });
@@ -608,18 +641,26 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
                 </div>
                 <span style={{ fontSize: 10, color: THEME.textDim, background: THEME.card, borderRadius: 9999, padding: "2px 6px" }}>fixo</span>
               </div>
-              {/* Pinned 2 — Modelo de Proposta (supersedable) */}
+              {/* Pinned 2 — this process's own copy of the Modelo de Proposta
+                  template, named "<processo> Lista_T_TEST.xlsx". The original
+                  template file keeps its own name/location (shared, used
+                  elsewhere) and is never modified — only this per-process
+                  copy is a distinct file. See the modeloCopyUrl effect above
+                  for the "_TEST" naming convention note: this is a temporary
+                  testing mechanism, to be replaced by real backend file
+                  copying in Stage 4. */}
               {!p.modeloSuperseded && (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 8 }}>
                   <a
-                    href="https://promasterlda.sharepoint.com/:x:/r/sites/Intranet/_layouts/15/guestaccess.aspx?e=DLVapo&share=IQCrlmqVEA1tQ5fRdQpoTnz1ATDQ8uLZXGdhQHDKqkEKpDE"
+                    href={modeloCopyUrl || undefined}
+                    onClick={e => e.stopPropagation()}
+                    download={`${p.id} Lista_T_TEST.xlsx`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={e => e.stopPropagation()}
                     style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, textDecoration: "none", color: THEME.accent, fontSize: 12, fontWeight: 500 }}
                   >
                     <Icon name="paperclip" size={13} color={THEME.accent} />
-                    <span style={{ flex: 1 }}>Modelo de Proposta.xlsx</span>
+                    <span style={{ flex: 1 }}>{p.id} Lista_T_TEST.xlsx</span>
                   </a>
                   {canEdit && confirmRemove !== "modelo" && (
                     <button onClick={() => setConfirmRemove("modelo")} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textDim, fontSize: 10, padding: "2px 4px" }} title="Remover">
@@ -630,7 +671,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
                     <div style={{ display: "flex", gap: 4 }}>
                       <button onClick={() => {
                         const ts = new Date().toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
-                        const entry = { icon: "x", color: THEME.textDim, time: ts, text: `Modelo de Proposta.xlsx substituído por ${currentUser.name || "—"}` };
+                        const entry = { icon: "x", color: THEME.textDim, time: ts, text: `${p.id} Lista_T_TEST.xlsx substituído por ${currentUser.name || "—"}` };
                         const updated = { ...p, modeloSuperseded: true, timeline: [...(p.timeline || []), entry] };
                         setP(updated); onUpdate?.(updated); setConfirmRemove(null);
                       }} style={{ background: THEME.danger, color: "white", border: "none", borderRadius: 5, padding: "2px 8px", fontSize: 10, cursor: "pointer" }}>Confirmar</button>
@@ -652,7 +693,18 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
                 return (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 8, fontSize: 12, color: THEME.textMuted }}>
                     <Icon name="paperclip" size={13} color={THEME.textDim} />
-                    <span style={{ flex: 1 }}>{typeof att === "string" ? att : att.name}</span>
+                    {typeof att !== "string" && att.url ? (
+                      <a
+                        href={att.url}
+                        download={att.name}
+                        onClick={e => e.stopPropagation()}
+                        style={{ flex: 1, color: THEME.accent, textDecoration: "none" }}
+                      >
+                        {att.name}
+                      </a>
+                    ) : (
+                      <span style={{ flex: 1 }}>{typeof att === "string" ? att : att.name}</span>
+                    )}
                     {canEdit && confirmRemove !== attKey && (
                       <button onClick={() => setConfirmRemove(attKey)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textDim, fontSize: 10, padding: "2px 4px" }} title="Remover">
                         <Icon name="x" size={11} color={THEME.textDim} />
@@ -685,15 +737,28 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
                   >
                     <Icon name="upload" size={12} color={THEME.textDim} /> Anexar ficheiro
                   </button>
+                  {/* Interim storage: no backend file storage exists yet (Stage 4
+                      will add Supabase Storage — see CLAUDE.md). Until then the
+                      file is read into a base64 data URL and stored inline in
+                      the attachment object, which localStorage can hold as a
+                      plain string. This makes the file genuinely openable/
+                      downloadable, but is only viable for small files — the
+                      browser's localStorage quota (~5-10MB per origin, shared
+                      across the whole app) rules out large catalogues or many
+                      uploads. Revisit once Supabase Storage is wired up. */}
                   <input ref={attachRef} type="file" style={{ display: "none" }} onChange={e => {
                     const f = e.target.files[0];
                     if (!f) return;
                     const ts = new Date().toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
-                    const newAtt = { name: f.name, uploadedBy: currentUser.name, uploadedAt: ts };
-                    const entry = { icon: "paperclip", color: THEME.textMuted, time: ts, text: `Ficheiro "${f.name}" anexado por ${currentUser.name || "—"}` };
-                    const updated = { ...p, attachments: [...(p.attachments || []), newAtt], timeline: [...(p.timeline || []), entry] };
-                    setP(updated);
-                    onUpdate?.(updated);
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      const newAtt = { name: f.name, url: reader.result, uploadedBy: currentUser.name, uploadedAt: ts };
+                      const entry = { icon: "paperclip", color: THEME.textMuted, time: ts, text: `Ficheiro "${f.name}" anexado por ${currentUser.name || "—"}` };
+                      const updated = { ...p, attachments: [...(p.attachments || []), newAtt], timeline: [...(p.timeline || []), entry] };
+                      setP(updated);
+                      onUpdate?.(updated);
+                    };
+                    reader.readAsDataURL(f);
                     e.target.value = "";
                   }} />
                 </>

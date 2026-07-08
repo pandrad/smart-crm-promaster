@@ -7,6 +7,7 @@ import { StatsBar } from "../components/StatsBar.jsx";
 import { SupervisorWidget } from "../components/SupervisorWidget.jsx";
 import { Avatar, Tag } from "../components/Primitives.jsx";
 import { Icon } from "../icons.jsx";
+import { getUnacknowledgedAckCount } from "./Tarefas.jsx";
 
 function ActivityList({ items, users }) {
   return (
@@ -69,15 +70,22 @@ export function Dashboard({ processos, tarefas, users, currentUser, accent, onOp
     try { const [d, m, y] = t.due.split("/").map(Number); return new Date("2026-05-15T12:00:00") > new Date(y, m - 1, d); } catch { return false; }
   });
   const active        = processos.filter(p => !p.archived);
-  const myProcessos   = active.filter(p => p.owner === userName || p.comm === userName || p.compra === userName);
+  // "Mine" is based on respActual (who currently has the process), not owner
+  // (Resp. Cotação), since owner is now a frozen historical field that no
+  // longer necessarily reflects who is actively working the process today —
+  // consistent with the same change already applied in Processos.jsx/Tarefas.jsx.
+  const myProcessos   = active.filter(p => p.respActual === userName || p.comm === userName || p.compra === userName);
   const myOpen        = myProcessos.filter(p => p.status < 8);
   const myOverdue     = myProcessos.filter(p => daysLeft(p.deadline) < 0 && p.status < 8);
   const myUrgent      = myProcessos.filter(p => { const d = daysLeft(p.deadline); return d >= 0 && d <= 2 && p.status < 8; });
+
+  const myAckCount = getUnacknowledgedAckCount(processos, userName);
 
   const taskStats = [
     { label: "Por fazer",       value: myPorFazer.length,   color: "#94a3b8",     icon: "list",   nav: "/tarefas", filter: "activas" },
     { label: "Activas",         value: myActive.length,     color: THEME.warning, icon: "tasks",  nav: "/tarefas", filter: "activas" },
     { label: "SLA excedido",    value: mySlaBreach.length,  color: THEME.danger,  icon: "alert",  nav: "/tarefas", filter: "activas" },
+    { label: "Notificações",    value: myAckCount,          color: THEME.warning, icon: "alert",  nav: "/tarefas", filter: "activas" },
   ];
 
   const processStats = [
