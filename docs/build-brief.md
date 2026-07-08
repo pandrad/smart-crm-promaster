@@ -494,7 +494,7 @@ Prompt must extract and return JSON:
   "serial_vin": "string or null",
   "client_ref": "string or null",
   "urgency": "normal | alta",
-  "task_type": "Pré-Entrada | Status Encomenda | Desconto | Contas Correntes | Cliente Novo | Follow-up | Diversos",
+  "task_type": "Pré-Entrada | Abertura de Processo | Contas Correntes | Status de Encomenda | Desconto | Cliente Novo | Follow-Up | Escalação | Análise Técnica",
   "summary": "one sentence in Portuguese"
 }
 ```
