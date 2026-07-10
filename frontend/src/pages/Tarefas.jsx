@@ -851,6 +851,13 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
       comm:  "",
       compra: "",
       respAbertura: abridoPor,
+      // The person who originally validated this journey's Pré-Entrada task
+      // (t.cotacaoOwner, set in handleValidarPreEntrada) — carried onto the
+      // process so the Em Abertura → Entrada transition can give them
+      // priority for Resp. Cotação if they still hold that role, ahead of
+      // the general role-history continuity/round-robin fallback. See
+      // DetailDrawer.jsx handleStatusSave.
+      origPreEntradaOwner: t.cotacaoOwner || null,
       comprador: email?.senderName || "",
       price: null, emails: 1,
       note: `Aberto via tarefa de Abertura ${t.id}`,
@@ -1096,7 +1103,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
             <div>
               <div style={{ ...LABEL, marginBottom: 10 }}>Histórico</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {t.history.map((h, i) => {
+                {[...t.history].reverse().map((h, i) => {
                   const u = users.find(usr => usr.name === h.actor);
                   return (
                     <div key={i} style={{ display: "flex", gap: 10 }}>

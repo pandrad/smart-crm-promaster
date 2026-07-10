@@ -398,7 +398,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
   function handleEmailSent({ to, subject, body, attachments }) {
     const ts = new Date().toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
     const entry = {
-      icon: "mail", color: "#60a5fa", time: ts,
+      icon: "mail", color: "#60a5fa", time: ts, actor: currentUser.name || null,
       text: `Email enviado por ${currentUser.name || "—"} para ${to} — ${subject}${attachments?.length ? ` (${attachments.join(", ")})` : ""}`,
       email: { direction: "outbound", from: currentUser.name || "—", to, subject, body, attachments: attachments || [], timestamp: ts },
     };
@@ -430,7 +430,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
     const displayNew = field === "price" && value ? `€${value}` : (value || "—");
     const displayOld = field === "price" && oldVal && oldVal !== "—" ? `€${oldVal}` : (oldVal || "—");
     const ts = nowTs();
-    const entry = { icon: "edit", color: THEME.textMuted, time: ts, text: `${label} alterado de "${displayOld}" para "${displayNew}" por ${currentUser.name || "—"}` };
+    const entry = { icon: "edit", color: THEME.textMuted, time: ts, actor: currentUser.name || null, text: `${label} alterado de "${displayOld}" para "${displayNew}" por ${currentUser.name || "—"}` };
     const updated = { ...p, [field]: value, timeline: [...(p.timeline || []), entry] };
     setP(updated);
     onUpdate?.(updated);
@@ -472,10 +472,35 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
       // "Reatribuído a X (via mapeamento de estado)" timeline entry below)
       // triggers consistently everywhere a process actually changes hands
       // without the new owner's own action.
+      // Em Abertura (45) → Entrada (5) has one extra priority check that
+      // runs ahead of the general role-history/round-robin resolution below,
+      // but still behind client-specific assignment (client assignment
+      // remains the top priority everywhere, unchanged): the person who
+      // originally validated this journey's Pré-Entrada task
+      // (p.origPreEntradaOwner, carried over from the task's cotacaoOwner at
+      // process creation — see handleAbrirProcesso in Tarefas.jsx) is the
+      // true anchor of this process's journey. If no client-specific
+      // assignment applies, and they still currently hold the Resp. Cotação
+      // role, they take priority over both round-robin and the general
+      // role-history continuity check for this one specific transition,
+      // since this is the one moment Resp. Cotação is genuinely being set
+      // for the first time. This does not apply to any other transition —
+      // every later Reatribui-ON status change still uses the unmodified
+      // general logic below.
+      const isEmAberturaToEntrada = p.status === 45 && newStatus === 5;
+      let anchorActual = null;
+      if (isEmAberturaToEntrada && p.origPreEntradaOwner) {
+        const roleId = mapeamento.processoStatus?.[newStatus] ?? null;
+        const clientAssignee = store.resolveClientRoleAssignment(p.client || null, roleId);
+        if (!clientAssignee && store.userHoldsRole(p.origPreEntradaOwner, roleId)) {
+          anchorActual = p.origPreEntradaOwner;
+        }
+      }
+
       const roleHistory = (p.timeline || [])
         .filter(entry => entry.roleId && entry.assignee)
         .map(entry => ({ roleId: entry.roleId, assignee: entry.assignee }));
-      const newActual = store.assignForProcessStatus(newStatus, p.client || null, roleHistory);
+      const newActual = anchorActual || store.assignForProcessStatus(newStatus, p.client || null, roleHistory);
       if (newActual && newActual !== p.respActual) patch = { ...patch, respActual: newActual };
 
       // Em Abertura (45) → Entrada (5) is the one specific moment Resp.
@@ -485,7 +510,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
       // could resolve the real person. Only fires when owner is still
       // unset, so Resp. Cotação stays fixed as a historical record on every
       // later Reatribui-ON transition, exactly like every other status.
-      if (p.status === 45 && newStatus === 5 && !p.owner && newActual) {
+      if (isEmAberturaToEntrada && !p.owner && newActual) {
         patch = { ...patch, owner: newActual };
       }
     }
@@ -494,15 +519,21 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
     const newStage = stages.find(s => s.id === newStatus);
     const ts = nowTs();
     const entries = [];
-    entries.push({ icon: "tag", color: newStage?.color || THEME.textMuted, time: ts, text: `Estado alterado de "${oldStage?.label || p.status}" para "${newStage?.label || newStatus}" por ${currentUser.name || "—"}` });
+    entries.push({ icon: "tag", color: newStage?.color || THEME.textMuted, time: ts, actor: currentUser.name || null, text: `Estado alterado de "${oldStage?.label || p.status}" para "${newStage?.label || newStatus}" por ${currentUser.name || "—"}` });
     if (patch.respActual && patch.respActual !== p.respActual) {
-      entries.push({ icon: "user", color: THEME.textMuted, time: ts, text: `Reatribuído a ${patch.respActual} (via mapeamento de estado)`, roleId: resolvedRoleId, assignee: patch.respActual });
+      // This entry documents a mapping-driven handoff, but the person who
+      // triggered it by making this status change is still the current user —
+      // not the new respActual. actor must stay currentUser.name so this
+      // shows up in the acting user's own "As Minhas" feed even after the
+      // process moves to someone else; roleId/assignee (the new holder) are
+      // a separate concern used for continuity lookups, not for "who acted".
+      entries.push({ icon: "user", color: THEME.textMuted, time: ts, actor: currentUser.name || null, text: `Reatribuído a ${patch.respActual} (via mapeamento de estado)`, roleId: resolvedRoleId, assignee: patch.respActual });
     }
     if (patch.owner && patch.owner !== p.owner) {
-      entries.push({ icon: "user", color: THEME.textMuted, time: ts, text: `Resp. Cotação definido como ${patch.owner} (via mapeamento de estado)` });
+      entries.push({ icon: "user", color: THEME.textMuted, time: ts, actor: currentUser.name || null, text: `Resp. Cotação definido como ${patch.owner} (via mapeamento de estado)` });
     }
     if (newFu !== undefined && newFu !== p.fu) {
-      entries.push({ icon: "check", color: "#38bdf8", time: ts, text: `Follow-up alterado para "${newFu || "—"}" por ${currentUser.name || "—"}` });
+      entries.push({ icon: "check", color: "#38bdf8", time: ts, actor: currentUser.name || null, text: `Follow-up alterado para "${newFu || "—"}" por ${currentUser.name || "—"}` });
     }
 
     const updated = { ...p, ...patch, timeline: [...(p.timeline || []), ...entries] };
@@ -512,9 +543,9 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
   function handleReassignSave({ owner, comm, compra }) {
     const ts = nowTs();
     const entries = [];
-    if (owner !== p.owner) entries.push({ icon: "user", color: THEME.textMuted, time: ts, text: `Resp. Cotação alterado de ${p.owner} para ${owner} por ${currentUser.name || "—"}` });
-    if (comm !== p.comm) entries.push({ icon: "user", color: THEME.textMuted, time: ts, text: `Resp. Comercial alterado de ${p.comm} para ${comm} por ${currentUser.name || "—"}` });
-    if (compra !== p.compra) entries.push({ icon: "user", color: THEME.textMuted, time: ts, text: `Resp. Compra alterado de ${p.compra} para ${compra} por ${currentUser.name || "—"}` });
+    if (owner !== p.owner) entries.push({ icon: "user", color: THEME.textMuted, time: ts, actor: currentUser.name || null, text: `Resp. Cotação alterado de ${p.owner} para ${owner} por ${currentUser.name || "—"}` });
+    if (comm !== p.comm) entries.push({ icon: "user", color: THEME.textMuted, time: ts, actor: currentUser.name || null, text: `Resp. Comercial alterado de ${p.comm} para ${comm} por ${currentUser.name || "—"}` });
+    if (compra !== p.compra) entries.push({ icon: "user", color: THEME.textMuted, time: ts, actor: currentUser.name || null, text: `Resp. Compra alterado de ${p.compra} para ${compra} por ${currentUser.name || "—"}` });
     const updated = { ...p, owner, comm, compra, timeline: [...(p.timeline || []), ...entries] };
     setP(updated); onUpdate?.(updated);
   }
@@ -597,7 +628,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
                     onChange={e => {
                       const val = e.target.value;
                       const ts = nowTs();
-                      const entry = { icon: "check", color: "#38bdf8", time: ts, text: `Follow-up alterado para "${val || "—"}" por ${currentUser.name || "—"}` };
+                      const entry = { icon: "check", color: "#38bdf8", time: ts, actor: currentUser.name || null, text: `Follow-up alterado para "${val || "—"}" por ${currentUser.name || "—"}` };
                       const updated = { ...p, fu: val || null, timeline: [...(p.timeline || []), entry] };
                       setP(updated); onUpdate?.(updated);
                     }}
@@ -699,7 +730,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
                     <div style={{ display: "flex", gap: 4 }}>
                       <button onClick={() => {
                         const ts = new Date().toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
-                        const entry = { icon: "x", color: THEME.textDim, time: ts, text: `${p.id} Lista_T_TEST.xlsx substituído por ${currentUser.name || "—"}` };
+                        const entry = { icon: "x", color: THEME.textDim, time: ts, actor: currentUser.name || null, text: `${p.id} Lista_T_TEST.xlsx substituído por ${currentUser.name || "—"}` };
                         const updated = { ...p, modeloSuperseded: true, timeline: [...(p.timeline || []), entry] };
                         setP(updated); onUpdate?.(updated); setConfirmRemove(null);
                       }} style={{ background: THEME.danger, color: "white", border: "none", borderRadius: 5, padding: "2px 8px", fontSize: 10, cursor: "pointer" }}>Confirmar</button>
@@ -743,7 +774,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
                         <button onClick={() => {
                           const ts = new Date().toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
                           const attName = typeof att === "string" ? att : att.name;
-                          const entry = { icon: "x", color: THEME.textDim, time: ts, text: `Ficheiro "${attName}" removido por ${currentUser.name || "—"}` };
+                          const entry = { icon: "x", color: THEME.textDim, time: ts, actor: currentUser.name || null, text: `Ficheiro "${attName}" removido por ${currentUser.name || "—"}` };
                           const nextAtts = p.attachments.map(a =>
                             a === att ? { ...(typeof a === "string" ? { name: a } : a), superseded: true, supersededBy: currentUser.name, supersededAt: ts } : a
                           );
@@ -781,7 +812,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
                     const reader = new FileReader();
                     reader.onload = () => {
                       const newAtt = { name: f.name, url: reader.result, uploadedBy: currentUser.name, uploadedAt: ts };
-                      const entry = { icon: "paperclip", color: THEME.textMuted, time: ts, text: `Ficheiro "${f.name}" anexado por ${currentUser.name || "—"}` };
+                      const entry = { icon: "paperclip", color: THEME.textMuted, time: ts, actor: currentUser.name || null, text: `Ficheiro "${f.name}" anexado por ${currentUser.name || "—"}` };
                       const updated = { ...p, attachments: [...(p.attachments || []), newAtt], timeline: [...(p.timeline || []), entry] };
                       setP(updated);
                       onUpdate?.(updated);
@@ -805,7 +836,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
           {/* ── Timeline ── */}
           <div>
             <SectionLabel>Histórico</SectionLabel>
-            {p.timeline.map((t, i) => (
+            {[...p.timeline].reverse().map((t, i) => (
               <div key={i} style={{ display: "flex", gap: 10, marginBottom: 12 }}>
                 <div style={{ width: 24, height: 24, borderRadius: "50%", background: THEME.sidebar, border: `1px solid ${THEME.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
                   <Icon name={t.icon} size={11} color={ICON_MAP[t.icon] ?? t.color ?? THEME.textMuted} />

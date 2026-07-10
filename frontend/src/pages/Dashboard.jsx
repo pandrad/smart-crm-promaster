@@ -13,20 +13,35 @@ function ActivityList({ items, users }) {
   return (
     <div style={{ background: THEME.card, overflow: "hidden" }}>
       {items.map((h, i) => {
-        const u = users.find(usr => usr.name === h.actor);
+        // Fall back to owner-at-time for the avatar/name shown whenever an
+        // entry has no actor recorded (older pre-fix process entries only).
+        const displayActor = h.actor || h.ownerAtTime || "?";
+        const u = users.find(usr => usr.name === displayActor);
+        // Task entries carry a short `action` label (e.g. "Concluído") shown
+        // as a tag, with the longer detail in `note`. Process timeline entries
+        // only have one combined descriptive string in `action` — shown as
+        // the detail line directly, with no redundant tag. Discriminated by
+        // `kind`, not by presence of `actor` — both entry types now carry a
+        // real actor field.
+        const hasShortAction = h.kind === "task";
         return (
           <div key={i} style={{ display: "flex", gap: 10, padding: "10px 14px", borderBottom: i < items.length - 1 ? `1px solid ${THEME.borderLight}` : "none" }}>
-            <Avatar name={h.actor || "?"} size={24} photo={u?.photo} />
+            <Avatar name={displayActor} size={24} photo={u?.photo} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                <span style={{ fontFamily: "monospace", fontSize: 10, color: THEME.textDim }}>{h.taskId}</span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: THEME.text }}>{h.actor}</span>
-                <Tag bg={THEME.sidebar} color={THEME.textDim} style={{ fontSize: 10 }}>{h.action}</Tag>
+                <span style={{ fontFamily: "monospace", fontSize: 10, color: THEME.textDim }}>{h.recordId}</span>
+                {hasShortAction && <span style={{ fontSize: 12, fontWeight: 600, color: THEME.text }}>{h.actor}</span>}
+                {hasShortAction && <Tag bg={THEME.sidebar} color={THEME.textDim} style={{ fontSize: 10 }}>{h.action}</Tag>}
                 <span style={{ fontSize: 10, color: THEME.textDim, marginLeft: "auto", flexShrink: 0 }}>{h.ts}</span>
               </div>
-              {h.note && (
+              {hasShortAction && h.note && (
                 <div style={{ fontSize: 11, color: THEME.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {h.note.split("\n")[0]}
+                </div>
+              )}
+              {!hasShortAction && (
+                <div style={{ fontSize: 11, color: THEME.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {h.action}
                 </div>
               )}
             </div>
@@ -96,22 +111,56 @@ export function Dashboard({ processos, tarefas, users, currentUser, accent, onOp
 
   // ── Recent activity ────────────────────────────────────────────────────────
 
+  // Combines both tasks (t.history) and processes (p.timeline) into one feed —
+  // "actividade recente" must reflect every action the user takes anywhere in
+  // the app, not just task actions. Each drawer's own history/timeline display
+  // is untouched; this is purely an aggregation for the Dashboard feed.
+  //
+  // Task and process entries use different shapes at the source (task history:
+  // { actor, action, note, ts }; process timeline: { icon, color, time, text },
+  // with no explicit actor — the acting user is only baked into `text`).
+  // normaliseTask / normaliseProcesso below map both onto one common display
+  // shape consumed by ActivityList: { ts, actor, action, note, recordId }.
+  //
+  // Process timeline entries now carry a real actor field (added alongside
+  // this fix — see DetailDrawer.jsx, every entries.push(...)/entry literal),
+  // so personal-view filtering can match on it directly instead of only
+  // falling back to current ownership. Both conditions are independent, not
+  // either/or: an entry qualifies if the user was the actor who performed
+  // that specific action, OR the record currently belongs to them — so an
+  // action that hands a process off to someone else still shows up in the
+  // acting user's own feed, exactly like task entries already work via
+  // (actor === userName || taskOwner === userName).
+  function normaliseTask(t) {
+    return (t.history || []).map(h => ({
+      ts: h.ts, actor: h.actor, action: h.action, note: h.note, kind: "task",
+      recordId: t.id, client: t.client, ownerAtTime: t.owner,
+    }));
+  }
+
+  function normaliseProcesso(p) {
+    return (p.timeline || []).map(h => ({
+      ts: h.time, actor: h.actor || null, action: h.text, note: null, kind: "processo",
+      recordId: p.id, client: p.client,
+      ownerAtTime: p.respActual || p.owner || p.comm || p.compra,
+    }));
+  }
+
   // Personal view must only show entries the current user is actually part of —
-  // where they were the actor, or they were the task's owner at the time of the
-  // entry. History entries don't store an owner snapshot, so "owner at the time"
-  // is approximated as the task's current owner: correct for every entry after
-  // the last reassignment, which is what matters for a recent-activity feed.
-  // Filtering per-entry (not per-task) prevents a task the user merely touched
-  // once, or currently owns, from leaking every other person's entries on it.
-  const myActivity = tarefas
-    .flatMap(t => (t.history || []).map(h => ({ ...h, taskId: t.id, client: t.client, taskOwner: t.owner })))
-    .filter(h => h.ts && (h.actor === userName || h.taskOwner === userName))
+  // where they were the actor, or they were the record's owner at the time of
+  // the entry. History entries don't store an owner snapshot, so "owner at the
+  // time" is approximated as the record's current owner: correct for every
+  // entry after the last reassignment, which is what matters for a recent-
+  // activity feed. Filtering per-entry (not per-record) prevents a record the
+  // user merely touched once, or currently owns, from leaking every other
+  // person's entries on it.
+  const myActivity = [...tarefas.flatMap(normaliseTask), ...processos.flatMap(normaliseProcesso)]
+    .filter(h => h.ts && (h.actor === userName || h.ownerAtTime === userName))
     .sort((a, b) => (b.ts || "").localeCompare(a.ts || ""))
     .slice(0, 20);
 
   const allActivity = isPrivileged
-    ? tarefas
-        .flatMap(t => (t.history || []).map(h => ({ ...h, taskId: t.id, client: t.client })))
+    ? [...tarefas.flatMap(normaliseTask), ...processos.flatMap(normaliseProcesso)]
         .filter(h => h.ts)
         .sort((a, b) => (b.ts || "").localeCompare(a.ts || ""))
         .slice(0, 20)
