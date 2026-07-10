@@ -226,24 +226,56 @@ export const store = {
     return entry[roleId] ?? null;
   },
 
+  // Returns true if userName currently holds roleId.
+  userHoldsRole(userName, roleId) {
+    if (!userName || !roleId) return false;
+    return store.resolveRoleUsers(roleId).some(u => u.name === userName);
+  },
+
+  // Continuity lookup — scans this specific process/task's own past
+  // role-attributed assignments (roleHistory: array of { roleId, assignee }
+  // entries, most recent last) for one made under roleId, and returns the
+  // assignee from the most recent match. Returns null if this role has never
+  // been resolved for this process/task before — genuinely the first time.
+  // Deliberately does NOT check who currently holds the process/task, nor
+  // whether that person still holds roleId today: continuity follows this
+  // specific record's own history, not present-day role membership.
+  findPastRoleAssignee(roleHistory, roleId) {
+    if (!roleId || !roleHistory || roleHistory.length === 0) return null;
+    for (let i = roleHistory.length - 1; i >= 0; i--) {
+      if (roleHistory[i].roleId === roleId && roleHistory[i].assignee) {
+        return roleHistory[i].assignee;
+      }
+    }
+    return null;
+  },
+
   // Resolve the responsible user for a given task type id.
-  // If clientName has a role-specific assignment for the mapped role, that
-  // takes priority over round-robin. Falls back to round-robin otherwise.
-  assignForTaskType(typeId, clientName) {
+  // Priority: client-specific role assignment first; then, if this task has
+  // previously had this exact role resolved for it (per roleHistory), reuse
+  // that same person regardless of who holds the task now or who else has
+  // held it under a different role since; otherwise round-robin among role
+  // holders — only when this role is genuinely being resolved for this task
+  // for the first time.
+  assignForTaskType(typeId, clientName, roleHistory) {
     const mapeamento = load("crm_mapeamento", DEFAULT_MAPEAMENTO);
     const roleId = mapeamento.taskType?.[typeId] ?? null;
     const clientAssignee = store.resolveClientRoleAssignment(clientName, roleId);
     if (clientAssignee) return clientAssignee;
+    const pastAssignee = store.findPastRoleAssignee(roleHistory, roleId);
+    if (pastAssignee) return pastAssignee;
     return store.assignRoundRobin(roleId);
   },
 
   // Resolve the responsible user for a given process status id.
-  // Same client-first, role-aware logic as assignForTaskType.
-  assignForProcessStatus(statusId, clientName) {
+  // Same client-first, role-history-continuity logic as assignForTaskType.
+  assignForProcessStatus(statusId, clientName, roleHistory) {
     const mapeamento = load("crm_mapeamento", DEFAULT_MAPEAMENTO);
     const roleId = mapeamento.processoStatus?.[statusId] ?? null;
     const clientAssignee = store.resolveClientRoleAssignment(clientName, roleId);
     if (clientAssignee) return clientAssignee;
+    const pastAssignee = store.findPastRoleAssignee(roleHistory, roleId);
+    if (pastAssignee) return pastAssignee;
     return store.assignRoundRobin(roleId);
   },
 

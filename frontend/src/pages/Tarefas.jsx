@@ -311,7 +311,7 @@ function ValidarPreEntradaModal({ task, onClose, onSave }) {
             {email && <div style={{ fontSize: 11, color: THEME.textDim }}>{email.subject}</div>}
           </div>
           <div style={{ fontSize: 13, color: THEME.textMuted, lineHeight: 1.6 }}>
-            Ao confirmar, será criada uma tarefa de <strong style={{ color: THEME.text }}>Abertura de Processo</strong> atribuída ao Resp. Abertura. Esta tarefa de Pré-Entrada ficará marcada como Concluída.
+            Ao confirmar, esta tarefa é reatribuída ao responsável pela <strong style={{ color: THEME.text }}>Abertura de Processo</strong> e muda de tipo. A tarefa permanece aberta até que essa pessoa abra o processo.
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
@@ -701,10 +701,19 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   // ownership at all) leaves the drawer open as before.
   function update(patch, historyEntry) {
     const reassignedAway = "owner" in patch && patch.owner !== t.owner && patch.owner !== currentUser?.name;
+    // If applyReatribui resolved this reassignment under a specific role,
+    // tag the history entry with that roleId + the resulting assignee so a
+    // later status change can find this exact past assignment again (see
+    // findPastRoleAssignee in store.js). patch.roleId itself is never
+    // persisted onto the task object — only onto the history entry.
+    const { roleId: assignedRoleId, ...taskPatch } = patch;
+    const roleAttribution = assignedRoleId && "owner" in patch
+      ? { roleId: assignedRoleId, assignee: patch.owner }
+      : {};
     const updated = {
       ...t,
-      ...patch,
-      history: [...(t.history || []), { ...historyEntry, ts: nowTs() }],
+      ...taskPatch,
+      history: [...(t.history || []), { ...historyEntry, ...roleAttribution, ts: nowTs() }],
     };
     setT(updated);
     onUpdate(updated);
@@ -713,11 +722,15 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
 
   // If the mapeamento has reatribuiResponsavel ON for the target status and
   // the patch doesn't already set an explicit owner, run the mapeamento lookup.
-  // Existing owner guard: only reassign if the task has no current owner, or a
-  // role-specific client assignment points to someone other than the current
-  // owner. Otherwise the current owner is preserved even with Reatribui on.
-  // This only applies to this in-place reassignment path — task creation
-  // (Inbox triage, Abrir Processo) never calls applyReatribui and is unaffected.
+  // Continuity rule: client-specific role assignment takes priority first. If
+  // that names someone other than the current owner, use them. Otherwise,
+  // scan this specific task's own history for a prior assignment made under
+  // this exact role — anywhere in its history, regardless of who owns the
+  // task now or who has held it under a different role since — and reuse
+  // that same person. Round-robin only runs when this role has genuinely
+  // never been resolved for this task before. This only applies to this
+  // in-place reassignment path — task creation (Inbox triage, Abrir
+  // Processo) never calls applyReatribui and is unaffected.
   function applyReatribui(newStatus, patch) {
     if ("owner" in patch) return patch; // explicit owner wins
     const statusObj = store.getTaskStatuses().find(s => s.label === newStatus);
@@ -730,12 +743,14 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     const mapeamento = store.getMapeamento();
     const roleId = mapeamento.taskType?.[typeObj.id] ?? null;
     const clientAssignee = store.resolveClientRoleAssignment(t.client || null, roleId);
-    const hasOwner = !!t.owner;
-    if (hasOwner && !(clientAssignee && clientAssignee !== t.owner)) return patch;
+    if (clientAssignee && clientAssignee !== t.owner) return { ...patch, owner: clientAssignee, roleId };
 
-    const newOwner = clientAssignee || store.assignForTaskType(typeObj.id, t.client || null);
+    const roleHistory = (t.history || [])
+      .filter(entry => entry.roleId && entry.assignee)
+      .map(entry => ({ roleId: entry.roleId, assignee: entry.assignee }));
+    const newOwner = clientAssignee || store.assignForTaskType(typeObj.id, t.client || null, roleHistory);
     if (!newOwner) return patch;
-    return { ...patch, owner: newOwner };
+    return { ...patch, owner: newOwner, roleId };
   }
 
   // Action: Marcar como Concluído
@@ -751,14 +766,20 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   function handleValidarPreEntrada() {
     const aberturaTypeObj = store.getTaskTypes().find(x => x.label === "Abertura de Processo");
     const aberturaLabel = aberturaTypeObj?.label ?? t.type;
+    const mapeamento = store.getMapeamento();
+    const roleId = aberturaTypeObj ? (mapeamento.taskType?.[aberturaTypeObj.id] ?? null) : null;
+    const roleHistory = (t.history || [])
+      .filter(entry => entry.roleId && entry.assignee)
+      .map(entry => ({ roleId: entry.roleId, assignee: entry.assignee }));
     const aberturaOwner = aberturaTypeObj
-      ? (store.assignForTaskType(aberturaTypeObj.id, t.client || null) || t.owner)
+      ? (store.assignForTaskType(aberturaTypeObj.id, t.client || null, roleHistory) || t.owner)
       : t.owner;
 
     update(
       {
         type: aberturaLabel,
         owner: aberturaOwner,
+        roleId,
         cotacaoOwner: currentUser?.name,
         status: sysStatus("Por Fazer"),
         devolvido: false,

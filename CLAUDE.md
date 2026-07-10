@@ -182,7 +182,20 @@ The Resp. Cotação–labeled filter dropdown in Toolbar.jsx intentionally still
 
 Now correctly fires for any process that changes owner without a direct action from the new owner, including routine status changes through the pipeline — not only the initial Em Abertura → Entrada handover. A visible badge count was added combining active tasks and unacknowledged notifications together on the Tarefas sidebar tab, and a separate dedicated Notificações tile was added to the Dashboard under "As minhas tarefas", distinct from the existing Activas tile.
 
-**Pending / not yet confirmed:** the Dashboard.jsx consistency fix for `myProcessos` (aligning it to the same Resp. Actual definition used elsewhere) was the very last instruction sent before pausing this session, and has not yet been confirmed back as completed.
+Dashboard.jsx's `myProcessos` consistency fix (aligning it to the same Resp. Actual definition used elsewhere) — noted as pending at the end of the previous session — has since been confirmed complete.
+
+### Meus Processos — Resp. Actual Only, Not Resp. Cotação
+
+The "Meus processos" filter in Processos.jsx now strictly follows Resp. Actual (who currently holds the process), no longer falling back to the historical Resp. Cotação field. Separately, the Toolbar.jsx role filter dropdowns (Resp. Cotação, Resp. Comercial) were fixed — they were previously empty because they filtered on the legacy `user.role` field (which only ever holds `"admin"`/`"supervisor"`/etc.), instead of resolving actual role assignments via `store.getUserRoles()`.
+
+### Reassignment Continuity — Role History, Not Just Current Holder
+
+The continuity rule for mapping-driven reassignment was refined twice this session:
+
+1. **First pass:** kept the current owner/Resp. Actual in place on a status change if they already held the newly resolved role today, instead of always re-running round-robin. Applied identically to process reassignment (DetailDrawer.jsx) and task reassignment (Tarefas.jsx `applyReatribui`), via a new `store.userHoldsRole()` helper.
+2. **Second pass (broader, supersedes the above):** the correct rule looks further back through the process's or task's *own history*, not just who currently holds it. If this record has, at any earlier point, been assigned to a specific person under this exact role, that same person is reassigned again — regardless of who has held it under a different role in between. Round-robin now only applies when this role has genuinely never been resolved for this particular process/task before.
+
+This required adding role attribution to timeline/history entries going forward, since neither `p.timeline` nor `t.history` previously recorded which role justified a past assignment — only who became the owner and a human-readable sentence. Reassignment timeline/history entries written by the mapping-driven path now carry `roleId` + `assignee`; `store.findPastRoleAssignee()` scans a record's own `roleId`-tagged entries for a prior match before falling back to round-robin. Client-based assignment still takes priority over this in both cases, unchanged. Pre-existing entries from before this change carry no `roleId` and correctly fall through to round-robin, since the system never recorded that attribution before now.
 
 ---
 

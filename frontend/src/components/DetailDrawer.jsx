@@ -445,24 +445,49 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
     const reatribuiMap = mapeamento.processoStatusReatribui ?? {};
     let patch = { status: newStatus, ...(newFu !== undefined ? { fu: newFu } : {}) };
 
+    // Role this status resolves to, if any — needed both to resolve the
+    // assignee below and to tag the resulting timeline entry with roleId so
+    // future status changes can find this exact assignment again.
+    const resolvedRoleId = mapeamento.processoStatus?.[newStatus] ?? null;
+
     if (reatribuiMap[newStatus]) {
       // Resolve who currently should have the process using the same
       // priority order used everywhere else: client-specific role assignment
-      // first, then mapeamento, then round-robin as last resort. This only
-      // ever updates respActual — the "who has this right now" field — and
-      // deliberately never touches owner (Resp. Cotação) or comm (Resp.
-      // Comercial). Those are historical record fields: once someone is
-      // genuinely assigned to either role during the process's journey, that
-      // name must stay fixed and never be silently overwritten by an
-      // automatic status-driven reassignment. respActual updates whenever
-      // this resolves someone different from the current respActual, for
-      // every Reatribui-ON status transition in the pipeline (Em Abertura →
-      // Entrada, → Para Fechar, etc.), so the passive-handoff notification
-      // (which fires off the "Reatribuído a X (via mapeamento de estado)"
-      // timeline entry below) triggers consistently everywhere a process
-      // actually changes hands without the new owner's own action.
-      const newActual = store.assignForProcessStatus(newStatus, p.client || null);
+      // first; then, if this process has ever previously had this exact role
+      // resolved for it — anywhere in its own timeline, regardless of who
+      // holds it now or who has held it under a different role since — reuse
+      // that same person (continuity follows the process's own role history,
+      // not present-day role membership); otherwise round-robin among role
+      // holders, only when this role is genuinely being resolved for this
+      // process for the first time. This only ever updates respActual — the
+      // "who has this right now" field — and deliberately never touches
+      // owner (Resp. Cotação) or comm (Resp. Comercial). Those are
+      // historical record fields: once someone is genuinely assigned to
+      // either role during the process's journey, that name must stay fixed
+      // and never be silently overwritten by an automatic status-driven
+      // reassignment. respActual updates whenever this resolves someone
+      // different from the current respActual, for every Reatribui-ON status
+      // transition in the pipeline (Em Abertura → Entrada, → Para Fechar,
+      // etc.), so the passive-handoff notification (which fires off the
+      // "Reatribuído a X (via mapeamento de estado)" timeline entry below)
+      // triggers consistently everywhere a process actually changes hands
+      // without the new owner's own action.
+      const roleHistory = (p.timeline || [])
+        .filter(entry => entry.roleId && entry.assignee)
+        .map(entry => ({ roleId: entry.roleId, assignee: entry.assignee }));
+      const newActual = store.assignForProcessStatus(newStatus, p.client || null, roleHistory);
       if (newActual && newActual !== p.respActual) patch = { ...patch, respActual: newActual };
+
+      // Em Abertura (45) → Entrada (5) is the one specific moment Resp.
+      // Cotação (owner) is genuinely assigned for the first time — it was
+      // deliberately left empty when the process was opened (see
+      // handleAbrirProcesso in Tarefas.jsx) precisely so this transition
+      // could resolve the real person. Only fires when owner is still
+      // unset, so Resp. Cotação stays fixed as a historical record on every
+      // later Reatribui-ON transition, exactly like every other status.
+      if (p.status === 45 && newStatus === 5 && !p.owner && newActual) {
+        patch = { ...patch, owner: newActual };
+      }
     }
 
     const oldStage = stages.find(s => s.id === p.status);
@@ -471,7 +496,10 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
     const entries = [];
     entries.push({ icon: "tag", color: newStage?.color || THEME.textMuted, time: ts, text: `Estado alterado de "${oldStage?.label || p.status}" para "${newStage?.label || newStatus}" por ${currentUser.name || "—"}` });
     if (patch.respActual && patch.respActual !== p.respActual) {
-      entries.push({ icon: "user", color: THEME.textMuted, time: ts, text: `Reatribuído a ${patch.respActual} (via mapeamento de estado)` });
+      entries.push({ icon: "user", color: THEME.textMuted, time: ts, text: `Reatribuído a ${patch.respActual} (via mapeamento de estado)`, roleId: resolvedRoleId, assignee: patch.respActual });
+    }
+    if (patch.owner && patch.owner !== p.owner) {
+      entries.push({ icon: "user", color: THEME.textMuted, time: ts, text: `Resp. Cotação definido como ${patch.owner} (via mapeamento de estado)` });
     }
     if (newFu !== undefined && newFu !== p.fu) {
       entries.push({ icon: "check", color: "#38bdf8", time: ts, text: `Follow-up alterado para "${newFu || "—"}" por ${currentUser.name || "—"}` });
