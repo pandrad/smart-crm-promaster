@@ -197,6 +197,18 @@ The continuity rule for mapping-driven reassignment was refined twice this sessi
 
 This required adding role attribution to timeline/history entries going forward, since neither `p.timeline` nor `t.history` previously recorded which role justified a past assignment — only who became the owner and a human-readable sentence. Reassignment timeline/history entries written by the mapping-driven path now carry `roleId` + `assignee`; `store.findPastRoleAssignee()` scans a record's own `roleId`-tagged entries for a prior match before falling back to round-robin. Client-based assignment still takes priority over this in both cases, unchanged. Pre-existing entries from before this change carry no `roleId` and correctly fall through to round-robin, since the system never recorded that attribution before now.
 
+### Validar (Pré-Entrada → Abertura de Processo) Missed the Role-History Continuity Fix
+
+`handleValidarPreEntrada` (Tarefas.jsx) is a separate handler from `applyReatribui` and had not been updated when role-history continuity was introduced — it called `store.assignForTaskType()` with no `roleHistory` argument at all, so it always fell through to round-robin regardless of any prior Resp. Abertura holder for that task, and never tagged the resulting reassignment with `roleId`/`assignee`, so even a correct assignment would have been invisible to later continuity lookups. Now builds `roleHistory` from `t.history` and resolves/tags `roleId` the same way `applyReatribui` does.
+
+The Validar confirmation modal's copy was also out of date — it described the pre-redesign behaviour ("a task will be created and this one marked as concluded"). Updated to describe the current behaviour: the task is reassigned to whoever is responsible for Abertura de Processo and stays open until they actually open the process.
+
+### Resp. Cotação Was Never Actually Being Set at Em Abertura → Entrada (Regression)
+
+The "Resp. Cotação Assignment Fix" above (client → mapping → round-robin resolution order) was correct in principle, but a later change — making Resp. Cotação a fixed historical-record field that Reatribui-ON status changes never auto-touch (see "Resp. Cotação / Resp. Comercial vs. Resp. Actual" above) — was applied as a blanket rule in `handleStatusSave` (DetailDrawer.jsx) that also suppressed the one case where Resp. Cotação legitimately needs to be set for the first time: the Em Abertura → Entrada transition. The handler was only ever writing `respActual`; `owner` (Resp. Cotação) was never written there at all, despite `handleAbrirProcesso` (Tarefas.jsx) deliberately leaving `owner` empty at process creation specifically so this transition would fill it in.
+
+Fixed with a narrow, transition-specific check: when moving from Em Abertura (45) to Entrada (5) and `owner` is still unset, `owner` is now set to the same person resolved for `respActual` in that same transition (client assignment → role-history continuity → round-robin). Guarded on `!p.owner`, so it only ever fires once per process — Resp. Cotação remains fixed as a historical record on every subsequent Reatribui-ON transition, exactly as already established; only Resp. Actual continues to move from that point forward.
+
 ---
 
 ## Steps to Close Stage 1
