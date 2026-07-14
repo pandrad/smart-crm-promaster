@@ -219,6 +219,12 @@ export function DevTools({
   const [collapsed, setCollapsed] = useState(false);
   const [aiSimOn, setAiSimOn] = useState(() => getAISimulationEnabled());
   const [typedEmailType, setTypedEmailType] = useState("");
+  const [clientEmailTarget, setClientEmailTarget] = useState("");
+
+  // Existing clients — same derivation Clientes.jsx uses to build its own
+  // list (grouped by p.client across all non-archived processos), so this
+  // dropdown only ever offers clients that genuinely exist in the mock data.
+  const existingClients = [...new Set(processos.filter(p => !p.archived && p.client).map(p => p.client))].sort();
 
   function toggleAISim() {
     const next = !aiSimOn;
@@ -307,6 +313,61 @@ export function DevTools({
       subject:      template.subject,
       preview:      template.body.split("\n").find(l => l.trim()) || template.subject,
       body:         `${template.body}\n\nCom os melhores cumprimentos,\n${sender.name}\n${sender.company}`,
+      attachments:  [],
+      received:     nowReceived(),
+      isInternal:   false,
+      isNewClient:  false,
+      aiSuggestion,
+      status:       "pending",
+    };
+    const next = [...store.getInboxEmails(), newEmail];
+    store.saveInboxEmails(next);
+    setInboxEmails(next);
+  }
+
+  // ── Tool 2d: Generate inbox email from an existing client ───────────────
+  // Inbox.jsx's triage useEffect uses email.senderName directly as the
+  // clientName passed into store.assignForTaskType(...) (for role-aware
+  // client-based routing via store.resolveClientRoleAssignment), and copies
+  // email.senderName verbatim onto the resulting task's `client` field. So
+  // for a generated email to actually match a crm_client_assignments entry
+  // configured in the Clientes tab, senderName here must be the exact client
+  // (company) name as it appears in processos' p.client — not a contact
+  // person's name, which is what every other generator in this file uses.
+  // The most recent comprador on that client's processos is still used for
+  // the email's From address and signature so the message reads naturally.
+  // Otherwise behaves exactly like the other generators: same AI simulation
+  // toggle, same confidence range, same classification path in Inbox.jsx.
+  function handleGenerateClientEmail(clientName) {
+    if (!clientName) return;
+    const clientProcessos = processos
+      .filter(p => p.client === clientName)
+      .sort((a, b) => (a.created || "").localeCompare(b.created || ""));
+    const latest = clientProcessos[clientProcessos.length - 1];
+    const comprador = latest?.comprador || clientName;
+    const eq = randomPick(RANDOM_EQUIPMENT);
+    const subject = `Pedido de cotação — ${eq.brand} ${eq.model}`;
+    const body = `Bom dia,\n\nVenho por este meio, em nome da ${clientName}, solicitar cotação para ${eq.brand} ${eq.model}.\n\nAguardamos proposta com preço, prazo de entrega e condições de pagamento.\n\nCom os melhores cumprimentos,\n${comprador}\n${clientName}`;
+
+    let aiSuggestion;
+    if (aiSimOn && Math.random() < 0.78) {
+      const types = store.getTaskTypes();
+      const picked = types.length > 0 ? randomPick(types) : null;
+      aiSuggestion = picked
+        ? { type: picked.label, category: picked.label, confidence: Math.round((0.75 + Math.random() * 0.24) * 100) / 100 }
+        : { type: null, category: null, confidence: 0 };
+    } else {
+      aiSuggestion = { type: null, category: null, confidence: 0 };
+    }
+
+    const newEmail = {
+      id:           `E_dev_${Date.now()}`,
+      sender:       `${comprador.toLowerCase().replace(/ /g, ".")}@${clientName.toLowerCase().replace(/[^a-z]/g, "").slice(0, 12)}.co.ao`,
+      senderName:   clientName,
+      to:           "info@promaster.co",
+      subject,
+      preview:      `Bom dia, venho solicitar cotação para ${eq.brand} ${eq.model}.`,
+      body,
       attachments:  [],
       received:     nowReceived(),
       isInternal:   false,
@@ -504,6 +565,26 @@ export function DevTools({
               onClick={() => { handleGenerateTypedEmail(typedEmailType); }}
               disabled={!typedEmailType}
               style={{ ...BTN_BASE, width: "auto", padding: "5px 10px", background: typedEmailType ? "#14330a" : "#0f172a", color: typedEmailType ? "#a3e635" : "#475569", fontSize: 10, opacity: typedEmailType ? 1 : 0.5 }}
+            >
+              Gerar
+            </button>
+          </div>
+
+          {/* Tool 2d — Generate email from an existing client */}
+          <div style={{ display: "flex", gap: 3 }}>
+            <select
+              value={clientEmailTarget}
+              onChange={e => setClientEmailTarget(e.target.value)}
+              disabled={existingClients.length === 0}
+              style={{ flex: 1, fontSize: 10, padding: "5px 6px", background: "#0f172a", color: "#94a3b8", border: "1px solid #1e293b", borderRadius: 5, outline: "none" }}
+            >
+              <option value="">{existingClients.length === 0 ? "Sem clientes…" : "Cliente existente…"}</option>
+              {existingClients.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <button
+              onClick={() => { handleGenerateClientEmail(clientEmailTarget); }}
+              disabled={!clientEmailTarget}
+              style={{ ...BTN_BASE, width: "auto", padding: "5px 10px", background: clientEmailTarget ? "#14330a" : "#0f172a", color: clientEmailTarget ? "#a3e635" : "#475569", fontSize: 10, opacity: clientEmailTarget ? 1 : 0.5 }}
             >
               Gerar
             </button>

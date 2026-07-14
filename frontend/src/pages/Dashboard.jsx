@@ -35,12 +35,12 @@ function ActivityList({ items, users }) {
                 <span style={{ fontSize: 10, color: THEME.textDim, marginLeft: "auto", flexShrink: 0 }}>{h.ts}</span>
               </div>
               {hasShortAction && h.note && (
-                <div style={{ fontSize: 11, color: THEME.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {h.note.split("\n")[0]}
+                <div style={{ fontSize: 11, color: THEME.textMuted, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
+                  {h.note}
                 </div>
               )}
               {!hasShortAction && (
-                <div style={{ fontSize: 11, color: THEME.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div style={{ fontSize: 11, color: THEME.textMuted, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
                   {h.action}
                 </div>
               )}

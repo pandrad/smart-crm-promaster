@@ -359,7 +359,7 @@ function ConsultaChecklist({ consulta, onChange }) {
 }
 
 // ── Main drawer ───────────────────────────────────────────────────────────────
-export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], currentUser = {} }) {
+export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], currentUser = {}, tarefas = [] }) {
   const { isMobile } = useWindowSize();
   const [p,            setP]            = useState(initialP);
   const [emailOpen,       setEmailOpen]       = useState(false);
@@ -410,6 +410,26 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
   const stages = store.getStages();
   const d      = daysLeft(p.deadline);
   const stage  = stages.find(s => s.id === p.status);
+
+  // Tasks linked to this process via originProcesso — separate from the
+  // Associar a Processo direction rule (task inherits process's client;
+  // process itself is never overwritten). This is purely a read-only merge
+  // for display: everything that happened on a linked task (history entries,
+  // attachments) is surfaced here too, tagged as task-origin, without ever
+  // writing back into p.timeline/p.attachments. Applies to both what already
+  // existed on the task before linking and anything added afterward, since
+  // it's recomputed live from tarefas on every render.
+  const linkedTasks = tarefas.filter(t => t.originProcesso === p.id);
+  const taskTimelineEntries = linkedTasks.flatMap(t =>
+    (t.history || []).map(h => ({
+      icon: "tasks", color: "#a78bfa", time: h.ts, actor: h.actor,
+      text: `[Tarefa ${t.id}] ${h.action}${h.note ? ` — ${h.note.split("\n")[0]}` : ""}`,
+      fromTask: t.id,
+    }))
+  );
+  const taskAttachments = linkedTasks.flatMap(t =>
+    (t.attachments || []).map(att => ({ ...att, fromTask: t.id }))
+  );
 
   const isAdmin      = currentUser.role === "admin";
   const isSupervisor = currentUser.role === "supervisor";
@@ -741,10 +761,10 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
                 </div>
               )}
               {/* Other attachments — only show non-superseded */}
-              {(p.attachments || []).filter(att => !att.superseded).length === 0 && p.modeloSuperseded && (
+              {(p.attachments || []).filter(att => !att.superseded).length === 0 && taskAttachments.length === 0 && p.modeloSuperseded && (
                 <div style={{ fontSize: 11, color: THEME.textDim, paddingLeft: 2 }}>Sem anexos activos</div>
               )}
-              {(p.attachments || []).filter(att => !att.superseded).length === 0 && !p.modeloSuperseded && (!p.attachments || p.attachments.length === 0) && (
+              {(p.attachments || []).filter(att => !att.superseded).length === 0 && taskAttachments.length === 0 && !p.modeloSuperseded && (!p.attachments || p.attachments.length === 0) && (
                 <div style={{ fontSize: 11, color: THEME.textDim, paddingLeft: 2 }}>Sem outros anexos</div>
               )}
               {p.attachments?.filter(att => !att.superseded).map((att, i) => {
@@ -787,6 +807,21 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
                   </div>
                 );
               })}
+              {/* Attachments from linked tasks (originProcesso) — read-only here,
+                  since the task remains the owning record; removal must happen
+                  from the task's own drawer. Tagged with the task id so it's
+                  never confused with a native process attachment. */}
+              {taskAttachments.map((att, i) => (
+                <div key={`task-att-${i}`} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: THEME.sidebar, border: "1px solid #a78bfa44", borderRadius: 8, fontSize: 12, color: THEME.textMuted }}>
+                  <Icon name="paperclip" size={13} color="#a78bfa" />
+                  {att.url ? (
+                    <a href={att.url} download={att.name} style={{ flex: 1, color: THEME.accent, textDecoration: "none" }}>{att.name}</a>
+                  ) : (
+                    <span style={{ flex: 1 }}>{att.name}</span>
+                  )}
+                  <span style={{ fontSize: 10, color: "#a78bfa", background: "#2e106522", borderRadius: 9999, padding: "2px 6px" }}>Tarefa {att.fromTask}</span>
+                </div>
+              ))}
               {/* Upload quotation file */}
               {canEdit && (
                 <>
@@ -833,20 +868,26 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
             </div>
           )}
 
-          {/* ── Timeline ── */}
+          {/* ── Timeline — process's own entries merged with linked tasks' history,
+              newest first. Task-origin entries are tagged (icon/colour + "Tarefa
+              X" prefix baked into the text above) so it's always clear which
+              record an entry actually came from; the process's own p.timeline
+              array is never mutated by this merge. ── */}
           <div>
             <SectionLabel>Histórico</SectionLabel>
-            {[...p.timeline].reverse().map((t, i) => (
-              <div key={i} style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-                <div style={{ width: 24, height: 24, borderRadius: "50%", background: THEME.sidebar, border: `1px solid ${THEME.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
-                  <Icon name={t.icon} size={11} color={ICON_MAP[t.icon] ?? t.color ?? THEME.textMuted} />
+            {[...p.timeline, ...taskTimelineEntries]
+              .sort((a, b) => (b.time || "").localeCompare(a.time || ""))
+              .map((entry, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: "50%", background: THEME.sidebar, border: `1px solid ${entry.fromTask ? "#a78bfa66" : THEME.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                    <Icon name={entry.icon} size={11} color={ICON_MAP[entry.icon] ?? entry.color ?? THEME.textMuted} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, color: THEME.textDim }}>{entry.time}</div>
+                    <div style={{ fontSize: 12, color: THEME.textMuted, lineHeight: 1.4 }}>{entry.text}</div>
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 10, color: THEME.textDim }}>{t.time}</div>
-                  <div style={{ fontSize: 12, color: THEME.textMuted, lineHeight: 1.4 }}>{t.text}</div>
-                </div>
-              </div>
-            ))}
+              ))}
           </div>
 
           {/* ── Actions ── */}

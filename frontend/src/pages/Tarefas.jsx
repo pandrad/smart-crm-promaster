@@ -138,14 +138,14 @@ function EnviarEmailClienteModal({ task, currentUser, onClose, onSave }) {
     `informamos que a sua solicitação está a ser analisada pela nossa equipa.\n\n` +
     `Em caso de dúvidas, não hesite em contactar-nos.\n\nCom os melhores cumprimentos,\n${currentUser?.name || ""}`
   );
-  const [attachments, setAttachments] = useState([]);
+  const [attachments, setAttachments] = useState([]); // [{ name, file }]
   const [sent,        setSent]        = useState(false);
 
   function addFiles(files) {
-    setAttachments(prev => [...prev, ...Array.from(files).map(f => f.name)]);
+    setAttachments(prev => [...prev, ...Array.from(files).map(f => ({ name: f.name, file: f }))]);
   }
   function removeAttachment(name) {
-    setAttachments(prev => prev.filter(n => n !== name));
+    setAttachments(prev => prev.filter(a => a.name !== name));
   }
 
   function handleSend() {
@@ -192,10 +192,10 @@ function EnviarEmailClienteModal({ task, currentUser, onClose, onSave }) {
               <label style={{ ...LABEL, display: "block", marginBottom: 6 }}>Anexos</label>
               {attachments.length > 0 && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-                  {attachments.map(name => (
-                    <span key={name} style={{ display: "inline-flex", alignItems: "center", gap: 5, background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 9999, padding: "2px 8px", fontSize: 11, color: THEME.textMuted }}>
-                      <Icon name="paperclip" size={10} color={THEME.textDim} />{name}
-                      <button onClick={() => removeAttachment(name)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.danger, padding: 0, lineHeight: 1 }}>×</button>
+                  {attachments.map(a => (
+                    <span key={a.name} style={{ display: "inline-flex", alignItems: "center", gap: 5, background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 9999, padding: "2px 8px", fontSize: 11, color: THEME.textMuted }}>
+                      <Icon name="paperclip" size={10} color={THEME.textDim} />{a.name}
+                      <button onClick={() => removeAttachment(a.name)} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.danger, padding: 0, lineHeight: 1 }}>×</button>
                     </span>
                   ))}
                 </div>
@@ -462,11 +462,16 @@ const CATEGORY_BG_MAP = {
   "#34d399":"#022c22","#94a3b8":"#1e293b",
 };
 
-function ReclassificarModal({ onClose, onSave }) {
+function ReclassificarModal({ currentType, onClose, onSave }) {
   const { isMobile } = useWindowSize();
   const types = store.getTaskTypes().map(t => t.label).filter(l => !SYSTEM_TYPES_SET.has(l));
   const [mode,     setMode]     = useState("existing"); // "existing" | "new"
-  const [selected, setSelected] = useState(types[0] ?? "");
+  // Preselect the task's current type when it's a real, reclassifiable type
+  // (i.e. not unclassified/system) so Alterar Tipo opens showing what the
+  // user is actually changing from, instead of always defaulting to the
+  // first type in the list. Falls back to types[0] for Classificar Tarefa
+  // on a genuinely unclassified task, where there is no current type to show.
+  const [selected, setSelected] = useState(types.includes(currentType) ? currentType : (types[0] ?? ""));
   const [newLabel, setNewLabel] = useState("");
   const [newColor, setNewColor] = useState("#60a5fa");
 
@@ -756,9 +761,12 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   // Action: Marcar como Concluído
   function handleConcluir(note) {
     const newStatus = sysStatus("Concluído");
+    const resolvedPatch = applyReatribui(newStatus, { status: newStatus });
+    const reassigned = resolvedPatch.owner && resolvedPatch.owner !== t.owner;
+    const baseNote = note || "Tarefa concluída.";
     update(
-      applyReatribui(newStatus, { status: newStatus }),
-      { actor: currentUser?.name, action: "Concluído", note: note || "Tarefa concluída." }
+      resolvedPatch,
+      { actor: currentUser?.name, action: "Concluído", note: reassigned ? `${baseNote}\n\nReatribuída a ${resolvedPatch.owner}.` : baseNote }
     );
   }
 
@@ -811,7 +819,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   function handleRetomar() {
     update(
       { owner: currentUser?.name, status: sysStatus("Em Curso"), escalationNote: null, devolvido: false },
-      { actor: currentUser?.name, action: "Retomada", note: "Supervisor assumiu a tarefa." }
+      { actor: currentUser?.name, action: "Retomada", note: `Assumida por ${currentUser?.name}.` }
     );
   }
 
@@ -871,9 +879,15 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
 
     if (setProcessos) setProcessos(prev => [...prev, newProcesso]);
     const concluido = sysStatus("Concluído");
+    const resolvedPatch = applyReatribui(concluido, { status: concluido, originProcesso: newId });
+    const taskReassigned = resolvedPatch.owner && resolvedPatch.owner !== t.owner;
     update(
-      applyReatribui(concluido, { status: concluido, originProcesso: newId }),
-      { actor: currentUser?.name, action: "Processo Aberto", note: `Processo ${newId} criado com estado Em Abertura. Resp. Abertura: ${abridoPor}.` }
+      resolvedPatch,
+      {
+        actor: currentUser?.name,
+        action: "Processo Aberto",
+        note: `Processo ${newId} criado com estado Em Abertura. Resp. Abertura: ${abridoPor}.${taskReassigned ? ` Tarefa reatribuída a ${resolvedPatch.owner}.` : ""}`,
+      }
     );
   }
 
@@ -889,59 +903,123 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
       if (preEntradaType) patch.type = preEntradaType.label;
     }
     const actionNote = returnToCotacao && patch.type
-      ? `${note}\n\n[Tipo revertido para ${patch.type}]`
-      : note;
+      ? `${note}\n\n[Tipo revertido para ${patch.type}]\n\nDevolvida a ${prevOwner}.`
+      : `${note}\n\nDevolvida a ${prevOwner}.`;
     update(patch, { actor: currentUser?.name, action: "Devolvido", note: actionNote });
   }
 
-  // Action: Cancelar Tarefa — puts task into Cancelamento Pendente for supervisor approval
+  // Action: Cancelar Tarefa — puts task into Cancelamento Pendente for approval.
+  // "Cancelamento Pendente" has no entry in taskStatusReatribui, so
+  // applyReatribui alone never reassigns owner for this transition — the task
+  // stayed with whoever cancelled it and never surfaced in anyone's Por
+  // Fazer. Resolved here the exact same way every other status/type
+  // transition resolves a responsible person: client-based assignment first,
+  // then the role the admin has assigned to this status in the Mapeamento
+  // tab (mapeamento.taskStatus, via the new store.assignForTaskStatus — mirrors
+  // assignForTaskType/assignForProcessStatus), then round-robin among holders
+  // of that role, then role-history continuity on this task's own past
+  // assignments. Nothing about which role is responsible is hardcoded here.
   function handleCancelar(reason) {
     const newStatus = sysStatus("Cancelamento Pendente");
+    const statusObj = store.getTaskStatuses().find(s => s.label === newStatus);
+    const mapeamento = store.getMapeamento();
+    const roleId = statusObj ? (mapeamento.taskStatus?.[statusObj.id] ?? null) : null;
+    const roleHistory = (t.history || [])
+      .filter(entry => entry.roleId && entry.assignee)
+      .map(entry => ({ roleId: entry.roleId, assignee: entry.assignee }));
+    const approver = statusObj
+      ? (store.assignForTaskStatus(statusObj.id, t.client || null, roleHistory) || t.owner)
+      : t.owner;
     update(
-      applyReatribui(newStatus, { status: newStatus, cancelReason: reason }),
-      { actor: currentUser?.name, action: "Cancelamento Pedido", note: reason }
+      { status: newStatus, cancelReason: reason, owner: approver, roleId, cancelRequestedBy: t.owner },
+      { actor: currentUser?.name, action: "Cancelamento Pedido", note: `${reason}${approver !== t.owner ? `\n\nEncaminhado a ${approver} para aprovação.` : ""}` }
     );
   }
 
   // Action: Aprovar Cancelamento (supervisor/admin only, when Cancelamento Pendente)
+  // Restores ownership to whoever requested the cancellation (cancelRequestedBy,
+  // set in handleCancelar) rather than leaving it on the approver. Otherwise the
+  // task's owner permanently became the approving supervisor, and since the
+  // Tarefas page scopes non-privileged/non-showAll users to tasks they own
+  // (myTasks = tarefas.filter(owner === currentUser)), the original requester
+  // would never see their own cancelled task again — it would silently drop out
+  // of scope before the Canceladas section filter ever ran.
   function handleAprovarCancelamento() {
     const newStatus = sysStatus("Cancelado");
+    const restoredOwner = t.cancelRequestedBy || t.owner;
     update(
-      applyReatribui(newStatus, { status: newStatus }),
-      { actor: currentUser?.name, action: "Cancelamento Aprovado", note: t.cancelReason || "" }
+      { ...applyReatribui(newStatus, { status: newStatus }), owner: restoredOwner },
+      {
+        actor: currentUser?.name,
+        action: "Cancelamento Aprovado",
+        note: `Cancelamento aprovado por ${currentUser?.name || "—"}. Motivo original: ${t.cancelReason || "Sem motivo indicado"}. Devolvida a ${restoredOwner}.`,
+      }
     );
   }
 
   // Action: Enviar Email ao Cliente — all task types
-  function handleEnviarEmailCliente({ to, cc, subject, body, attachments }) {
+  // Any file attached to the outbound email is also saved as a genuine task
+  // attachment (base64 data URL in localStorage — same interim mechanism
+  // DetailDrawer.jsx uses for manually attached process files; see the
+  // Stage 4 Dependencies note in CLAUDE.md). If this task is associated
+  // with an existing process via originProcesso, the same attachment is
+  // also pushed onto that process's own attachments list, so it's visible
+  // from both places.
+  async function handleEnviarEmailCliente({ to, cc, subject, body, attachments }) {
+    const files = attachments || []; // [{ name, file }]
+    const ts = nowTs();
+    const savedAttachments = await Promise.all(
+      files.map(a => new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ name: a.name, url: reader.result, uploadedBy: currentUser?.name, uploadedAt: ts });
+        reader.readAsDataURL(a.file);
+      }))
+    );
+    const attachmentNames = files.map(a => a.name);
+
     const statusPorFazer = sysStatus("Por Fazer");
     const newStatus = t.status === statusPorFazer ? sysStatus("Em Curso") : t.status;
+    const resolvedPatch = applyReatribui(newStatus, {
+      status: newStatus,
+      ...(savedAttachments.length ? { attachments: [...(t.attachments || []), ...savedAttachments] } : {}),
+    });
+    const reassigned = resolvedPatch.owner && resolvedPatch.owner !== t.owner;
     update(
-      applyReatribui(newStatus, { status: newStatus }),
+      resolvedPatch,
       {
         actor:  currentUser?.name,
         action: "Email enviado ao cliente",
-        note:   `Para: ${to}${cc ? `\nCC: ${cc}` : ""}\nAssunto: ${subject}\n\n${body}${attachments?.length ? `\n\nAnexos: ${attachments.join(", ")}` : ""}`,
-        email:  { direction: "outbound", from: currentUser?.name, to, cc: cc || null, subject, body, attachments: attachments || [] },
+        note:   `Para: ${to}${cc ? `\nCC: ${cc}` : ""}\nAssunto: ${subject}\n\n${body}${attachmentNames.length ? `\n\nAnexos: ${attachmentNames.join(", ")}` : ""}${reassigned ? `\n\nReatribuída a ${resolvedPatch.owner}.` : ""}`,
+        email:  { direction: "outbound", from: currentUser?.name, to, cc: cc || null, subject, body, attachments: attachmentNames },
       }
     );
+
+    if (savedAttachments.length && t.originProcesso && setProcessos) {
+      setProcessos(prev => prev.map(p =>
+        p.id === t.originProcesso ? { ...p, attachments: [...(p.attachments || []), ...savedAttachments] } : p
+      ));
+    }
   }
 
   // Action: Rejeitar Cancelamento (supervisor/admin only, when Cancelamento Pendente)
   function handleRejeitarCancelamento(note) {
     const newStatus = sysStatus("Em Curso");
+    const resolvedPatch = applyReatribui(newStatus, { status: newStatus, cancelReason: null });
+    const reassigned = resolvedPatch.owner && resolvedPatch.owner !== t.owner;
     update(
-      applyReatribui(newStatus, { status: newStatus, cancelReason: null }),
-      { actor: currentUser?.name, action: "Cancelamento Rejeitado", note }
+      resolvedPatch,
+      { actor: currentUser?.name, action: "Cancelamento Rejeitado", note: reassigned ? `${note}\n\nReatribuída a ${resolvedPatch.owner}.` : note }
     );
   }
 
   // Action: Alterar Estado Manualmente (Admin/Supervisor override)
   function handleAlterarEstado(newStatusLabel, reason) {
     const oldStatus = t.status;
+    const resolvedPatch = applyReatribui(newStatusLabel, { status: newStatusLabel });
+    const reassigned = resolvedPatch.owner && resolvedPatch.owner !== t.owner;
     update(
-      applyReatribui(newStatusLabel, { status: newStatusLabel }),
-      { actor: currentUser?.name, action: "⚠ Alteração manual", note: `Estado alterado manualmente de "${oldStatus}" para "${newStatusLabel}" por ${currentUser?.name} — motivo: ${reason}` }
+      resolvedPatch,
+      { actor: currentUser?.name, action: "⚠ Alteração manual", note: `Estado alterado manualmente de "${oldStatus}" para "${newStatusLabel}" por ${currentUser?.name} — motivo: ${reason}${reassigned ? `\n\nReatribuída a ${resolvedPatch.owner}.` : ""}` }
     );
   }
 
@@ -1165,10 +1243,32 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
             </div>
           )}
 
+          {/* ── Attachments — files saved via Enviar Email ao Cliente (or any
+              other action that saves a real attachment onto the task) ── */}
+          {t.attachments?.length > 0 && (
+            <div>
+              <div style={{ ...LABEL, marginBottom: 8 }}>Anexos</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {t.attachments.map((att, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 8, fontSize: 12, color: THEME.textMuted }}>
+                    <Icon name="paperclip" size={13} color={THEME.textDim} />
+                    {att.url ? (
+                      <a href={att.url} download={att.name} style={{ flex: 1, color: THEME.accent, textDecoration: "none" }}>{att.name}</a>
+                    ) : (
+                      <span style={{ flex: 1 }}>{att.name}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* ── Action buttons ── */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
 
-            {/* ── Pré-Entrada actions: Validar, Enviar Email, Passar(priv), Escalar(std), Cancelar ── */}
+            {/* ── Pré-Entrada actions: Validar, Enviar Email, Escalar(std) ──
+                 Passar and Cancelar Tarefa are universal actions, rendered once
+                 below regardless of task type — see that section. ── */}
             {isPre && !isDone && (
               <>
                 <button onClick={() => setModal("validarPreEntrada")}
@@ -1179,22 +1279,12 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#0c1a2e", color: "#93c5fd", border: "1px solid #1e3a5f", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                   <Icon name="mail" size={14} color="#93c5fd" /> Enviar Email ao Cliente
                 </button>
-                {isPrivileged && (
-                  <button onClick={() => setModal("passar")}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-                    <Icon name="edit" size={13} color={THEME.textMuted} /> Passar
-                  </button>
-                )}
                 {!isPrivileged && (
                   <button onClick={() => setModal("escalar")}
                     style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.dangerBg, color: THEME.danger, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
                     <Icon name="escalate" size={13} color={THEME.danger} /> Escalar
                   </button>
                 )}
-                <button onClick={() => setModal("cancelar")}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.dangerBg, color: THEME.danger, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-                  <Icon name="x" size={13} color={THEME.danger} /> Cancelar Tarefa
-                </button>
               </>
             )}
 
@@ -1209,26 +1299,23 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.warningBg, color: THEME.warning, border: `1px solid ${THEME.warning}44`, borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                   <Icon name="edit" size={14} color={THEME.warning} /> Devolver com Notas
                 </button>
-                {isPrivileged && (
-                  <button onClick={() => setModal("passar")}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-                    <Icon name="edit" size={13} color={THEME.textMuted} /> Passar
-                  </button>
-                )}
                 {!isPrivileged && (
                   <button onClick={() => setModal("escalar")}
                     style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.dangerBg, color: THEME.danger, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
                     <Icon name="escalate" size={13} color={THEME.danger} /> Escalar
                   </button>
                 )}
-                <button onClick={() => setModal("cancelar")}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.dangerBg, color: THEME.danger, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-                  <Icon name="x" size={13} color={THEME.danger} /> Cancelar Tarefa
-                </button>
               </>
             )}
 
-            {/* ── Classificar — unclassified tasks (type null), Admin/Supervisor only ── */}
+            {/* ── Classificar — unclassified tasks (type null), Admin/Supervisor only.
+                 Also carries the same baseline action set (Enviar Email, Escalar,
+                 Marcar como Concluído, Associar a Processo) as a classified task
+                 would get from the baseline fallback below — an unclassified task
+                 still needs to be actionable (e.g. replying to the client) before
+                 anyone gets around to classifying it. This block satisfies
+                 hasTypeSpecificActions on its own, so the baseline fallback never
+                 fires here; those actions must be included explicitly. ── */}
             {isUnclassified && isPrivileged && !isDone && (
               <>
                 <button
@@ -1237,9 +1324,31 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
                 >
                   <Icon name="tag" size={14} color="#f87171" /> Classificar Tarefa
                 </button>
-                <button onClick={() => setModal("passar")}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-                  <Icon name="edit" size={13} color={THEME.textMuted} /> Passar
+                <button
+                  onClick={() => setModal("concluir")}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.success, color: "white", border: "none", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                >
+                  <Icon name="check" size={14} color="white" /> Marcar como Concluído
+                </button>
+                <button
+                  onClick={() => setModal("enviarEmailCliente")}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#0c1a2e", color: "#93c5fd", border: "1px solid #1e3a5f", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                >
+                  <Icon name="mail" size={14} color="#93c5fd" /> Enviar Email ao Cliente
+                </button>
+                {!isPrivileged && (
+                  <button
+                    onClick={() => setModal("escalar")}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.dangerBg, color: THEME.danger, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+                  >
+                    <Icon name="escalate" size={13} color={THEME.danger} /> Escalar
+                  </button>
+                )}
+                <button
+                  onClick={() => setProcessoPickerOpen(true)}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+                >
+                  <Icon name="paperclip" size={13} color={THEME.textMuted} /> Associar a Processo
                 </button>
               </>
             )}
@@ -1279,24 +1388,14 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
                   </button>
                 )}
 
-                {/* Secondary row */}
-                {!isDone && (
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      onClick={() => setModal("passar")}
-                      style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
-                    >
-                      <Icon name="edit" size={13} color={THEME.textMuted} /> Passar
-                    </button>
-                    {!isPrivileged && !isEscalated && (
-                      <button
-                        onClick={() => setModal("escalar")}
-                        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.dangerBg, color: THEME.danger, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
-                      >
-                        <Icon name="escalate" size={13} color={THEME.danger} /> Escalar
-                      </button>
-                    )}
-                  </div>
+                {/* Escalar — Passar is now a universal action, rendered once below */}
+                {!isDone && !isPrivileged && !isEscalated && (
+                  <button
+                    onClick={() => setModal("escalar")}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.dangerBg, color: THEME.danger, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+                  >
+                    <Icon name="escalate" size={13} color={THEME.danger} /> Escalar
+                  </button>
                 )}
               </>
             )}
@@ -1338,20 +1437,12 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
                 >
                   <Icon name="mail" size={14} color="#93c5fd" /> Enviar Email ao Cliente
                 </button>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    onClick={() => setModal("passar")}
-                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
-                  >
-                    <Icon name="edit" size={13} color={THEME.textMuted} /> Passar
-                  </button>
-                  <button
-                    onClick={() => setModal("escalar")}
-                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.dangerBg, color: THEME.danger, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
-                  >
-                    <Icon name="escalate" size={13} color={THEME.danger} /> Escalar
-                  </button>
-                </div>
+                <button
+                  onClick={() => setModal("escalar")}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.dangerBg, color: THEME.danger, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+                >
+                  <Icon name="escalate" size={13} color={THEME.danger} /> Escalar
+                </button>
                 {(isPrivileged || isOwner) && (
                   <button
                     onClick={() => setProcessoPickerOpen(true)}
@@ -1361,6 +1452,32 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
                   </button>
                 )}
               </>
+            )}
+
+            {/* ── Passar / Cancelar Tarefa — Passar is a universal action, available
+                 on every task type for any user. Cancelar Tarefa is universal for
+                 standard users only (requires a mandatory reason, results in
+                 Cancelamento Pendente for approval) — hidden for Supervisor/Admin,
+                 who already have direct authority to set any status, including
+                 Cancelado, via Alterar Estado Manualmente. Neither is shown once
+                 the task is done or already awaiting cancellation approval. ── */}
+            {!isDone && !isCancelPending && (
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => setModal("passar")}
+                  style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+                >
+                  <Icon name="edit" size={13} color={THEME.textMuted} /> Passar
+                </button>
+                {!isPrivileged && (
+                  <button
+                    onClick={() => setModal("cancelar")}
+                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.dangerBg, color: THEME.danger, border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, cursor: "pointer" }}
+                  >
+                    <Icon name="x" size={13} color={THEME.danger} /> Cancelar Tarefa
+                  </button>
+                )}
+              </div>
             )}
 
             {/* ── Alterar Estado Manualmente — Admin/Supervisor override (any status) ── */}
@@ -1376,9 +1493,6 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
             {/* ── Cancelamento Pendente — supervisor approval/rejection ── */}
             {isCancelPending && isPrivileged && (
               <>
-                <div style={{ background: "#2d1505", border: "1px solid #fb923c44", borderRadius: 8, padding: "9px 13px", fontSize: 12, color: "#fb923c" }}>
-                  <strong>Pedido de cancelamento</strong> — {t.cancelReason || "Sem motivo indicado"}
-                </div>
                 <button
                   onClick={handleAprovarCancelamento}
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.successBg, color: THEME.success, border: `1px solid ${THEME.success}44`, borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
@@ -1392,13 +1506,6 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
                   <Icon name="x" size={14} color={THEME.warning} /> Rejeitar e devolver
                 </button>
               </>
-            )}
-
-            {/* Cancelamento Pendente — waiting label for non-privileged */}
-            {isCancelPending && !isPrivileged && (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#2d1505", color: "#fb923c", border: "1px solid #fb923c44", borderRadius: 8, padding: 10, fontSize: 13 }}>
-                <Icon name="alert" size={14} color="#fb923c" /> A aguardar aprovação de cancelamento
-              </div>
             )}
 
             {/* Completed / Cancelled state label */}
@@ -1422,7 +1529,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
       {modal === "passar"                && <PassarModal               users={users} onClose={() => setModal(null)} onSave={handlePassar} />}
       {modal === "escalar"               && <EscalarModal              users={users} onClose={() => setModal(null)} onSave={handleEscalar} />}
       {modal === "alterarEstado"         && <AlterarEstadoModal        currentStatus={t.status} onClose={() => setModal(null)} onSave={handleAlterarEstado} />}
-      {modal === "reclassificar"         && <ReclassificarModal        onClose={() => setModal(null)} onSave={handleReclassificar} />}
+      {modal === "reclassificar"         && <ReclassificarModal        currentType={t.type} onClose={() => setModal(null)} onSave={handleReclassificar} />}
       {processoPickerOpen && <AssociarProcessoModal processos={processos} currentId={t.originProcesso || null} onClose={() => setProcessoPickerOpen(false)} onSave={handleAssociarProcesso} />}
     </>
   );
@@ -1584,9 +1691,9 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
   const assignedUsers = [...new Set(tarefas.map(t => t.owner).filter(Boolean))].sort();
 
   // Status grouping via System Roles
-  const doneLabels = new Set(
-    ["Concluído", "Cancelado"].map(r => store.getLabelForSystemRole(r)).filter(Boolean)
-  );
+  const concluidoLabel = store.getLabelForSystemRole("Concluído");
+  const canceladoLabel = store.getLabelForSystemRole("Cancelado");
+  const doneLabels = new Set([concluidoLabel, canceladoLabel].filter(Boolean));
   const porFazerLabel = store.getLabelForSystemRole("Por Fazer");
 
   // Apply filters to full scope
@@ -1602,10 +1709,14 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
     return true;
   });
 
-  // Three-way split: Por Fazer / Em Curso (actioned but not done) / Concluídas
-  const porFazerTasks = filtered.filter(t => t.status === porFazerLabel);
-  const emCursoTasks  = filtered.filter(t => t.status !== porFazerLabel && !doneLabels.has(t.status));
-  const doneTasks     = filtered.filter(t => doneLabels.has(t.status));
+  // Four-way split: Por Fazer / Em Curso (actioned but not done) / Concluídas / Canceladas.
+  // Cancelled tasks get their own section (rather than being merged into
+  // Concluídas, as before) so they remain visible and findable instead of
+  // disappearing from view once cancelled.
+  const porFazerTasks  = filtered.filter(t => t.status === porFazerLabel);
+  const emCursoTasks   = filtered.filter(t => t.status !== porFazerLabel && !doneLabels.has(t.status));
+  const doneTasks      = filtered.filter(t => t.status === concluidoLabel);
+  const cancelledTasks = filtered.filter(t => t.status === canceladoLabel);
 
   const activeCount = scope.filter(t => !doneLabels.has(t.status)).length;
 
@@ -1865,12 +1976,12 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
         </div>
       </div>
       {isMobile ? (
-        <div style={{ padding: "0 14px 32px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ padding: "0 14px 8px", display: "flex", flexDirection: "column", gap: 8 }}>
           {doneTasks.length === 0 && <p style={{ textAlign: "center", color: THEME.textDim, padding: "16px 0", fontSize: 13 }}>Sem tarefas concluídas</p>}
           {doneTasks.map(t => <TaskCard key={t.id} t={t} />)}
         </div>
       ) : (
-        <div style={{ padding: "0 24px 32px" }}>
+        <div style={{ padding: "0 24px 8px" }}>
           <div style={{ background: THEME.card, borderRadius: 12, border: `1px solid ${THEME.border}`, overflowX: "auto", opacity: 0.7 }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
               <thead>
@@ -1883,6 +1994,40 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
               <tbody>{doneTasks.map(t => <TaskRow key={t.id} t={t} />)}</tbody>
             </table>
             {doneTasks.length === 0 && <p style={{ textAlign: "center", color: THEME.textDim, padding: "16px 0", fontSize: 13 }}>Sem tarefas concluídas</p>}
+          </div>
+        </div>
+      )}
+
+      {/* ── Section: Canceladas — any task whose current status resolves to the
+          Cancelado system role. Kept as its own section (not merged into
+          Concluídas) so cancelled tasks remain visible and findable rather
+          than disappearing from view once cancelled. ── */}
+      <div style={{ padding: isMobile ? "4px 14px" : "4px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "8px 0 8px" }}>
+          <span style={SECTION_LABEL}>Canceladas</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: THEME.textDim, background: THEME.sidebar, border: `1px solid ${THEME.border}`, borderRadius: 10, padding: "1px 7px" }}>{cancelledTasks.length}</span>
+          <div style={{ flex: 1, height: 1, background: THEME.border }} />
+        </div>
+      </div>
+      {isMobile ? (
+        <div style={{ padding: "0 14px 32px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {cancelledTasks.length === 0 && <p style={{ textAlign: "center", color: THEME.textDim, padding: "16px 0", fontSize: 13 }}>Sem tarefas canceladas</p>}
+          {cancelledTasks.map(t => <TaskCard key={t.id} t={t} />)}
+        </div>
+      ) : (
+        <div style={{ padding: "0 24px 32px" }}>
+          <div style={{ background: THEME.card, borderRadius: 12, border: `1px solid ${THEME.border}`, overflowX: "auto", opacity: 0.7 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
+              <thead>
+                <tr style={{ background: THEME.sidebar, borderBottom: `1px solid ${THEME.border}` }}>
+                  {["Nº", "Tipo", "Cliente", "Processo", "Responsável", "Estado", "Prazo"].map(h => (
+                    <th key={h} style={{ padding: "9px 12px", fontSize: 10, fontWeight: 600, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "left", whiteSpace: "nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>{cancelledTasks.map(t => <TaskRow key={t.id} t={t} />)}</tbody>
+            </table>
+            {cancelledTasks.length === 0 && <p style={{ textAlign: "center", color: THEME.textDim, padding: "16px 0", fontSize: 13 }}>Sem tarefas canceladas</p>}
           </div>
         </div>
       )}

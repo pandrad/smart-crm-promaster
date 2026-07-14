@@ -82,9 +82,20 @@ const DEFAULT_MAPEAMENTO = {
     5: "resp-cotacao", 6: "supervisor", 9: "resp-tecnico",
   },
   taskStatus: {
-    4: "supervisor", 6: "supervisor",
+    4: "supervisor", 7: "supervisor",
   },
-  taskStatusReatribui:     { 3: true, 4: true, 6: true },
+  // Cancelado (id 6) intentionally excluded — it's a terminal status, same as
+  // Concluído (id 5, also absent here): once a task is cancelled, ownership
+  // must stay exactly as it was at that moment, not get silently reassigned
+  // via the mapping/round-robin lookup in applyReatribui. That reassignment
+  // was previously happening (taskStatusReatribui[6] was true), which caused
+  // a cancelled task to vanish from the approving/original user's own task
+  // list the moment they navigated away and back, since it had quietly
+  // changed owner. Cancelamento Pendente (id 7) replaces id 6 in both maps
+  // above/below — that's the actual transition that should route to a
+  // supervisor (handled explicitly in handleCancelar via
+  // store.assignForTaskStatus), not the terminal Cancelado transition itself.
+  taskStatusReatribui:     { 3: true, 4: true, 7: true },
   // Em Abertura (id 45) defaults OFF — the process must stay with whoever
   // opened it while they populate required files. Entrada (id 5) stays ON so
   // the manual Em Abertura → Entrada transition hands off to Resp. Cotação
@@ -272,6 +283,21 @@ export const store = {
   assignForProcessStatus(statusId, clientName, roleHistory) {
     const mapeamento = load("crm_mapeamento", DEFAULT_MAPEAMENTO);
     const roleId = mapeamento.processoStatus?.[statusId] ?? null;
+    const clientAssignee = store.resolveClientRoleAssignment(clientName, roleId);
+    if (clientAssignee) return clientAssignee;
+    const pastAssignee = store.findPastRoleAssignee(roleHistory, roleId);
+    if (pastAssignee) return pastAssignee;
+    return store.assignRoundRobin(roleId);
+  },
+
+  // Resolve the responsible user for a given task status id (e.g.
+  // Cancelamento Pendente), reading mapeamento.taskStatus rather than
+  // mapeamento.taskType — the two are configured independently in the
+  // Mapeamento tab. Same client-first, role-history-continuity logic as
+  // assignForTaskType/assignForProcessStatus.
+  assignForTaskStatus(statusId, clientName, roleHistory) {
+    const mapeamento = load("crm_mapeamento", DEFAULT_MAPEAMENTO);
+    const roleId = mapeamento.taskStatus?.[statusId] ?? null;
     const clientAssignee = store.resolveClientRoleAssignment(clientName, roleId);
     if (clientAssignee) return clientAssignee;
     const pastAssignee = store.findPastRoleAssignee(roleHistory, roleId);

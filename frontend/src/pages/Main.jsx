@@ -346,6 +346,7 @@ export function Main() {
           onUpdate={handleProcessoUpdate}
           users={users}
           currentUser={currentUser}
+          tarefas={tarefas}
         />
       )}
       {/* Shell-level TaskDrawer — opened from SupervisorWidget or anywhere */}
