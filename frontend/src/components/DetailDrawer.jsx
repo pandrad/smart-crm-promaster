@@ -290,6 +290,47 @@ function ReassignModal({ p, users, onClose, onSave }) {
   );
 }
 
+// ── Arquivar Processo modal — Admin/Supervisor only, mandatory reason ────────
+function ArquivarModal({ onClose, onSave }) {
+  const { isMobile } = useWindowSize();
+  const [reason, setReason] = useState("");
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden", ...mobileModal(isMobile, 420) }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Arquivar Processo</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
+        </div>
+        <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ background: THEME.dangerBg, border: `1px solid ${THEME.danger}44`, borderRadius: 7, padding: "8px 12px", fontSize: 12, color: THEME.danger }}>
+            O processo deixará de aparecer na lista de Processos e passará a estar visível apenas em Arquivo. Esta acção não pode ser revertida nesta fase.
+          </div>
+          <div>
+            <label style={{ fontSize: 10, fontWeight: 600, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>
+              Motivo do arquivamento <span style={{ color: THEME.danger }}>*</span>
+            </label>
+            <textarea
+              value={reason} onChange={e => setReason(e.target.value)}
+              rows={3} placeholder="Indique o motivo do arquivamento…"
+              style={{ ...INPUT, resize: "vertical", fontFamily: "inherit", lineHeight: 1.5 }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
+            <button
+              onClick={() => { if (reason.trim()) { onSave(reason.trim()); onClose(); } }}
+              disabled={!reason.trim()}
+              style={{ background: reason.trim() ? THEME.danger : THEME.border, color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: reason.trim() ? "pointer" : "default" }}
+            >
+              Arquivar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Consulta checklist — only when status === 6 ───────────────────────────────
 function ConsultaChecklist({ consulta, onChange }) {
   const sla = store.getSLASettings();
@@ -366,6 +407,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
   const [originEmailOpen, setOriginEmailOpen] = useState(false);
   const [statusOpen,      setStatusOpen]      = useState(false);
   const [reassignOpen,    setReassignOpen]    = useState(false);
+  const [arquivarOpen,    setArquivarOpen]    = useState(false);
   const attachRef = useRef(null);
   const [confirmRemove, setConfirmRemove] = useState(null);
   const [modeloCopyUrl, setModeloCopyUrl] = useState(null);
@@ -575,6 +617,18 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
     setP(updated); onUpdate?.(updated);
   }
 
+  // Manual archive — Admin/Supervisor only. Uses the exact same `archived`
+  // field and filtering logic as the existing automatic three-year archiving,
+  // so manually and automatically archived processes are indistinguishable
+  // from this point forward (Processos list excludes archived; Arquivo shows
+  // only archived). One-way for now — no un-archive action.
+  function handleArquivar(reason) {
+    const ts = nowTs();
+    const entry = { icon: "x", color: THEME.textDim, time: ts, actor: currentUser.name || null, text: `Processo arquivado por ${currentUser.name || "—"} — motivo: ${reason}` };
+    const updated = { ...p, archived: true, timeline: [...(p.timeline || []), entry] };
+    setP(updated); onUpdate?.(updated);
+  }
+
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 40 }} />
@@ -682,7 +736,6 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <TeamCard name={p.owner}  role="Resp. Cotação"   photo={photoOf(p.owner)} />
               <TeamCard name={p.comm}   role="Resp. Comercial" photo={photoOf(p.comm)} />
-              <TeamCard name={p.compra} role="Resp. Compra"    photo={photoOf(p.compra)} />
               {p.respAbertura && <TeamCard name={p.respAbertura} role="Resp. Abertura" photo={photoOf(p.respAbertura)} />}
             </div>
           </div>
@@ -900,6 +953,14 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
             </button>
           </div>
 
+          {/* ── Arquivar — Admin/Supervisor only, manual equivalent of the
+              automatic three-year archiving ── */}
+          {(isAdmin || isSupervisor) && !p.archived && (
+            <button onClick={() => setArquivarOpen(true)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "none", border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, color: THEME.danger, cursor: "pointer", marginTop: -6, marginBottom: 4 }}>
+              <Icon name="x" size={13} color={THEME.danger} /> Arquivar Processo
+            </button>
+          )}
+
         </div>
       </div>
 
@@ -907,6 +968,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
       {originEmailOpen && p.originEmail && <OriginEmailModal email={p.originEmail} onClose={() => setOriginEmailOpen(false)} />}
       {statusOpen      && <ChangeStatusModal p={p} onClose={() => setStatusOpen(false)} onSave={handleStatusSave} />}
       {reassignOpen    && <ReassignModal     p={p} users={users} onClose={() => setReassignOpen(false)} onSave={handleReassignSave} />}
+      {arquivarOpen    && <ArquivarModal     onClose={() => setArquivarOpen(false)} onSave={handleArquivar} />}
     </>
   );
 }

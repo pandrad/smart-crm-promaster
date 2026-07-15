@@ -229,11 +229,19 @@ export const store = {
 
   // Resolve a client's role-specific assignment, or null if none exists.
   // clientMap[clientName] may be a role → user-name object (current shape).
+  //
+  // resp-pre-entrada has no assignment entry of its own — Clientes.jsx only
+  // exposes Resp. Cotação / Resp. Comercial per client — so it deliberately
+  // borrows whatever is configured for resp-cotacao on that client: the
+  // person who handles a client's quotations is expected to also be the
+  // right person to receive their first incoming email. This is a
+  // deliberate simplification, not a distinct assignment.
   resolveClientRoleAssignment(clientName, roleId) {
     if (!clientName || !roleId) return null;
     const clientMap = load("crm_client_assignments", {});
     const entry = clientMap[clientName];
     if (!entry) return null;
+    if (roleId === "resp-pre-entrada") return entry["resp-cotacao"] ?? null;
     return entry[roleId] ?? null;
   },
 

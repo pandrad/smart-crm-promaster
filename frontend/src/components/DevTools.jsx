@@ -514,7 +514,7 @@ export function DevTools({
       top:    isMobile ? 72    : "auto",
       right:  isMobile ? 8    : 16,
       zIndex: 9999,
-      width: collapsed ? "auto" : 224,
+      width: collapsed ? "auto" : 260,
       background: "#020617",
       border: "1px solid #dc2626",
       borderRadius: 10,
@@ -576,7 +576,7 @@ export function DevTools({
               value={clientEmailTarget}
               onChange={e => setClientEmailTarget(e.target.value)}
               disabled={existingClients.length === 0}
-              style={{ flex: 1, fontSize: 10, padding: "5px 6px", background: "#0f172a", color: "#94a3b8", border: "1px solid #1e293b", borderRadius: 5, outline: "none" }}
+              style={{ flex: 1, minWidth: 0, fontSize: 10, padding: "5px 6px", background: "#0f172a", color: "#94a3b8", border: "1px solid #1e293b", borderRadius: 5, outline: "none", textOverflow: "ellipsis" }}
             >
               <option value="">{existingClients.length === 0 ? "Sem clientes…" : "Cliente existente…"}</option>
               {existingClients.map(c => <option key={c} value={c}>{c}</option>)}
@@ -584,7 +584,7 @@ export function DevTools({
             <button
               onClick={() => { handleGenerateClientEmail(clientEmailTarget); }}
               disabled={!clientEmailTarget}
-              style={{ ...BTN_BASE, width: "auto", padding: "5px 10px", background: clientEmailTarget ? "#14330a" : "#0f172a", color: clientEmailTarget ? "#a3e635" : "#475569", fontSize: 10, opacity: clientEmailTarget ? 1 : 0.5 }}
+              style={{ ...BTN_BASE, width: "auto", flexShrink: 0, padding: "5px 10px", background: clientEmailTarget ? "#14330a" : "#0f172a", color: clientEmailTarget ? "#a3e635" : "#475569", fontSize: 10, opacity: clientEmailTarget ? 1 : 0.5 }}
             >
               Gerar
             </button>

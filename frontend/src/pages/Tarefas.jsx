@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { THEME } from "../theme.js";
 import { store } from "../store.js";
@@ -680,6 +680,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
   const [t,              setT]              = useState(initialTask);
   const [emailExpanded,  setEmailExpanded]  = useState(false);
   const [modal,          setModal]          = useState(null);
+  const [reassignedTo,   setReassignedTo]   = useState(null);
 
   // Resolve status label from systemRole dynamically — never hardcode status strings
   const sysStatus = role => store.getLabelForSystemRole(role) ?? role;
@@ -722,7 +723,12 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     };
     setT(updated);
     onUpdate(updated);
-    if (reassignedAway) onClose();
+    // Confirm the handoff before closing — same visual pattern as the
+    // "Email enviado" confirmation — so the user always sees explicitly who
+    // the task went to, regardless of which action triggered the handoff
+    // (manual like Passar/Escalar, or auto-resolved like Validar, Devolver,
+    // a mapping-driven status change, etc).
+    if (reassignedAway) setReassignedTo(patch.owner);
   }
 
   // If the mapeamento has reatribuiResponsavel ON for the target status and
@@ -849,6 +855,11 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
     const dlDate = new Date(now); dlDate.setDate(dlDate.getDate() + 7);
     const deadlineStr = `${pad(dlDate.getDate())}/${pad(dlDate.getMonth()+1)}/${dlDate.getFullYear()}`;
 
+    // Resp. Comercial has no competing automatic assignment logic anywhere
+    // else, so it's set directly from the client's role-aware assignment (if
+    // any) at process creation — not deferred like owner/Resp. Cotação.
+    const commAssignee = store.resolveClientRoleAssignment(t.client || "", "resp-comercial") || "";
+
     const newProcesso = {
       id: newId,
       created: createdStr, deadline: deadlineStr, priority: t.priority || "Normal",
@@ -856,7 +867,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
       client: t.client || "",
       ref: "", brand: "", model: "", vin: "",
       owner: "",
-      comm:  "",
+      comm:  commAssignee,
       compra: "",
       respAbertura: abridoPor,
       // The person who originally validated this journey's Pré-Entrada task
@@ -1531,7 +1542,32 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
       {modal === "alterarEstado"         && <AlterarEstadoModal        currentStatus={t.status} onClose={() => setModal(null)} onSave={handleAlterarEstado} />}
       {modal === "reclassificar"         && <ReclassificarModal        currentType={t.type} onClose={() => setModal(null)} onSave={handleReclassificar} />}
       {processoPickerOpen && <AssociarProcessoModal processos={processos} currentId={t.originProcesso || null} onClose={() => setProcessoPickerOpen(false)} onSave={handleAssociarProcesso} />}
+      {reassignedTo && <ReassignedConfirm ownerName={reassignedTo} onDone={onClose} />}
     </>
+  );
+}
+
+// ── Reassignment confirmation — shown whenever an action hands the task to
+// someone else, right before the drawer closes. Same visual pattern as the
+// "Email enviado" confirmation in EnviarEmailClienteModal: a centred
+// checkmark over a short success message, auto-dismissing. Applies uniformly
+// regardless of which action triggered the handoff. ──────────────────────
+function ReassignedConfirm({ ownerName, onDone }) {
+  const { isMobile } = useWindowSize();
+  useEffect(() => {
+    const timer = setTimeout(onDone, 1400);
+    return () => clearTimeout(timer);
+  }, [onDone]);
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden", ...mobileModal(isMobile, 380) }}>
+        <div style={{ padding: "36px 20px", textAlign: "center" }}>
+          <div style={{ fontSize: 28, marginBottom: 8 }}>✓</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: THEME.success }}>Tarefa reatribuída</div>
+          <div style={{ fontSize: 13, color: THEME.textMuted, marginTop: 6 }}>Atribuída a <strong style={{ color: THEME.text }}>{ownerName}</strong></div>
+        </div>
+      </div>
+    </div>
   );
 }
 

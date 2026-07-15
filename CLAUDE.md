@@ -264,6 +264,30 @@ Added a new DEV tool generator (`handleGenerateClientEmail`) that creates an inb
 
 ---
 
+## Changes Since v4, continued (July 2026 session)
+
+### Client-Assigned Pré-Entrada Routing Fix
+
+A client with a role-aware Resp. Cotação assignment configured (e.g. Adelina for client Mauto) was not having that assignment respected for Pré-Entrada tasks generated via DevTools' client-email generator — routing fell through to round-robin instead. Diagnosed: the resolution chain (`email.senderName` → `assignForTaskType` → `resolveClientRoleAssignment`) was already correct and identical to every other resolution path; the actual gap was that Pré-Entrada tasks resolve through role `resp-pre-entrada`, but Clientes.jsx's per-client assignment UI only ever exposes `resp-cotacao`/`resp-comercial` — there was no way to configure a client assignment for `resp-pre-entrada` at all. Fixed as a deliberate simplification, not a new config surface: `store.resolveClientRoleAssignment(clientName, roleId)` now treats a lookup for `resp-pre-entrada` as an alias for that client's `resp-cotacao` entry (the person handling a client's quotations is expected to also be the right person for their first incoming email). No changes to Clientes.jsx.
+
+### Resp. Comercial Set From Client Assignment at Process Creation
+
+When `handleAbrirProcesso` (Tarefas.jsx) creates a new process, `comm` (Resp. Comercial) is now resolved via `store.resolveClientRoleAssignment(t.client, "resp-comercial")` at creation time instead of always starting empty. Unlike Resp. Cotação, Resp. Comercial has no other automatic assignment logic anywhere else in the app, so this is a direct one-time set with no priority ordering involved — if no client assignment exists, it stays empty as before.
+
+### Equipa Section No Longer Shows Resp. Compra
+
+The process drawer's "Equipa" (team) card row previously showed four cards: Resp. Cotação, Resp. Comercial, Resp. Compra, Resp. Abertura. Resp. Compra (`p.compra`) is actually the *comprador* — the client-side contact person who initiated the process — not a Promaster team member, so it no longer appears among the team cards. The underlying `p.compra` field, the Reatribuir modal's "Resp. Compra" dropdown, and all history/timeline text referencing it are unchanged; only its card in the Equipa display was removed.
+
+### Task Reassignment Confirmation
+
+Whenever an action in the task drawer results in the task being handed to someone other than the current user — Passar, Escalar, Validar, Devolver, a mapping-driven status change, cancellation approval/rejection, reclassification, or any other reassignment path — a confirmation now appears before the drawer closes, explicitly naming the new owner ("Tarefa reatribuída — Atribuída a `<name>`"). Styled identically to the existing "Email enviado" confirmation (centred checkmark, auto-dismiss after ~1.4s). Implemented once in `TaskDrawer`'s shared `update()` function in Tarefas.jsx, so it applies uniformly to every action handler without per-action special-casing.
+
+### Manual Process Archiving (Admin/Supervisor)
+
+Added an "Arquivar Processo" action to the process detail drawer, visible only to Admin/Supervisor and only while the process isn't already archived. Opens a mandatory-reason confirmation modal (same pattern as other reason-required actions like Cancelar Tarefa/Devolver com Notas). On confirm, sets `archived: true` — the exact same field the existing automatic three-year archiving already uses — so the process disappears from Processos and appears only in Arquivo via the existing filtering logic, with no changes needed to either page. Logs who archived it and the stated reason to the process timeline. One-way for now; no un-archive action exists yet.
+
+---
+
 ## Steps to Close Stage 1
 
 1. Final human QA pass across all screens (see `docs/stage1-testing-guide.md`)
