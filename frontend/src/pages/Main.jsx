@@ -14,7 +14,7 @@ import { Icon } from "../icons.jsx";
 import { Dashboard } from "./Dashboard.jsx";
 import { Processos } from "./Processos.jsx";
 import { Tarefas, TaskDrawer, getUnacknowledgedAckCount } from "./Tarefas.jsx";
-import { Inbox } from "./Inbox.jsx";
+import { Inbox, useEmailTriage } from "./Inbox.jsx";
 import { Arquivo } from "./Arquivo.jsx";
 import { Clientes } from "./Clientes.jsx";
 import { DevTools } from "../components/DevTools.jsx";
@@ -131,6 +131,10 @@ export function Main() {
   const [tarefas,      setTarefas]      = useState(() => store.getTarefas());
   const [inboxEmails,  setInboxEmails]  = useState(() => store.getInboxEmails());
   const [users,        setUsers]        = useState(() => store.getUsers());
+
+  // Runs email→task triage at the shell level so it fires regardless of
+  // which page is currently active — see useEmailTriage in Inbox.jsx.
+  useEmailTriage({ inboxEmails, setInboxEmails, tarefas, setTarefas });
   const [selected,     setSelected]     = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);   // tarefa open from SupervisorWidget
   const [adminOpen,    setAdminOpen]    = useState(false);
@@ -233,7 +237,7 @@ export function Main() {
 
   // ── Badge counts ───────────────────────────────────────────────────────────
   const isPrivileged   = currentUser?.role === "admin" || currentUser?.role === "supervisor";
-  const processosBadge = processos.filter(p => !p.archived && p.status < 8).length;
+  const processosBadge = processos.filter(p => !p.archived && p.status < 8 && p.respActual === currentUser?.name).length;
   const _activeLabels  = new Set(["Por Fazer","Em Curso","Escalado","Devolvido","Cancelamento Pendente"]
     .map(r => store.getLabelForSystemRole(r)).filter(Boolean));
   // Combines the user's own active tasks with unacknowledged process-handoff

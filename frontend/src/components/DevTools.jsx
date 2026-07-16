@@ -419,6 +419,7 @@ export function DevTools({
       owner:     byRole("cotacao"),
       comm:      byRole("comercial"),
       compra:    byRole("compra"),
+      respActual: byRole("cotacao"),
       comprador: cl.comprador,
       price:     null,
       emails:    1,

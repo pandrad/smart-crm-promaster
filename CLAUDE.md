@@ -322,6 +322,41 @@ Swapped the tab order so "Meus processos" appears first, "Todos os processos" se
 
 ---
 
+## Changes Since v4, continued (July 2026 session — Sidebar Badge, Em Abertura Fixes, Cancellation, Archiving)
+
+### Sidebar Processos Badge — Was a Global Count, Not Personal
+
+`processosBadge` in `Main.jsx` previously counted every non-archived, open-status (`status < 8`) process across the entire system, with no filtering by user — every logged-in user saw the identical number regardless of who they were. Fixed to strictly match `p.respActual === currentUser?.name`, consistent with the `respActual`-only definition already used in `Processos.jsx` and the Visão Global strip.
+
+### Reatribuir Processo — Resp. Compra Removed
+
+The "Reatribuir processo" modal's "Resp. Compra" dropdown let any Promaster team member be assigned as `p.compra` — but `p.compra` is actually the client-side contact (comprador) who initiated the process, not a Promaster role, and was already correctly removed from the Equipa team card display earlier. Removed the dropdown, its state, and its patch/timeline-entry handling from `ReassignModal`/`handleReassignSave` in `DetailDrawer.jsx`. The underlying `p.compra` field itself is untouched.
+
+### Em Abertura de Processo — Attachments, Seeding, and a Dedicated Action Button
+
+Three related fixes to the Em Abertura (id 45) stage:
+
+- **Resp. Abertura couldn't add attachments.** `isOwned` (which gates `canEdit`, including attachments) checked `owner`/`comm`/`compra` but never `respActual` — and at Em Abertura, `owner` (Resp. Cotação) is deliberately still empty. Fixed by adding `p.respActual === currentUser.name` to `isOwned`.
+- **DevTools' random process generator never set `respActual`**, so "Meus processos" (which filters strictly on `respActual`) never showed a freshly generated random process to anyone, regardless of `owner`. Fixed by seeding `respActual: byRole("cotacao")` alongside `owner` in `handleGenerateProcesso`.
+- **Dedicated "Concluir Abertura de Processo" button.** At Em Abertura, the drawer now shows a green, first-positioned "Concluir Abertura de Processo" button (ahead of "Enviar Email ao Cliente") instead of the generic "Alterar Estado" — it calls `handleStatusSave(5, p.fu)` directly, reusing the exact same Em Abertura → Entrada resolution logic (client assignment → original Pré-Entrada anchor → role-history → round-robin, plus the one-time Resp. Cotação set) unchanged. Every other status still opens the normal "Alterar Estado" modal. The pipeline progress bar in the drawer no longer lights up any segment while `p.status === 45`, since Em Abertura (`optional: true`) isn't really "at" any pipeline stage and its numeric id (45) previously made the bar falsely render as fully filled.
+- **Process-side reassignment confirmation.** Clicking "Concluir Abertura de Processo" now shows the same acknowledgment pattern as the task-side "Tarefa reatribuída" confirmation (`ReassignedConfirm` in Tarefas.jsx) — a new `ProcessoReassignedConfirm` in DetailDrawer.jsx shows "Processo reatribuído — Atribuída a `<name>`" whenever the Em Abertura → Entrada transition resolves someone other than the current user as Resp. Cotação, then closes the drawer and navigates to `/processos`.
+- **"Abrir Processo" (from a task) also now navigates to `/processos`.** Same principle applied to `handleAbrirProcesso` in Tarefas.jsx (the Abertura de Processo task action, distinct from the process-side button above) — `TaskDrawer` now calls `useNavigate()` and redirects to `/processos` after the process is created and the task marked Concluído.
+
+### Archived Processes Are Now Fully Read-Only, With Reversible Reactivation
+
+- **Reativar Processo (Admin/Supervisor only).** Archiving previously had no reverse path. Added `handleReativar(reason)` and a `ReativarModal` (mirrors `ArquivarModal`'s mandatory-reason pattern, styled green/success instead of danger) — clicking "Reativar Processo" requires a stated reason before `archived` flips back to `false`. Since both `Processos.jsx` and `Arquivo.jsx` already filter on `p.archived`, no other page needed changes.
+- **Archived processes now show no editable controls or actions at all, other than Reativar.** `canReassign`, `canEdit`, and `canEditFields` in DetailDrawer.jsx all now short-circuit to `false` whenever `p.archived` is true — covering editable fields (Cliente, Marca/Tipo, Modelo, Sell Price), Follow-up, attachments (add/remove), and the "Reatribuir" button. The entire Actions row (Enviar Email ao Cliente, Alterar Estado / Concluir Abertura de Processo) is now wrapped in `!p.archived &&` and hidden outright for archived processes. The only action visible on an archived process is "Reativar Processo" (Admin/Supervisor only).
+
+### Task Cancellation Journey (continued) — Reactivation follows the same reason-required pattern
+
+No changes to the cancellation flow itself this session; the Reativar Processo modal above deliberately follows the same mandatory-reason confirmation convention already established for Cancelar Tarefa / Devolver com Notas / Arquivar Processo.
+
+### Email→Task Triage Was Only Running When Inbox Was Actually Visited (Confirmed Bug, Fixed)
+
+The email→task classification logic lived entirely inside a `useEffect` in the `Inbox` page component (`Inbox.jsx`), which only mounts when a user navigates to `/inbox`. Any email generated elsewhere (e.g. via DevTools) while the user was on another page sat untriaged — no task was created — until someone happened to open Inbox. Fixed by extracting the triage logic into an exported `useEmailTriage({ inboxEmails, setInboxEmails, tarefas, setTarefas })` hook in `Inbox.jsx`, now called once from the always-mounted shell (`Main.jsx`) instead of from `Inbox` itself (the redundant call inside `Inbox` was removed to avoid double-creating tasks for the same email — each call has its own `processedRef`, so calling it in both places would have double-classified every pending email). `Inbox.jsx`'s own component is otherwise unchanged; it still renders the same read-only two-section layout, just no longer performs classification itself.
+
+---
+
 ## Steps to Close Stage 1
 
 1. Final human QA pass across all screens (see `docs/stage1-testing-guide.md`)

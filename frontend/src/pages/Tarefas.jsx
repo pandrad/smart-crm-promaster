@@ -685,6 +685,7 @@ function AssociarProcessoModal({ processos, currentId, onClose, onSave }) {
 // ── TaskDrawer ────────────────────────────────────────────────────────────────
 export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onUpdate, setProcessos, processos, setTarefas, tarefas }) {
   const { isMobile } = useWindowSize();
+  const navigate = useNavigate();
   const [t,              setT]              = useState(initialTask);
   const [emailExpanded,  setEmailExpanded]  = useState(false);
   const [modal,          setModal]          = useState(null);
@@ -915,6 +916,7 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
         note: `Processo ${newId} criado com estado Em Abertura. Resp. Abertura: ${abridoPor}.${taskReassigned ? ` Tarefa reatribuída a ${resolvedPatch.owner}.` : ""}`,
       }
     );
+    navigate("/processos");
   }
 
   // Action: Devolver com Notas — patches existing task in-place, returns to previous owner

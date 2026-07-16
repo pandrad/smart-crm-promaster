@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { daysLeft, useWindowSize } from "../utils.js";
 import { store } from "../store.js";
 import { THEME } from "../theme.js";
@@ -255,7 +256,6 @@ function ReassignModal({ p, users, onClose, onSave }) {
 
   const [owner,  setOwner]  = useState(p.owner);
   const [comm,   setComm]   = useState(p.comm);
-  const [compra, setCompra] = useState(p.compra);
 
   const SEL = { ...INPUT, marginTop: 4 };
 
@@ -270,7 +270,6 @@ function ReassignModal({ p, users, onClose, onSave }) {
           {[
             { label: "Resp. Cotação",   val: owner,  set: setOwner  },
             { label: "Resp. Comercial", val: comm,   set: setComm   },
-            { label: "Resp. Compra",    val: compra, set: setCompra },
           ].map(({ label, val, set }) => (
             <div key={label}>
               <div style={LABEL}>{label}</div>
@@ -282,7 +281,7 @@ function ReassignModal({ p, users, onClose, onSave }) {
           ))}
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
             <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
-            <button onClick={() => { onSave({ owner, comm, compra }); onClose(); }} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Guardar</button>
+            <button onClick={() => { onSave({ owner, comm }); onClose(); }} style={{ background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Guardar</button>
           </div>
         </div>
       </div>
@@ -325,6 +324,70 @@ function ArquivarModal({ onClose, onSave }) {
               Arquivar
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Reativar Processo modal — Admin/Supervisor only, mandatory reason ────────
+function ReativarModal({ onClose, onSave }) {
+  const { isMobile } = useWindowSize();
+  const [reason, setReason] = useState("");
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden", ...mobileModal(isMobile, 420) }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${THEME.border}` }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: THEME.text }}>Reativar Processo</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: THEME.textMuted, padding: 4 }}><Icon name="x" size={16} /></button>
+        </div>
+        <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ background: THEME.successBg, border: `1px solid ${THEME.success}44`, borderRadius: 7, padding: "8px 12px", fontSize: 12, color: THEME.success }}>
+            O processo voltará a aparecer na lista de Processos e deixará de estar visível em Arquivo.
+          </div>
+          <div>
+            <label style={{ fontSize: 10, fontWeight: 600, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>
+              Motivo da reativação <span style={{ color: THEME.danger }}>*</span>
+            </label>
+            <textarea
+              value={reason} onChange={e => setReason(e.target.value)}
+              rows={3} placeholder="Indique o motivo da reativação…"
+              style={{ ...INPUT, resize: "vertical", fontFamily: "inherit", lineHeight: 1.5 }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button onClick={onClose} style={{ background: "none", border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "7px 16px", fontSize: 13, color: THEME.textMuted, cursor: "pointer" }}>Cancelar</button>
+            <button
+              onClick={() => { if (reason.trim()) { onSave(reason.trim()); onClose(); } }}
+              disabled={!reason.trim()}
+              style={{ background: reason.trim() ? THEME.success : THEME.border, color: "white", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: reason.trim() ? "pointer" : "default" }}
+            >
+              Reativar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Reassignment confirmation — shown after Concluir Abertura de Processo
+// hands the process to the resolved Resp. Cotação. Same visual pattern as the
+// task-side "Tarefa reatribuída" confirmation in Tarefas.jsx: a centred
+// checkmark over a short success message, auto-dismissing. ──────────────────
+function ProcessoReassignedConfirm({ ownerName, onDone }) {
+  const { isMobile } = useWindowSize();
+  useEffect(() => {
+    const timer = setTimeout(onDone, 1400);
+    return () => clearTimeout(timer);
+  }, [onDone]);
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}>
+      <div style={{ background: THEME.card, border: `1px solid ${THEME.border}`, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden", ...mobileModal(isMobile, 380) }}>
+        <div style={{ padding: "36px 20px", textAlign: "center" }}>
+          <div style={{ fontSize: 28, marginBottom: 8 }}>✓</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: THEME.success }}>Processo reatribuído</div>
+          <div style={{ fontSize: 13, color: THEME.textMuted, marginTop: 6 }}>Atribuída a <strong style={{ color: THEME.text }}>{ownerName}</strong></div>
         </div>
       </div>
     </div>
@@ -402,12 +465,15 @@ function ConsultaChecklist({ consulta, onChange }) {
 // ── Main drawer ───────────────────────────────────────────────────────────────
 export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], currentUser = {}, tarefas = [] }) {
   const { isMobile } = useWindowSize();
+  const navigate = useNavigate();
   const [p,            setP]            = useState(initialP);
   const [emailOpen,       setEmailOpen]       = useState(false);
   const [originEmailOpen, setOriginEmailOpen] = useState(false);
   const [statusOpen,      setStatusOpen]      = useState(false);
   const [reassignOpen,    setReassignOpen]    = useState(false);
   const [arquivarOpen,    setArquivarOpen]    = useState(false);
+  const [reativarOpen,    setReativarOpen]    = useState(false);
+  const [reassignedTo,    setReassignedTo]    = useState(null);
   const attachRef = useRef(null);
   const [confirmRemove, setConfirmRemove] = useState(null);
   const [modeloCopyUrl, setModeloCopyUrl] = useState(null);
@@ -475,13 +541,16 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
 
   const isAdmin      = currentUser.role === "admin";
   const isSupervisor = currentUser.role === "supervisor";
-  const isOwned      = p.owner === currentUser.name || p.comm === currentUser.name || p.compra === currentUser.name;
-  const canReassign  = isAdmin || isSupervisor || isOwned;
-  const canEdit      = isAdmin || isSupervisor || isOwned;
+  const isOwned      = p.owner === currentUser.name || p.comm === currentUser.name || p.compra === currentUser.name || p.respActual === currentUser.name;
+  // An archived process is read-only for everyone — no editing, reassigning,
+  // emailing, or status changes. Admin/Supervisor's only available action is
+  // Reativar Processo, rendered separately below regardless of these flags.
+  const canReassign  = !p.archived && (isAdmin || isSupervisor || isOwned);
+  const canEdit      = !p.archived && (isAdmin || isSupervisor || isOwned);
   // Cliente, Marca/Tipo, Modelo, and Sell Price are editable by any user —
   // unlike canEdit (which still gates attachments and Follow-up), this is not
   // restricted to admin/supervisor/assigned team members.
-  const canEditFields = true;
+  const canEditFields = !p.archived;
 
   function photoOf(name) { return users.find(u => u.name === name)?.photo; }
 
@@ -511,6 +580,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
     // assignee below and to tag the resulting timeline entry with roleId so
     // future status changes can find this exact assignment again.
     const resolvedRoleId = mapeamento.processoStatus?.[newStatus] ?? null;
+    const isEmAberturaToEntrada = p.status === 45 && newStatus === 5;
 
     if (reatribuiMap[newStatus]) {
       // Resolve who currently should have the process using the same
@@ -549,7 +619,6 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
       // for the first time. This does not apply to any other transition —
       // every later Reatribui-ON status change still uses the unmodified
       // general logic below.
-      const isEmAberturaToEntrada = p.status === 45 && newStatus === 5;
       let anchorActual = null;
       if (isEmAberturaToEntrada && p.origPreEntradaOwner) {
         const roleId = mapeamento.processoStatus?.[newStatus] ?? null;
@@ -600,15 +669,22 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
 
     const updated = { ...p, ...patch, timeline: [...(p.timeline || []), ...entries] };
     setP(updated); onUpdate?.(updated);
+
+    // Concluir Abertura de Processo hands the process to whoever was
+    // resolved as Resp. Cotação — surface the same acknowledgment pattern
+    // used on the task side whenever an action hands a record to someone
+    // other than the current user.
+    if (isEmAberturaToEntrada && patch.owner && patch.owner !== currentUser.name) {
+      setReassignedTo(patch.owner);
+    }
   }
 
-  function handleReassignSave({ owner, comm, compra }) {
+  function handleReassignSave({ owner, comm }) {
     const ts = nowTs();
     const entries = [];
     if (owner !== p.owner) entries.push({ icon: "user", color: THEME.textMuted, time: ts, actor: currentUser.name || null, text: `Resp. Cotação alterado de ${p.owner} para ${owner} por ${currentUser.name || "—"}` });
     if (comm !== p.comm) entries.push({ icon: "user", color: THEME.textMuted, time: ts, actor: currentUser.name || null, text: `Resp. Comercial alterado de ${p.comm} para ${comm} por ${currentUser.name || "—"}` });
-    if (compra !== p.compra) entries.push({ icon: "user", color: THEME.textMuted, time: ts, actor: currentUser.name || null, text: `Resp. Compra alterado de ${p.compra} para ${compra} por ${currentUser.name || "—"}` });
-    const updated = { ...p, owner, comm, compra, timeline: [...(p.timeline || []), ...entries] };
+    const updated = { ...p, owner, comm, timeline: [...(p.timeline || []), ...entries] };
     setP(updated); onUpdate?.(updated);
   }
 
@@ -621,11 +697,22 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
   // field and filtering logic as the existing automatic three-year archiving,
   // so manually and automatically archived processes are indistinguishable
   // from this point forward (Processos list excludes archived; Arquivo shows
-  // only archived). One-way for now — no un-archive action.
+  // only archived). Reversible via handleReativar below (Admin/Supervisor only).
   function handleArquivar(reason) {
     const ts = nowTs();
     const entry = { icon: "x", color: THEME.textDim, time: ts, actor: currentUser.name || null, text: `Processo arquivado por ${currentUser.name || "—"} — motivo: ${reason}` };
     const updated = { ...p, archived: true, timeline: [...(p.timeline || []), entry] };
+    setP(updated); onUpdate?.(updated);
+  }
+
+  // Reactivates an archived process — Admin/Supervisor only. Sets archived
+  // back to false, which is the same field both Processos and Arquivo already
+  // filter on, so the process reappears in Processos and drops out of Arquivo
+  // with no further changes needed to either page.
+  function handleReativar(reason) {
+    const ts = nowTs();
+    const entry = { icon: "check", color: THEME.success, time: ts, actor: currentUser.name || null, text: `Processo reativado por ${currentUser.name || "—"} — motivo: ${reason}` };
+    const updated = { ...p, archived: false, timeline: [...(p.timeline || []), entry] };
     setP(updated); onUpdate?.(updated);
   }
 
@@ -745,7 +832,7 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
             <SectionLabel>Pipeline</SectionLabel>
             <div style={{ display: "flex", gap: 3 }}>
               {stages.filter(s => !s.optional && s.id <= 10).map(s => (
-                <div key={s.id} style={{ flex: 1, height: 6, borderRadius: 9999, background: p.status >= s.id ? s.color : THEME.border }} />
+                <div key={s.id} style={{ flex: 1, height: 6, borderRadius: 9999, background: p.status !== 45 && p.status >= s.id ? s.color : THEME.border }} />
               ))}
             </div>
             <div style={{ fontSize: 11, color: THEME.textMuted, marginTop: 5 }}>{stage?.label}</div>
@@ -943,21 +1030,39 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
               ))}
           </div>
 
-          {/* ── Actions ── */}
-          <div style={{ display: "flex", gap: 8, paddingTop: 4, paddingBottom: 12 }}>
-            <button onClick={() => setEmailOpen(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              <Icon name="mail" size={14} color="white" /> Enviar Email ao Cliente
-            </button>
-            <button onClick={() => setStatusOpen(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              <Icon name="tag" size={14} color={THEME.textMuted} /> Alterar Estado
-            </button>
-          </div>
+          {/* ── Actions — hidden entirely for archived processes, which are
+              read-only aside from Reativar Processo below ── */}
+          {!p.archived && (
+            <div style={{ display: "flex", gap: 8, paddingTop: 4, paddingBottom: 12 }}>
+              {p.status === 45 && (
+                <button onClick={() => handleStatusSave(5, p.fu)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.success, color: "white", border: "none", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                  <Icon name="check" size={14} color="white" /> Concluir Abertura de Processo
+                </button>
+              )}
+              <button onClick={() => setEmailOpen(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.accent, color: "white", border: "none", borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                <Icon name="mail" size={14} color="white" /> Enviar Email ao Cliente
+              </button>
+              {p.status !== 45 && (
+                <button onClick={() => setStatusOpen(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: THEME.sidebar, color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                  <Icon name="tag" size={14} color={THEME.textMuted} /> Alterar Estado
+                </button>
+              )}
+            </div>
+          )}
 
           {/* ── Arquivar — Admin/Supervisor only, manual equivalent of the
               automatic three-year archiving ── */}
           {(isAdmin || isSupervisor) && !p.archived && (
             <button onClick={() => setArquivarOpen(true)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "none", border: `1px solid ${THEME.danger}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, color: THEME.danger, cursor: "pointer", marginTop: -6, marginBottom: 4 }}>
               <Icon name="x" size={13} color={THEME.danger} /> Arquivar Processo
+            </button>
+          )}
+
+          {/* ── Reativar — Admin/Supervisor only, reverses Arquivar or the
+              automatic three-year archiving ── */}
+          {(isAdmin || isSupervisor) && p.archived && (
+            <button onClick={() => setReativarOpen(true)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "none", border: `1px solid ${THEME.success}44`, borderRadius: 8, padding: 9, fontSize: 12, fontWeight: 500, color: THEME.success, cursor: "pointer", marginTop: -6, marginBottom: 4 }}>
+              <Icon name="check" size={13} color={THEME.success} /> Reativar Processo
             </button>
           )}
 
@@ -969,6 +1074,8 @@ export function DetailDrawer({ p: initialP, onClose, onUpdate, users = [], curre
       {statusOpen      && <ChangeStatusModal p={p} onClose={() => setStatusOpen(false)} onSave={handleStatusSave} />}
       {reassignOpen    && <ReassignModal     p={p} users={users} onClose={() => setReassignOpen(false)} onSave={handleReassignSave} />}
       {arquivarOpen    && <ArquivarModal     onClose={() => setArquivarOpen(false)} onSave={handleArquivar} />}
+      {reativarOpen    && <ReativarModal     onClose={() => setReativarOpen(false)} onSave={handleReativar} />}
+      {reassignedTo    && <ProcessoReassignedConfirm ownerName={reassignedTo} onDone={() => { setReassignedTo(null); onClose(); navigate("/processos"); }} />}
     </>
   );
 }

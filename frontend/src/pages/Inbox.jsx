@@ -104,18 +104,20 @@ function getSupervisorName() {
   return users.find(u => u.role === "supervisor")?.name ?? "Supervisor";
 }
 
-// ── Inbox page ────────────────────────────────────────────────────────────────
-export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, tarefas, setTarefas, currentUser, accent }) {
-  const [selectedEmail, setSelectedEmail] = useState(null);
+function triageNowTs() {
+  return new Date("2026-05-15T12:00:00")
+    .toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+    .replace(",", "");
+}
+
+// ── Email→task triage — classifies pending inbox emails into tasks. Must run
+// at the app shell level (Main.jsx), not inside the Inbox page component,
+// since the page only mounts when the user actually visits /inbox — emails
+// generated elsewhere (e.g. DevTools) would otherwise sit untriaged, with no
+// task created, until someone happens to open Inbox. ─────────────────────────
+export function useEmailTriage({ inboxEmails, setInboxEmails, tarefas, setTarefas }) {
   const processedRef = useRef(new Set());
 
-  function nowTs() {
-    return new Date("2026-05-15T12:00:00")
-      .toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
-      .replace(",", "");
-  }
-
-  // ── Single triage pass — runs whenever inboxEmails change ─────────────────
   useEffect(() => {
     const simOn = getAISimulationEnabled();
 
@@ -200,7 +202,7 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
             note: outcome === "A"
               ? `${taskType} · ${Math.round((getAISuggestion(email)?.confidence ?? 0) * 100)}% confiança`
               : "Sem classificação — atribuído ao Supervisor para triagem manual.",
-            ts: nowTs(),
+            ts: triageNowTs(),
           },
         ],
       });
@@ -230,6 +232,14 @@ export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, ta
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inboxEmails]);
+}
+
+// ── Inbox page ────────────────────────────────────────────────────────────────
+export function Inbox({ inboxEmails, setInboxEmails, processos, setProcessos, tarefas, setTarefas, currentUser, accent }) {
+  const [selectedEmail, setSelectedEmail] = useState(null);
+
+  // Triage itself now runs at the shell level (Main.jsx via useEmailTriage)
+  // so it fires regardless of which page is active — not here.
 
   // ── Section splits ─────────────────────────────────────────────────────────
   const simOn = getAISimulationEnabled();
