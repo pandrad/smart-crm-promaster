@@ -58,7 +58,7 @@ export const PROCESSOS = [
     status: 5, // Entrada
     client: "Mauto – Garagem Oliveira",
     ref: "35112019", brand: "SMARTPOWER", model: "DC1065/B", vin: "",
-    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Augusto Gouveia",
+    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Augusto Gouveia", respActual: "Adelina Rodrigues",
     comprador: "Evedson Figueiredo", price: null, emails: 1,
     note: "", archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
@@ -82,7 +82,7 @@ export const PROCESSOS = [
     status: 3, // Análise Técnica Promaster
     client: "Sociedade Mineira do Puri, LDA",
     ref: "RJ382/M20", brand: "VOLVO", model: "EC750L", vin: "VOE123456",
-    owner: "Gabriel Dala", comm: "João Morais", compra: "Augusto Gouveia",
+    owner: "Gabriel Dala", comm: "João Morais", compra: "Augusto Gouveia", respActual: "Gabriel Dala",
     comprador: "Elmo Costa", price: null, emails: 2,
     note: "", archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
@@ -107,7 +107,7 @@ export const PROCESSOS = [
     status: 6, // Consulta
     client: "Construtora Horizonte SA",
     ref: "CH/2026/05", brand: "CATERPILLAR", model: "320GC", vin: "CAT320GC001",
-    owner: "Tiago Pinto", comm: "João Morais", compra: "Augusto Gouveia",
+    owner: "Tiago Pinto", comm: "João Morais", compra: "Augusto Gouveia", respActual: "Tiago Pinto",
     comprador: "Luísa Pinto", price: null, emails: 4,
     note: "Cliente aguarda resposta urgente",
     archived: false, carryover: false,
@@ -135,7 +135,7 @@ export const PROCESSOS = [
     status: 7, // Para Fechar
     client: "Vendap II",
     ref: "", brand: "JCB", model: "JS220", vin: "",
-    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Augusto Gouveia",
+    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Augusto Gouveia", respActual: "Adelina Rodrigues",
     comprador: "Sérgio Maia", price: null, emails: 6,
     note: "", archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
@@ -160,7 +160,7 @@ export const PROCESSOS = [
     status: 8, // Fechado
     client: "Planasul Engenharia e Construções",
     ref: "", brand: "VOLVO", model: "EC360BLC PRIME", vin: "VOE789012",
-    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Augusto Gouveia",
+    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Augusto Gouveia", respActual: "Adelina Rodrigues",
     comprador: "Rui Barros", price: null, emails: 5,
     note: "", archived: false, carryover: false,
     excelLink: "Excel Modelo.xlsx",
@@ -185,7 +185,7 @@ export const PROCESSOS = [
     status: 2, // Pendente Cliente
     client: "Mencons Engenharia e Construção Civil",
     ref: "SMA0119/2026", brand: "VOLVO", model: "EC360BLC", vin: "",
-    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Augusto Gouveia",
+    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Augusto Gouveia", respActual: "Adelina Rodrigues",
     comprador: "Andelson Chaves", price: null, emails: 3,
     note: "A aguardar documentação do cliente",
     archived: false, carryover: false,
@@ -211,7 +211,7 @@ export const PROCESSOS = [
     status: 3, // Análise Técnica Promaster
     client: "BetãoCerto Construções",
     ref: "BC-291", brand: "LIEBHERR", model: "LTM 1100", vin: "",
-    owner: "Gabriel Dala", comm: "João Morais", compra: "Augusto Gouveia",
+    owner: "Gabriel Dala", comm: "João Morais", compra: "Augusto Gouveia", respActual: "Gabriel Dala",
     comprador: "Rui Cardoso", price: null, emails: 2,
     note: "A aguardar aprovação interna",
     archived: false, carryover: false,
@@ -237,7 +237,7 @@ export const PROCESSOS = [
     fu: "Confirmado",
     client: "TerraMovida Lda",
     ref: "TM-0088", brand: "VOLVO", model: "L90H", vin: "VOL90H2024",
-    owner: "Francisco Leitão", comm: "João Morais", compra: "Augusto Gouveia",
+    owner: "Francisco Leitão", comm: "João Morais", compra: "Augusto Gouveia", respActual: "Francisco Leitão",
     comprador: "Carlos Menezes", price: 210000, emails: 8,
     note: "Enviado — a aguardar PO",
     archived: false, carryover: false,
@@ -264,7 +264,7 @@ export const PROCESSOS = [
     fu: "Confirmado",
     client: "AMF – Agentes de Formação",
     ref: "E26091", brand: "CAT – LUBRIFICAÇÃO", model: "", vin: "",
-    owner: "Tiago Pinto", comm: "João Morais", compra: "Augusto Gouveia",
+    owner: "Tiago Pinto", comm: "João Morais", compra: "Augusto Gouveia", respActual: "Tiago Pinto",
     comprador: "Teodósio Nzunda", price: 47500, emails: 7,
     note: "Encomenda confirmada",
     archived: false, carryover: false,
@@ -290,7 +290,7 @@ export const PROCESSOS = [
     status: 13, // Cancelado
     client: "Obras Nacionais SARL",
     ref: "ON-2026-33", brand: "JCB", model: "JS220", vin: "",
-    owner: "Tiago Pinto", comm: "João Morais", compra: "Augusto Gouveia",
+    owner: "Tiago Pinto", comm: "João Morais", compra: "Augusto Gouveia", respActual: "Tiago Pinto",
     comprador: "Manuel Faria", price: null, emails: 4,
     note: "Cliente cancelou — escolheu concorrente",
     archived: false, carryover: false,
@@ -318,7 +318,7 @@ export const PROCESSOS = [
     status: 3, // Análise Técnica Promaster — still open, carried over
     client: "Grupo Construções do Sul SARL",
     ref: "GCS-088", brand: "KOMATSU", model: "PC490LC", vin: "",
-    owner: "Francisco Leitão", comm: "João Morais", compra: "Augusto Gouveia",
+    owner: "Francisco Leitão", comm: "João Morais", compra: "Augusto Gouveia", respActual: "Francisco Leitão",
     comprador: "Henrique Dias", price: null, emails: 5,
     note: "Transitado de Abril — a aguardar cotação final",
     archived: false, carryover: true,
@@ -343,7 +343,7 @@ export const PROCESSOS = [
     status: 6, // Consulta — carried over, now overdue
     client: "Luso-Angola Peças Lda",
     ref: "LAP-2026-04", brand: "VOLVO", model: "EC480E", vin: "VOE555888",
-    owner: "Tiago Pinto", comm: "João Morais", compra: "Augusto Gouveia",
+    owner: "Tiago Pinto", comm: "João Morais", compra: "Augusto Gouveia", respActual: "Tiago Pinto",
     comprador: "Fernando Lopes", price: null, emails: 9,
     note: "URGENTE — transitado de Abril, prazo ultrapassado",
     archived: false, carryover: true,
@@ -373,7 +373,7 @@ export const PROCESSOS = [
     fu: "Confirmado",
     client: "Metalúrgica do Kwanza SARL",
     ref: "MK-2023-01", brand: "CAT", model: "D6T", vin: "CAT123001",
-    owner: "Tiago Pinto", comm: "João Morais", compra: "Augusto Gouveia",
+    owner: "Tiago Pinto", comm: "João Morais", compra: "Augusto Gouveia", respActual: "Tiago Pinto",
     comprador: "António Simões", price: 385000, emails: 14,
     note: "Processo arquivado — concluído em 2023",
     archived: true, carryover: false,
@@ -397,7 +397,7 @@ export const PROCESSOS = [
     status: 13, // Cancelado
     client: "Construções Horizonte Norte Lda",
     ref: "CHN-2022-44", brand: "LIEBHERR", model: "LTM 1080", vin: "",
-    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Augusto Gouveia",
+    owner: "Adelina Rodrigues", comm: "João Morais", compra: "Augusto Gouveia", respActual: "Adelina Rodrigues",
     comprador: "José Ferreira", price: null, emails: 6,
     note: "Processo arquivado — cancelado em 2022",
     archived: true, carryover: false,

@@ -7,29 +7,64 @@ import { Toolbar } from "../components/Toolbar.jsx";
 import { TableView } from "../components/TableView.jsx";
 import { KanbanView } from "../components/KanbanView.jsx";
 import { Icon } from "../icons.jsx";
+import { getDashboardView } from "./Dashboard.jsx";
 
-// ── Summary strip — pooled Por Fazer / Activas / SLA Excedido across tasks and
-// processes, compact entry point into Dashboard's detailed breakdown. ────────
-function SummaryStrip({ porFazer, activas, slaExcedido, onClick }) {
+// ── Process SLA breach — must match the exact logic TableView.jsx uses to
+// render the red ⚠ Data Limite indicator: due date = p.created + the admin-
+// configured SLA duration for the process's *current* status (not p.deadline,
+// which is a separate/older field), with no status ceiling — a late-stage
+// process with an SLA entry configured can still show as breached. ──────────
+function isProcessoSlaBreach(p) {
+  const sla = store.getSLASettings();
+  const entry = sla.processoStatus?.[p.status];
+  if (!entry || !entry.value) return false;
+  try {
+    const [d, m, y] = p.created.split("/").map(Number);
+    const base = new Date(y, m - 1, d);
+    const ms = entry.unit === "dias" ? entry.value * 86400000 : entry.value * 3600000;
+    const due = new Date(base.getTime() + ms);
+    return due < new Date();
+  } catch { return false; }
+}
+
+// ── Visão Global — plain page-level title + current date sit above, with no
+// card/box around them. Directly beneath, one single rounded container holds
+// all four pooled figures together (Por Resolver larger/bold, then Tarefas,
+// Processos, Tempo Excedido, each smaller, separated by dot separators) —
+// not four separate boxes. Por Resolver is always exactly Tarefas +
+// Processos shown alongside it — same pooled tasks-in-Por-Fazer +
+// processes-currently-assigned-via-Resp.-Actual figures Dashboard itself
+// already computes, just summed. Tempo Excedido pools SLA-breaching tasks
+// and overdue processes. Purely presentational — the underlying figures are
+// unchanged; only the layout/markup differs from the old pooled SummaryStrip. ─
+function VisaoGlobalStrip({ porFazerTasks, myProcessos, tempoExcedido, onClick }) {
+  const porResolver = porFazerTasks + myProcessos;
   const items = [
-    { label: "Por fazer",    value: porFazer,    color: "#94a3b8" },
-    { label: "Activas",      value: activas,      color: THEME.warning },
-    { label: "SLA excedido", value: slaExcedido, color: THEME.danger },
+    { label: "Tarefas",        value: porFazerTasks },
+    { label: "Processos",      value: myProcessos    },
+    { label: "Tempo Excedido", value: tempoExcedido, color: THEME.danger },
   ];
   return (
-    <div
-      onClick={onClick}
-      style={{ display: "flex", alignItems: "center", gap: 18, padding: "8px 24px", cursor: "pointer", borderBottom: `1px solid ${THEME.border}`, background: THEME.sidebar }}
-      title="Ver detalhe no Dashboard"
-    >
-      {items.map((it, i) => (
-        <div key={it.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 13, fontWeight: 800, color: it.value > 0 ? it.color : THEME.textMuted }}>{it.value}</span>
-          <span style={{ fontSize: 11, color: THEME.textDim }}>{it.label}</span>
-          {i < items.length - 1 && <span style={{ width: 1, height: 12, background: THEME.border, marginLeft: 12 }} />}
-        </div>
-      ))}
-      <Icon name="chevron" size={11} color={THEME.textDim} style={{ marginLeft: "auto" }} />
+    <div style={{ padding: "20px 24px 0" }}>
+      <div style={{ fontSize: 20, fontWeight: 700, color: THEME.text }}>Visão Global</div>
+
+      <div
+        onClick={onClick}
+        style={{ display: "flex", alignItems: "center", gap: 10, background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: "14px 20px", marginTop: 14, cursor: "pointer" }}
+        title="Ver detalhe no Dashboard"
+      >
+        <span style={{ fontSize: 24, fontWeight: 800, color: porResolver > 0 ? THEME.warning : THEME.text }}>{porResolver}</span>
+        <span style={{ fontSize: 13, color: THEME.textMuted, fontWeight: 600 }}>Por Resolver</span>
+        {items.map(it => (
+          <div key={it.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ width: 3, height: 3, borderRadius: "50%", background: THEME.textDim, flexShrink: 0 }} />
+            <span style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: it.value > 0 ? (it.color || THEME.text) : THEME.textMuted }}>{it.value}</span>
+              <span style={{ fontSize: 12, color: THEME.textDim }}>{it.label}</span>
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -42,7 +77,14 @@ export function Processos({ processos, setProcessos, tarefas, users, currentUser
   const [ownerFilter,  setOwnerFilter]  = useState("Todos");
   const [commFilter,   setCommFilter]   = useState("Todos");
   const [statusFilter, setStatusFilter] = useState(location.state?.statusFilter ?? null);
-  const [myTab,        setMyTab]        = useState(false);
+  // Meus Processos is the default for standard users; Admin/Supervisor default
+  // to Todos os Processos instead. Meus Processos still appears first in the
+  // tab order for everyone (see the tabs array below) — only the default
+  // selection differs by role.
+  const [myTab,        setMyTab]        = useState(() => {
+    const isPrivilegedInit = currentUser?.role === "admin" || currentUser?.role === "supervisor";
+    return !isPrivilegedInit;
+  });
   const [sortState,    setSortState]    = useState(() => store.getSortPrefs(currentUser?.email));
   const [colFilters,   setColFilters]   = useState({});    // { colKey: Set<value> }
 
@@ -54,7 +96,15 @@ export function Processos({ processos, setProcessos, tarefas, users, currentUser
   // mySlaBreach for tasks; myOpen/myOverdue for processes) just summed together,
   // since Dashboard already provides the detailed split — this is only a
   // compact entry point, not a new breakdown.
+  //
+  // Admin/Supervisor: the strip reflects whichever view (Minhas/Geral) was
+  // last selected on Dashboard's own toggle — read via getDashboardView(),
+  // persisted in localStorage — so this page stays consistent with that
+  // choice instead of always defaulting back to personal. Standard users
+  // never see any toggle anywhere and always get their own personal figures.
   const userName = currentUser?.name ?? "";
+  const isPrivileged = currentUser?.role === "admin" || currentUser?.role === "supervisor";
+  const showGeral = isPrivileged && getDashboardView() === "all";
   const doneLabels = new Set(
     ["Concluído", "Cancelado"].map(r => store.getLabelForSystemRole(r)).filter(Boolean)
   );
@@ -66,20 +116,21 @@ export function Processos({ processos, setProcessos, tarefas, users, currentUser
       return new Date("2026-05-15T12:00:00") > new Date(y, m - 1, d);
     } catch { return false; }
   }
-  const myTasksAll      = (tarefas || []).filter(t => t.owner === userName);
-  const myActiveTasks   = myTasksAll.filter(t => !doneLabels.has(t.status));
-  const myPorFazerTasks = myTasksAll.filter(t => t.status === porFazerLabel);
-  const myTaskSlaBreach = myActiveTasks.filter(isTaskSlaBreach);
-  // "Mine" is based on respActual (who currently has the process), not owner
-  // (Resp. Cotação), since owner is now a frozen historical field that no
-  // longer necessarily reflects who is actively working the process today.
-  const myProcessosForStrip    = active.filter(p => p.respActual === userName || p.comm === userName || p.compra === userName);
-  const myOpenProcessosStrip   = myProcessosForStrip.filter(p => p.status < 8);
-  const myOverdueProcessosStrip = myProcessosForStrip.filter(p => daysLeft(p.deadline) < 0 && p.status < 8);
+  const tasksInScope    = showGeral ? (tarefas || []) : (tarefas || []).filter(t => t.owner === userName);
+  const activeTasksInScope   = tasksInScope.filter(t => !doneLabels.has(t.status));
+  const porFazerTasksInScope = tasksInScope.filter(t => t.status === porFazerLabel);
+  const taskSlaBreachInScope = activeTasksInScope.filter(isTaskSlaBreach);
+  // Strictly Resp. Actual only — who currently and genuinely holds the
+  // process right now — matching the exact condition the "Meus processos"
+  // tab filter below already uses (p.respActual !== currentUser.name). Resp.
+  // Comercial (comm) and the client contact (compra) are no longer folded in
+  // here; this figure represents true current ownership only.
+  const processosInScope = showGeral ? active : active.filter(p => p.respActual === userName);
+  const overdueProcessosInScope = processosInScope.filter(isProcessoSlaBreach);
 
-  const pooledPorFazer    = myPorFazerTasks.length;
-  const pooledActivas     = myActiveTasks.length + myOpenProcessosStrip.length;
-  const pooledSlaExcedido = myTaskSlaBreach.length + myOverdueProcessosStrip.length;
+  const visaoGlobalTarefas   = porFazerTasksInScope.length;
+  const visaoGlobalProcessos = processosInScope.length;
+  const visaoGlobalTempoExcedido = taskSlaBreachInScope.length + overdueProcessosInScope.length;
 
   // Apply all filters
   let rows = active.filter(p => {
@@ -150,6 +201,8 @@ export function Processos({ processos, setProcessos, tarefas, users, currentUser
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100%", background: THEME.bg }}>
 
+      <VisaoGlobalStrip porFazerTasks={visaoGlobalTarefas} myProcessos={visaoGlobalProcessos} tempoExcedido={visaoGlobalTempoExcedido} onClick={() => navigate("/dashboard")} />
+
       {/* Page header */}
       <div style={{ padding: "20px 24px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
@@ -166,11 +219,9 @@ export function Processos({ processos, setProcessos, tarefas, users, currentUser
         </div>
       </div>
 
-      <SummaryStrip porFazer={pooledPorFazer} activas={pooledActivas} slaExcedido={pooledSlaExcedido} onClick={() => navigate("/dashboard")} />
-
       {/* Meus/Todos tabs */}
       <div style={{ padding: "12px 24px 0", display: "flex", gap: 6 }}>
-        {[{ id: false, label: "Todos os processos" }, { id: true, label: "Meus processos" }].map(t => (
+        {[{ id: true, label: "Meus processos" }, { id: false, label: "Todos os processos" }].map(t => (
           <button
             key={String(t.id)}
             onClick={() => { setMyTab(t.id); setStatusFilter(null); setOwnerFilter("Todos"); setCommFilter("Todos"); setSearch(""); }}

@@ -1,6 +1,24 @@
 import { Icon } from "../icons.jsx";
 import { THEME } from "../theme.js";
+import { store } from "../store.js";
 import { daysLeft, useWindowSize } from "../utils.js";
+
+// ── Process SLA breach — must match the exact logic already used everywhere
+// else in the app (Dashboard.jsx, Tarefas.jsx, Processos.jsx, TableView.jsx's
+// red ⚠ Data Limite indicator): due date = p.created + the admin-configured
+// SLA duration for the process's *current* status, not p.deadline. ──────────
+function isProcessoSlaBreach(p) {
+  const sla = store.getSLASettings();
+  const entry = sla.processoStatus?.[p.status];
+  if (!entry || !entry.value) return false;
+  try {
+    const [d, m, y] = p.created.split("/").map(Number);
+    const base = new Date(y, m - 1, d);
+    const ms = entry.unit === "dias" ? entry.value * 86400000 : entry.value * 3600000;
+    const due = new Date(base.getTime() + ms);
+    return due < new Date();
+  } catch { return false; }
+}
 
 // processos     — full visible (non-archived) list
 // myProcessos   — user-filtered list (when myTab is active)
@@ -13,7 +31,10 @@ export function StatsBar({ processos, myProcessos, myTab, activeFilter, onStatCl
   const src = myTab ? myProcessos : processos;
   const accentColor = accent || THEME.accent;
 
-  const overdue  = src.filter(p => daysLeft(p.deadline) < 0 && p.status < 8).length;
+  // "Em Atraso" now counts SLA breach — same calculation as Tempo Excedido
+  // (and TableView.jsx's red ⚠ Data Limite indicator) — not the old
+  // deadline-based daysLeft() comparison.
+  const overdue  = src.filter(isProcessoSlaBreach).length;
   const urgent   = src.filter(p => { const d = daysLeft(p.deadline); return d >= 0 && d <= 2 && p.status < 8; }).length;
   const open     = src.filter(p => p.status < 8).length;
   const won      = src.filter(p => p.status === 12).length;

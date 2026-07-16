@@ -34,6 +34,14 @@ export function getStatusColor(label) {
 export const TYPE_COLORS   = {};
 export const STATUS_COLORS = {};
 
+// Mirrors Dashboard.jsx's getDashboardView() — duplicated locally (not
+// imported) to avoid a circular import, since Dashboard.jsx already imports
+// getUnacknowledgedAckCount from this file. Same key, same read-only logic.
+function getDashboardView() {
+  try { return localStorage.getItem("crm_dashboard_view") === "all" ? "all" : "mine"; }
+  catch { return "mine"; }
+}
+
 const LABEL = { fontSize: 10, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 };
 const INPUT = { width: "100%", padding: "7px 10px", fontSize: 13, border: `1px solid ${THEME.border}`, borderRadius: 7, outline: "none", boxSizing: "border-box", background: THEME.sidebar, color: THEME.text };
 
@@ -870,6 +878,13 @@ export function TaskDrawer({ task: initialTask, users, currentUser, onClose, onU
       comm:  commAssignee,
       compra: "",
       respAbertura: abridoPor,
+      // Resp. Actual must always reflect whoever currently holds the process,
+      // at every stage — same invariant DetailDrawer's handleStatusSave
+      // maintains on every later transition. At creation, that's the person
+      // opening it (abridoPor), same as respAbertura. Resp. Cotação (owner)
+      // stays deliberately empty per the comment above — this only sets who
+      // currently has the process right now, not who Resp. Cotação will be.
+      respActual: abridoPor,
       // The person who originally validated this journey's Pré-Entrada task
       // (t.cotacaoOwner, set in handleValidarPreEntrada) — carried onto the
       // process so the Em Abertura → Entrada transition can give them
@@ -1658,28 +1673,44 @@ function AckCard({ item, onDismiss }) {
   );
 }
 
-// ── Summary strip — pooled Por Fazer / Activas / SLA Excedido across tasks and
-// processes, compact entry point into Dashboard's detailed breakdown. ────────
-function SummaryStrip({ porFazer, activas, slaExcedido, onClick }) {
+// ── Visão Global — plain page-level title + current date sit above, with no
+// card/box around them. Directly beneath, one single rounded container holds
+// all four pooled figures together (Por Resolver larger/bold, then Tarefas,
+// Processos, Tempo Excedido, each smaller, separated by dot separators) —
+// not four separate boxes. Por Resolver is always exactly Tarefas +
+// Processos shown alongside it — same pooled tasks-in-Por-Fazer +
+// processes-currently-assigned-via-Resp.-Actual figures Dashboard itself
+// already computes, just summed. Tempo Excedido pools SLA-breaching tasks
+// and overdue processes. Purely presentational — the underlying figures are
+// unchanged; only the layout/markup differs from the old pooled SummaryStrip. ─
+function VisaoGlobalStrip({ porFazerTasks, myProcessos, tempoExcedido, onClick }) {
+  const porResolver = porFazerTasks + myProcessos;
   const items = [
-    { label: "Por fazer",    value: porFazer,    color: "#94a3b8" },
-    { label: "Activas",      value: activas,      color: THEME.warning },
-    { label: "SLA excedido", value: slaExcedido, color: THEME.danger },
+    { label: "Tarefas",        value: porFazerTasks },
+    { label: "Processos",      value: myProcessos    },
+    { label: "Tempo Excedido", value: tempoExcedido, color: THEME.danger },
   ];
   return (
-    <div
-      onClick={onClick}
-      style={{ display: "flex", alignItems: "center", gap: 18, padding: "8px 24px", cursor: "pointer", borderBottom: `1px solid ${THEME.border}`, background: THEME.sidebar }}
-      title="Ver detalhe no Dashboard"
-    >
-      {items.map((it, i) => (
-        <div key={it.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 13, fontWeight: 800, color: it.value > 0 ? it.color : THEME.textMuted }}>{it.value}</span>
-          <span style={{ fontSize: 11, color: THEME.textDim }}>{it.label}</span>
-          {i < items.length - 1 && <span style={{ width: 1, height: 12, background: THEME.border, marginLeft: 12 }} />}
-        </div>
-      ))}
-      <Icon name="chevron" size={11} color={THEME.textDim} style={{ marginLeft: "auto" }} />
+    <div style={{ padding: "20px 24px 0" }}>
+      <div style={{ fontSize: 20, fontWeight: 700, color: THEME.text }}>Visão Global</div>
+
+      <div
+        onClick={onClick}
+        style={{ display: "flex", alignItems: "center", gap: 10, background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: "14px 20px", marginTop: 14, cursor: "pointer" }}
+        title="Ver detalhe no Dashboard"
+      >
+        <span style={{ fontSize: 24, fontWeight: 800, color: porResolver > 0 ? THEME.warning : THEME.text }}>{porResolver}</span>
+        <span style={{ fontSize: 13, color: THEME.textMuted, fontWeight: 600 }}>Por Resolver</span>
+        {items.map(it => (
+          <div key={it.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ width: 3, height: 3, borderRadius: "50%", background: THEME.textDim, flexShrink: 0 }} />
+            <span style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: it.value > 0 ? (it.color || THEME.text) : THEME.textMuted }}>{it.value}</span>
+              <span style={{ fontSize: 12, color: THEME.textDim }}>{it.label}</span>
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1692,6 +1723,24 @@ function isSlaBreach(task) {
     const due = new Date(y, m - 1, d);
     const now = new Date("2026-05-15T12:00:00");
     return now > due;
+  } catch { return false; }
+}
+
+// ── Process SLA breach — must match the exact logic TableView.jsx uses to
+// render the red ⚠ Data Limite indicator: due date = p.created + the admin-
+// configured SLA duration for the process's *current* status (not p.deadline,
+// which is a separate/older field), with no status ceiling — a late-stage
+// process with an SLA entry configured can still show as breached. ──────────
+function isProcessoSlaBreach(p) {
+  const sla = store.getSLASettings();
+  const entry = sla.processoStatus?.[p.status];
+  if (!entry || !entry.value) return false;
+  try {
+    const [d, m, y] = p.created.split("/").map(Number);
+    const base = new Date(y, m - 1, d);
+    const ms = entry.unit === "dias" ? entry.value * 86400000 : entry.value * 3600000;
+    const due = new Date(base.getTime() + ms);
+    return due < new Date();
   } catch { return false; }
 }
 
@@ -1766,17 +1815,34 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
   const myActiveTasks     = myTasksAll.filter(t => !doneLabels.has(t.status));
   const myPorFazerTasks   = myTasksAll.filter(t => t.status === porFazerLabel);
   const myTaskSlaBreach   = myActiveTasks.filter(isSlaBreach);
-  // "Mine" is based on respActual (who currently has the process), not owner
-  // (Resp. Cotação), since owner is now a frozen historical field that no
-  // longer necessarily reflects who is actively working the process today —
-  // consistent with the same change already applied in Processos.jsx.
+  // "Mine" here (myProcessosAll) intentionally stays broad — it feeds
+  // ackItems (passive handoff notifications) below, which must still surface
+  // for Resp. Comercial/Resp. Compra handoffs too, not just Resp. Actual.
+  // Not used by the Visão Global strip (see myProcessosStrict below).
   const myProcessosAll    = (processos || []).filter(p => !p.archived && (p.respActual === userName || p.comm === userName || p.compra === userName));
-  const myOpenProcessos   = myProcessosAll.filter(p => p.status < 8);
-  const myOverdueProcessos = myProcessosAll.filter(p => daysLeft(p.deadline) < 0 && p.status < 8);
 
-  const pooledPorFazer    = myPorFazerTasks.length;
-  const pooledActivas     = myActiveTasks.length + myOpenProcessos.length;
-  const pooledSlaExcedido = myTaskSlaBreach.length + myOverdueProcessos.length;
+  // Visão Global strip specifically — for Admin/Supervisor, follows whichever
+  // view (Minhas/Geral) was last selected on Dashboard's own toggle (read via
+  // getDashboardView(), persisted in localStorage), so this page's strip
+  // stays consistent with that choice instead of always defaulting back to
+  // personal. Standard users never see any toggle and always get their own
+  // figures. Strictly Resp. Actual only — matching the exact condition the
+  // "Meus processos" tab filter in Processos.jsx already uses — not the
+  // broader comm/compra-inclusive myProcessosAll above (that one is only for
+  // ackItems, a different, deliberately broader notification concern).
+  const showGeral = isPrivileged && getDashboardView() === "all";
+  const allActiveTasksForStrip   = tarefas.filter(t => !doneLabels.has(t.status));
+  const allPorFazerTasksForStrip = tarefas.filter(t => t.status === porFazerLabel);
+  const allTaskSlaBreachForStrip = allActiveTasksForStrip.filter(isSlaBreach);
+  const myProcessosStrict           = (processos || []).filter(p => !p.archived && p.respActual === userName);
+  const myOverdueProcessosStrict    = myProcessosStrict.filter(isProcessoSlaBreach);
+  const allProcessosForStrip        = (processos || []).filter(p => !p.archived);
+  const allOverdueProcessosForStrip = allProcessosForStrip.filter(isProcessoSlaBreach);
+
+  const visaoGlobalTarefas   = (showGeral ? allPorFazerTasksForStrip : myPorFazerTasks).length;
+  const visaoGlobalProcessos = (showGeral ? allProcessosForStrip     : myProcessosStrict).length;
+  const visaoGlobalTempoExcedido = (showGeral ? allTaskSlaBreachForStrip : myTaskSlaBreach).length
+    + (showGeral ? allOverdueProcessosForStrip : myOverdueProcessosStrict).length;
 
   // ── Passive handoff acknowledgment cards — processes that landed with this
   // user via someone else's action (mapeamento hand-off or a manual
@@ -1881,6 +1947,8 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100%", background: THEME.bg }}>
 
+      <VisaoGlobalStrip porFazerTasks={visaoGlobalTarefas} myProcessos={visaoGlobalProcessos} tempoExcedido={visaoGlobalTempoExcedido} onClick={() => navigate("/dashboard")} />
+
       {/* Page header */}
       <div style={{ padding: "20px 24px 0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <div>
@@ -1901,8 +1969,6 @@ export function Tarefas({ tarefas, setTarefas, processos, setProcessos, users, c
           </button>
         )}
       </div>
-
-      <SummaryStrip porFazer={pooledPorFazer} activas={pooledActivas} slaExcedido={pooledSlaExcedido} onClick={() => navigate("/dashboard")} />
 
       {/* Toolbar */}
       <div style={{ padding: isMobile ? "10px 14px" : "12px 24px", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>

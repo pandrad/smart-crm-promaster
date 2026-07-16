@@ -220,6 +220,7 @@ export function DevTools({
   const [aiSimOn, setAiSimOn] = useState(() => getAISimulationEnabled());
   const [typedEmailType, setTypedEmailType] = useState("");
   const [clientEmailTarget, setClientEmailTarget] = useState("");
+  const [forcePreEntrada, setForcePreEntrada] = useState(false);
 
   // Existing clients — same derivation Clientes.jsx uses to build its own
   // list (grouped by p.client across all non-archived processos), so this
@@ -338,7 +339,13 @@ export function DevTools({
   // the email's From address and signature so the message reads naturally.
   // Otherwise behaves exactly like the other generators: same AI simulation
   // toggle, same confidence range, same classification path in Inbox.jsx.
-  function handleGenerateClientEmail(clientName) {
+  //
+  // forcePreEntrada (checkbox-controlled) overrides all of the above when
+  // checked: the email is always generated with a confident Pré-Entrada
+  // classification, regardless of the AI Simulation toggle's state. This
+  // override is local to this one generation action — it does not touch
+  // aiSimOn or affect any other generator in this file.
+  function handleGenerateClientEmail(clientName, forcePreEntrada) {
     if (!clientName) return;
     const clientProcessos = processos
       .filter(p => p.client === clientName)
@@ -350,7 +357,9 @@ export function DevTools({
     const body = `Bom dia,\n\nVenho por este meio, em nome da ${clientName}, solicitar cotação para ${eq.brand} ${eq.model}.\n\nAguardamos proposta com preço, prazo de entrega e condições de pagamento.\n\nCom os melhores cumprimentos,\n${comprador}\n${clientName}`;
 
     let aiSuggestion;
-    if (aiSimOn && Math.random() < 0.78) {
+    if (forcePreEntrada) {
+      aiSuggestion = { type: "Pré-Entrada", category: "Pré-Entrada", confidence: Math.round((0.85 + Math.random() * 0.14) * 100) / 100 };
+    } else if (aiSimOn && Math.random() < 0.78) {
       const types = store.getTaskTypes();
       const picked = types.length > 0 ? randomPick(types) : null;
       aiSuggestion = picked
@@ -582,13 +591,22 @@ export function DevTools({
               {existingClients.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <button
-              onClick={() => { handleGenerateClientEmail(clientEmailTarget); }}
+              onClick={() => { handleGenerateClientEmail(clientEmailTarget, forcePreEntrada); }}
               disabled={!clientEmailTarget}
               style={{ ...BTN_BASE, width: "auto", flexShrink: 0, padding: "5px 10px", background: clientEmailTarget ? "#14330a" : "#0f172a", color: clientEmailTarget ? "#a3e635" : "#475569", fontSize: 10, opacity: clientEmailTarget ? 1 : 0.5 }}
             >
               Gerar
             </button>
           </div>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: "#94a3b8", cursor: "pointer", padding: "0 2px" }}>
+            <input
+              type="checkbox"
+              checked={forcePreEntrada}
+              onChange={e => setForcePreEntrada(e.target.checked)}
+              style={{ accentColor: "#a3e635", cursor: "pointer" }}
+            />
+            Forçar Pré-Entrada
+          </label>
 
           {/* Tool 3 — Generate random processo */}
           <ToolButton label="Gerar processo aleatório" icon="plus" color="#38bdf8" bg="#0c2231" onClick={handleGenerateProcesso} />
@@ -629,21 +647,37 @@ export function DevTools({
               store.saveTarefas(updated);
               setTarefas(updated);
             }
-            const sla = store.getSLASettings();
-            if (!sla.processoStatus) sla.processoStatus = {};
-            for (const s of store.getStages()) {
-              if (!sla.processoStatus[s.id]) sla.processoStatus[s.id] = { value: 7, unit: "dias" };
-            }
-            store.saveSLASettings(sla);
+            // Pick the target processes first, then guarantee a usable
+            // (non-zero) SLA entry specifically for their exact statuses —
+            // rather than a blanket pass over store.getStages(), which can
+            // silently miss a process whose status doesn't correspond to a
+            // current stage, or leave an existing-but-unusable entry (e.g.
+            // { value: 0 }) untouched. isProcessoSlaBreach (Dashboard.jsx/
+            // Tarefas.jsx/Processos.jsx/TableView.jsx) looks up
+            // sla.processoStatus[p.status] keyed by the process's own status
+            // and reads p.created — not p.deadline — so only p.created is
+            // backdated here; p.deadline is no longer touched.
             const activeProcs = processos.filter(p => !p.archived && p.status < 8);
             const picks = new Set();
+            const pickedStatuses = new Set();
             const copy = [...activeProcs];
             for (let i = 0; i < 2 && copy.length > 0; i++) {
               const idx = Math.floor(Math.random() * copy.length);
-              picks.add(copy.splice(idx, 1)[0].id);
+              const picked = copy.splice(idx, 1)[0];
+              picks.add(picked.id);
+              pickedStatuses.add(picked.status);
+            }
+            if (pickedStatuses.size > 0) {
+              const sla = store.getSLASettings();
+              if (!sla.processoStatus) sla.processoStatus = {};
+              for (const statusId of pickedStatuses) {
+                const entry = sla.processoStatus[statusId];
+                if (!entry || !entry.value) sla.processoStatus[statusId] = { value: 7, unit: "dias" };
+              }
+              store.saveSLASettings(sla);
             }
             setProcessos(prev => picks.size > 0
-              ? prev.map(p => picks.has(p.id) ? { ...p, created: "01/01/2025", deadline: "08/01/2025" } : p)
+              ? prev.map(p => picks.has(p.id) ? { ...p, created: "01/01/2025" } : p)
               : [...prev]
             );
             setThemeVersion(v => v + 1);

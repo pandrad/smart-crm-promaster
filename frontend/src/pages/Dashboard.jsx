@@ -9,6 +9,40 @@ import { Avatar, Tag } from "../components/Primitives.jsx";
 import { Icon } from "../icons.jsx";
 import { getUnacknowledgedAckCount } from "./Tarefas.jsx";
 
+// ── Personal vs. Geral view — Admin/Supervisor only. Persisted so the same
+// choice carries over to the Visão Global strip on Tarefas/Processos, rather
+// than those pages always defaulting back to personal regardless of what was
+// last selected here. Standard users never read/write this — they always get
+// their own personal figures, computed locally on each page.
+const DASHBOARD_VIEW_KEY = "crm_dashboard_view";
+
+export function getDashboardView() {
+  try { return localStorage.getItem(DASHBOARD_VIEW_KEY) === "all" ? "all" : "mine"; }
+  catch { return "mine"; }
+}
+
+function setDashboardView(view) {
+  try { localStorage.setItem(DASHBOARD_VIEW_KEY, view); } catch { /* ignore */ }
+}
+
+// ── Process SLA breach — must match the exact logic TableView.jsx uses to
+// render the red ⚠ Data Limite indicator: due date = p.created + the admin-
+// configured SLA duration for the process's *current* status (not p.deadline,
+// which is a separate/older field), with no status ceiling — a late-stage
+// process with an SLA entry configured can still show as breached. ──────────
+function isProcessoSlaBreach(p) {
+  const sla = store.getSLASettings();
+  const entry = sla.processoStatus?.[p.status];
+  if (!entry || !entry.value) return false;
+  try {
+    const [d, m, y] = p.created.split("/").map(Number);
+    const base = new Date(y, m - 1, d);
+    const ms = entry.unit === "dias" ? entry.value * 86400000 : entry.value * 3600000;
+    const due = new Date(base.getTime() + ms);
+    return due < new Date();
+  } catch { return false; }
+}
+
 function ActivityList({ items, users }) {
   return (
     <div style={{ background: THEME.card, overflow: "hidden" }}>
@@ -62,7 +96,17 @@ export function Dashboard({ processos, tarefas, users, currentUser, accent, onOp
   const isPrivileged = isAdmin || isSupervisor;
 
   const [showAllProcesses, setShowAllProcesses] = useState(isPrivileged);
-  const [activityView,     setActivityView]     = useState("mine");
+  // Single Admin/Supervisor toggle now controls both the Visão Global figures
+  // (taskStats/processStats/myProcessos below) and Actividade Recente together.
+  // Persisted via getDashboardView/setDashboardView so Tarefas.jsx/Processos.jsx
+  // can read the same choice for their own Visão Global strip.
+  const [activityView,     setActivityView]     = useState(() => isPrivileged ? getDashboardView() : "mine");
+  const showGeral = isPrivileged && activityView === "all";
+
+  function changeActivityView(view) {
+    setActivityView(view);
+    setDashboardView(view);
+  }
 
   const userName = currentUser?.name ?? "";
 
@@ -85,28 +129,48 @@ export function Dashboard({ processos, tarefas, users, currentUser, accent, onOp
     try { const [d, m, y] = t.due.split("/").map(Number); return new Date("2026-05-15T12:00:00") > new Date(y, m - 1, d); } catch { return false; }
   });
   const active        = processos.filter(p => !p.archived);
-  // "Mine" is based on respActual (who currently has the process), not owner
-  // (Resp. Cotação), since owner is now a frozen historical field that no
-  // longer necessarily reflects who is actively working the process today —
-  // consistent with the same change already applied in Processos.jsx/Tarefas.jsx.
-  const myProcessos   = active.filter(p => p.respActual === userName || p.comm === userName || p.compra === userName);
+  // Strictly Resp. Actual only — who currently and genuinely holds the
+  // process right now — matching the exact condition the "Meus processos"
+  // tab filter in Processos.jsx already uses (p.respActual === currentUser.name).
+  // Resp. Comercial (comm) and the client contact (compra) are no longer
+  // folded in here; this figure represents true current ownership only.
+  const myProcessos   = active.filter(p => p.respActual === userName);
   const myOpen        = myProcessos.filter(p => p.status < 8);
-  const myOverdue     = myProcessos.filter(p => daysLeft(p.deadline) < 0 && p.status < 8);
+  // SLA breach — matches TableView.jsx's red ⚠ Data Limite indicator exactly
+  // (p.created + admin-configured SLA duration for the current status), not
+  // the older, separate p.deadline-based calculation. No status ceiling.
+  const myOverdue     = myProcessos.filter(isProcessoSlaBreach);
   const myUrgent      = myProcessos.filter(p => { const d = daysLeft(p.deadline); return d >= 0 && d <= 2 && p.status < 8; });
 
   const myAckCount = getUnacknowledgedAckCount(processos, userName);
 
+  // ── Geral (team-wide) equivalents — Admin/Supervisor only, shown when the
+  // single Actividade/Visão Global toggle is set to "all". Same definitions
+  // as the personal ("my…") versions above, just without the owner/actor
+  // filter — every task/process in scope, not just the current user's.
+  const allActiveTasks   = tarefas.filter(t => !doneLabels.has(t.status));
+  const allPorFazerTasks = tarefas.filter(t => t.status === porFazerLabel);
+  const allSlaBreach     = allActiveTasks.filter(t => {
+    if (!t.due) return false;
+    try { const [d, m, y] = t.due.split("/").map(Number); return new Date("2026-05-15T12:00:00") > new Date(y, m - 1, d); } catch { return false; }
+  });
+  const allOpenProcessos    = active.filter(p => p.status < 8);
+  const allOverdueProcessos = active.filter(isProcessoSlaBreach);
+  const allUrgentProcessos  = active.filter(p => { const d = daysLeft(p.deadline); return d >= 0 && d <= 2 && p.status < 8; });
+
+  const displayProcessos = showGeral ? active : myProcessos;
+
   const taskStats = [
-    { label: "Por fazer",       value: myPorFazer.length,   color: "#94a3b8",     icon: "list",   nav: "/tarefas", filter: "activas" },
-    { label: "Activas",         value: myActive.length,     color: THEME.warning, icon: "tasks",  nav: "/tarefas", filter: "activas" },
-    { label: "SLA excedido",    value: mySlaBreach.length,  color: THEME.danger,  icon: "alert",  nav: "/tarefas", filter: "activas" },
-    { label: "Notificações",    value: myAckCount,          color: THEME.warning, icon: "alert",  nav: "/tarefas", filter: "activas" },
+    { label: "Por fazer",       value: (showGeral ? allPorFazerTasks : myPorFazer).length,   color: "#94a3b8",     icon: "list",   nav: "/tarefas", filter: "activas" },
+    { label: "Activas",         value: (showGeral ? allActiveTasks   : myActive).length,     color: THEME.warning, icon: "tasks",  nav: "/tarefas", filter: "activas" },
+    { label: "Tempo Excedido",  value: (showGeral ? allSlaBreach     : mySlaBreach).length,  color: THEME.danger,  icon: "alert",  nav: "/tarefas", filter: "activas" },
+    { label: "Notificações",    value: myAckCount,                                            color: THEME.warning, icon: "alert",  nav: "/tarefas", filter: "activas" },
   ];
 
   const processStats = [
-    { label: "Em aberto",   value: myOpen.length,    color: "#60a5fa",  icon: "layers", nav: "/processos", filter: "open"    },
-    { label: "Em atraso",   value: myOverdue.length, color: THEME.danger, icon: "alert", nav: "/processos", filter: "overdue" },
-    { label: "Prazo próximo", value: myUrgent.length, color: "#fbbf24", icon: "clock",  nav: "/processos", filter: "urgent"  },
+    { label: "Em aberto",     value: (showGeral ? allOpenProcessos    : myOpen).length,    color: "#60a5fa",    icon: "layers", nav: "/processos", filter: "open"    },
+    { label: "Em atraso",     value: (showGeral ? allOverdueProcessos : myOverdue).length,  color: THEME.danger, icon: "alert",  nav: "/processos", filter: "overdue" },
+    { label: "Prazo próximo", value: (showGeral ? allUrgentProcessos  : myUrgent).length,   color: "#fbbf24",    icon: "clock",  nav: "/processos", filter: "urgent"  },
   ];
 
   // ── Recent activity ────────────────────────────────────────────────────────
@@ -185,10 +249,26 @@ export function Dashboard({ processos, tarefas, users, currentUser, accent, onOp
 
       <div style={{ padding: isMobile ? "12px 14px" : "16px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
 
-        {/* ── Tarefas summary ── */}
+        {/* ── Tarefas summary — Admin/Supervisor toggle now sits here, since it
+             controls these figures (and processStats/myProcessos below, and
+             Actividade Recente further down) all together. ── */}
         <div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
-            As minhas tarefas
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              {showGeral ? "A equipa" : "As minhas tarefas"}
+            </div>
+            {isPrivileged && (
+              <div style={{ display: "flex", gap: 0, border: `1px solid ${THEME.border}`, borderRadius: 7, overflow: "hidden" }}>
+                {[{ id: "mine", label: "As Minhas" }, { id: "all", label: "Geral" }].map(v => (
+                  <button key={v.id} onClick={() => changeActivityView(v.id)}
+                    style={{ padding: "3px 10px", fontSize: 10, fontWeight: 600, border: "none", cursor: "pointer",
+                      background: activityView === v.id ? `${accentColor}22` : "transparent",
+                      color: activityView === v.id ? accentColor : THEME.textMuted }}>
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : `repeat(${taskStats.length},1fr)`, gap: 10 }}>
             {taskStats.map(s => (
@@ -230,8 +310,8 @@ export function Dashboard({ processos, tarefas, users, currentUser, accent, onOp
 
       <StatsBar
         processos={active}
-        myProcessos={myProcessos}
-        myTab={!showAllProcesses}
+        myProcessos={displayProcessos}
+        myTab={isPrivileged ? !showGeral : !showAllProcesses}
         activeFilter={null}
         onStatClick={handleStatClick}
         accent={accentColor}
@@ -244,27 +324,16 @@ export function Dashboard({ processos, tarefas, users, currentUser, accent, onOp
           <SupervisorWidget processos={active} tarefas={tarefas} onOpenTask={onOpenTask} />
         )}
 
-        {/* ── Recent activity ── */}
+        {/* ── Recent activity — same Admin/Supervisor toggle moved up above
+             now drives this too; no separate toggle rendered here anymore. ── */}
         <div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: THEME.textDim, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              {isPrivileged && activityView === "all" ? "Actividade geral" : "Actividade recente"}
+              {showGeral ? "Actividade geral" : "Actividade recente"}
             </div>
-            {isPrivileged && (
-              <div style={{ display: "flex", gap: 0, border: `1px solid ${THEME.border}`, borderRadius: 7, overflow: "hidden" }}>
-                {[{ id: "mine", label: "As Minhas" }, { id: "all", label: "Geral" }].map(v => (
-                  <button key={v.id} onClick={() => setActivityView(v.id)}
-                    style={{ padding: "3px 10px", fontSize: 10, fontWeight: 600, border: "none", cursor: "pointer",
-                      background: activityView === v.id ? `${accentColor}22` : "transparent",
-                      color: activityView === v.id ? accentColor : THEME.textMuted }}>
-                    {v.label}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
           {(() => {
-            const items = isPrivileged && activityView === "all" ? allActivity : myActivity;
+            const items = showGeral ? allActivity : myActivity;
             if (items.length === 0) return <div style={{ fontSize: 13, color: THEME.textDim, padding: "16px 0" }}>Sem actividade recente</div>;
             return (
               <div style={{ maxHeight: 280, overflowY: "auto", borderRadius: 12, border: `1px solid ${THEME.border}` }}>

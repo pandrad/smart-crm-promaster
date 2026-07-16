@@ -288,6 +288,40 @@ Added an "Arquivar Processo" action to the process detail drawer, visible only t
 
 ---
 
+## Changes Since v4, continued (July 2026 session — Visão Global)
+
+### Visão Global Strip — Introduced, Then Restyled Across Dashboard/Tarefas/Processos
+
+Replaced the old pooled `SummaryStrip` (Por Fazer / Activas / SLA Excedido) on Tarefas and Processos with a new "Visão Global" block: a plain page-level title (no card/box), directly above one single rounded container holding four pooled figures together — **Por Resolver** (headline, larger/bold, always exactly Tarefas + Processos), then **Tarefas**, **Processos**, **Tempo Excedido** — each separated by small dot separators inside the same continuous card, not four separate boxes. The whole card is clickable, navigating to `/dashboard`. The same treatment was later added to Dashboard itself (previously it had no such strip), sourced from Dashboard's own existing pooled variables.
+
+For Admin/Supervisor specifically, the existing "As Minhas / Geral" toggle (previously only controlling Actividade Recente, positioned near the bottom of Dashboard) was moved up to sit alongside the "As minhas tarefas" stats block, and now controls the Visão Global figures, the StatsBar's process set, and Actividade Recente together as one single choice. This choice is persisted via `store`-independent `getDashboardView()`/`setDashboardView()` helpers in Dashboard.jsx (backed by `localStorage["crm_dashboard_view"]`, exported for Processos.jsx to import; duplicated locally in Tarefas.jsx instead of imported, to avoid a circular module dependency since Dashboard.jsx already imports from Tarefas.jsx), so Tarefas/Processos' own Visão Global strips stay consistent with whatever was last selected on Dashboard, rather than always defaulting back to personal. Standard users never see this toggle anywhere and always get their own personal figures.
+
+### Processos Figure — Strict Resp. Actual Only
+
+The "Processos" figure in Visão Global (and the equivalent `myProcessos`/`myOpen`/`myOverdue` process-side stats on Dashboard) previously counted `p.respActual === userName || p.comm === userName || p.compra === userName` — silently inflating the count with processes where the user was only Resp. Comercial or the client-side `compra` contact, not genuinely Resp. Actual. Narrowed to strictly `p.respActual === userName` everywhere, matching the "Meus processos" tab filter in Processos.jsx, which was already correct. In Tarefas.jsx, the broader `comm`/`compra`-inclusive definition (`myProcessosAll`) was deliberately kept as-is for `ackItems` (passive handoff notifications, a different, intentionally broader concern) — a new, separate `myProcessosStrict` variable feeds the Visão Global strip instead.
+
+### Tempo Excedido — Process Side Now Matches TableView's Actual Red-Indicator Logic
+
+The process side of "Tempo Excedido" (and the "Em atraso" stat elsewhere) previously used `daysLeft(p.deadline) < 0 && p.status < 8` — a different, separate calculation from what TableView.jsx's red ⚠ Data Limite indicator actually uses: `p.created` + the admin-configured SLA duration for the process's *current* status (via `store.getSLASettings().processoStatus[p.status]`), with no status ceiling. An identical `isProcessoSlaBreach(p)` helper was added to Dashboard.jsx, Tarefas.jsx, Processos.jsx, and **StatsBar.jsx** (whose own independent, never-updated "Em Atraso" tile calculation on the "Visão geral de processos" section had been missed in the first pass — it recalculates internally from its own `processos`/`myProcessos` props rather than reading Dashboard's already-fixed `myOverdue`), replacing every `daysLeft(p.deadline)`-based breach check with the SLA-settings-based one. **Known follow-up gap, not yet fixed:** Processos.jsx's `statusFilter === "overdue"` row filter (triggered by clicking the "Em Atraso" tile) still uses the old `daysLeft(p.deadline)` condition, so the displayed count can now differ from the rows shown after clicking through.
+
+### respActual Backfilled on Seed Data, and Set at Process Creation
+
+`respActual` — a live field introduced by the Resp. Actual redesign, meant to be populated by reassignment logic — was never present on any seed process in `mock/data.js`'s `PROCESSOS` array (undefined on all 14), and was never set at all in `handleAbrirProcesso` (Tarefas.jsx) when a process is created at Em Abertura. Backfilled `respActual` on every seed process to match that process's `owner`. Fixed `handleAbrirProcesso` to set `respActual: abridoPor` alongside `respAbertura: abridoPor` at creation — the process opener is now immediately reflected as the current holder, exactly matching every other status transition's behavior. `owner` (Resp. Cotação) remains deliberately empty at this stage, unchanged.
+
+### DEV Tools — Simular Incumprimento SLA Fixed to Match the New Breach Calculation
+
+The DEV tool's process-side simulation was backdating `p.deadline` (a field the current breach calculation no longer reads) alongside `p.created`, and seeded `sla.processoStatus` via a blanket pass over every configured stage (`store.getStages()`) with an "entry doesn't exist" guard — which could silently miss a picked process whose status didn't correspond to a real stage, or whose existing SLA entry was present but unusable (e.g. a stale `{ value: 0 }`). Fixed: processes are now picked first, `deadline` is no longer touched, and the SLA-seeding step targets only the exact statuses of the picked processes, seeding whenever the entry is absent **or** falsy — guaranteeing a usable breach condition for exactly the processes the tool claims to affect.
+
+### DEV Tools — Forçar Pré-Entrada Checkbox
+
+Added a "Forçar Pré-Entrada" checkbox next to the existing client-specific email generator. When checked, `handleGenerateClientEmail` always classifies the generated email as Pré-Entrada with high confidence, overriding the AI Simulation toggle for that one generation action only — every other generator in the panel is unaffected.
+
+### Processos — Meus/Todos Tab Order and Default
+
+Swapped the tab order so "Meus processos" appears first, "Todos os processos" second, for every user. The default selection is now role-aware: standard users default to Meus Processos; Admin/Supervisor default to Todos os Processos — both roles still see Meus Processos listed first.
+
+---
+
 ## Steps to Close Stage 1
 
 1. Final human QA pass across all screens (see `docs/stage1-testing-guide.md`)
